@@ -4,13 +4,15 @@
 
 사용 예:
   python3 scrape_uijeongbu_apt.py
+  python3 scrape_uijeongbu_apt.py -t templates/uijeongbu_yangju_apt.json
+  python3 scrape_uijeongbu_apt.py -t templates/nambu_geumcheon_dasedae.json
   python3 scrape_uijeongbu_apt.py --court 서울중앙지방법원 --scl 아파트 --flbd-min 2회
-  python3 scrape_uijeongbu_apt.py --court 전체 --sido 서울특별시 --sgg 금천구 --scl 다세대주택
-  python3 scrape_uijeongbu_apt.py --court 전체 --mcl 주거용건물 -o results.csv
+  python3 scrape_uijeongbu_apt.py -t templates/uijeongbu_apt.json --sgg 포천시
 """
 
 import argparse
 import csv
+import json
 import os
 import time
 from playwright.sync_api import sync_playwright
@@ -19,17 +21,50 @@ TARGET_URL = "https://www.courtauction.go.kr/pgj/index.on?w2xPath=/pgj/ui/pgj100
 COLUMNS = ['사건번호', '물건소재지', '감정가', '최저가', '유찰횟수']
 
 
+DEFAULTS = {
+    'court':    '의정부지방법원',
+    'sido':     None,
+    'sgg':      None,
+    'lcl':      '건물',
+    'mcl':      '주거용건물',
+    'scl':      '아파트',
+    'flbd_min': '1회',
+    'output':   None,
+}
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description='법원경매 물건 수집기')
-    parser.add_argument('--court',    default='의정부지방법원', help='법원명 ("전체" 입력 시 전국)')
-    parser.add_argument('--sido',     default=None,            help='시/도 (예: 서울특별시)')
-    parser.add_argument('--sgg',      default=None,            help='시/군/구 (예: 금천구)')
-    parser.add_argument('--lcl',      default='건물',          help='용도 대분류 (기본: 건물)')
-    parser.add_argument('--mcl',      default='주거용건물',     help='용도 중분류 (기본: 주거용건물)')
-    parser.add_argument('--scl',      default='아파트',         help='용도 소분류 ("전체" 입력 시 생략)')
-    parser.add_argument('--flbd-min', default='1회',           help='유찰횟수 최솟값 ("전체" 입력 시 생략)')
-    parser.add_argument('-o', '--output', default=None,        help='출력 CSV 파일명 (기본: 자동 생성)')
-    return parser.parse_args()
+    parser.add_argument('-t', '--template', default=None,        help='템플릿 JSON 파일 경로 (templates/*.json)')
+    parser.add_argument('--court',          default=None,        help='법원명 ("전체" 입력 시 전국)')
+    parser.add_argument('--sido',           default=None,        help='시/도 (예: 서울특별시)')
+    parser.add_argument('--sgg',            default=None,        help='시/군/구 (예: 금천구)')
+    parser.add_argument('--lcl',            default=None,        help='용도 대분류')
+    parser.add_argument('--mcl',            default=None,        help='용도 중분류')
+    parser.add_argument('--scl',            default=None,        help='용도 소분류 ("전체" 입력 시 생략)')
+    parser.add_argument('--flbd-min',       default=None,        help='유찰횟수 최솟값 ("전체" 입력 시 생략)')
+    parser.add_argument('-o', '--output',   default=None,        help='출력 CSV 파일명 (기본: 자동 생성)')
+    args = parser.parse_args()
+
+    # 우선순위: CLI 인자 > 템플릿 > 기본값
+    merged = dict(DEFAULTS)
+    if args.template:
+        tpl_path = args.template
+        if not os.path.isabs(tpl_path):
+            tpl_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), tpl_path)
+        with open(tpl_path, encoding='utf-8') as f:
+            merged.update(json.load(f))
+        print(f"▶ 템플릿 로드: {args.template}")
+    for key in ['court', 'sido', 'sgg', 'lcl', 'mcl', 'scl', 'output']:
+        if getattr(args, key) is not None:
+            merged[key] = getattr(args, key)
+    if args.flbd_min is not None:
+        merged['flbd_min'] = args.flbd_min
+
+    # argparse Namespace로 변환
+    for key, val in merged.items():
+        setattr(args, key, val)
+    return args
 
 
 def make_output_path(args):
