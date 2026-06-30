@@ -44,6 +44,24 @@ python3 scrape_uijeongbu_apt.py --court 인천지방법원 -o incheon_apt.csv
 
 출력 파일명 자동 생성 예: `auction_의정부_아파트_유찰1회.csv`
 
+## 프로젝트 구조
+
+```
+auction-crwal0629/
+├── scrape_uijeongbu_apt.py        # 메인 스크래퍼 (CLI 인자 지원)
+├── auction_list.csv               # 초기 수집 결과 샘플
+└── skill/                         # Claude Code 재사용 스킬
+    ├── SKILL.md                   # 올바른 패턴, 드롭다운 체계, API 필드 매핑
+    ├── references/
+    │   └── trial-and-error.md    # 시행착오 12개 케이스 기록
+    └── scripts/
+        └── scrape_auction.py     # 기본 스크래퍼 번들 (서울중앙지방법원 기준)
+```
+
+`skill/` 폴더는 Claude Code 스킬 형식으로 작성된 재사용 가이드입니다.
+이 사이트를 처음 접할 때 반복하기 쉬운 실수들(IP 차단, headless 감지, 파이프라인 딜레이 등)을
+사전에 방지하기 위해 시행착오와 해결 패턴을 문서화했습니다.
+
 ## 기술 스택
 
 - **Playwright** (로컬 브라우저 경유 — 사이트가 외부 IP 직접 호출을 차단함)
