@@ -72,6 +72,19 @@ def fmt_ymd(v):
     return f"{s[:4]}.{s[4:6]}.{s[6:8]}" if len(s) >= 8 else s
 
 
+def _ymd_tuple(v):
+    """'2022.3.25.' 또는 '20220325' → (2022,3,25). 실패 시 None."""
+    if not v:
+        return None
+    s = str(v)
+    m = re.search(r'(\d{4})\D+(\d{1,2})\D+(\d{1,2})', s)
+    if m:
+        return tuple(int(x) for x in m.groups())
+    if len(s) == 8 and s.isdigit():
+        return (int(s[:4]), int(s[4:6]), int(s[6:8]))
+    return None
+
+
 def _slice(text, starts, ends):
     """text 에서 starts 중 첫 매칭 위치 ~ 그 뒤 ends 중 첫 매칭 위치 사이를 반환."""
     si = -1
@@ -606,11 +619,18 @@ def compute_investment(dxdy, myse, near, opts):
     else:
         expected_bid = raw_bid
 
-    # 인수 보증금(보수적 상한): 특별매각조건 '반환청구권 포기'면 0, 아니면 대항력 임차인 보증금 합
+    # 인수 보증금: 등기부 정밀분석(B안)이 있으면 그 값 우선, 없으면 명세서 기반 보수적 상한
     특조 = myse.get('특별매각조건', '') or ''
     risky_names = set(myse.get('대항력앞선임차인', []))
     risky_deposit = sum(t.get('보증금', 0) for t in myse.get('임차인', []) if t.get('성명') in risky_names)
-    if risky_deposit and ('포기' in 특조 and '반환' in 특조):
+    dbu = opts.get('deungibu')   # {'정밀인수금':int, '인수권리':[...], '말소기준권리':str}
+    if dbu is not None:
+        인수금 = dbu.get('정밀인수금', 0)
+        n_ins = len(dbu.get('인수권리', []))
+        인수주석 = (f"등기부 정밀분석 — 말소기준 {dbu.get('말소기준권리','?')}, "
+                  f"인수권리 {n_ins}건" + (f" + 대항력임차인" if dbu.get('대항력임차인') else '')
+                  + (' (특조 반환포기 반영은 별도확인)' if ('포기' in 특조) else ''))
+    elif risky_deposit and ('포기' in 특조 and '반환' in 특조):
         인수금, 인수주석 = 0, '특별매각조건상 채권자 보증금반환청구권 포기 → 매수인 인수 부담 없음'
     elif risky_deposit:
         # 배당요구+확정일자 있으면 배당으로 상당분 회수 가능 → 실제 인수는 상한보다 작을 수 있음
@@ -736,6 +756,25 @@ def print_report(rep):
             print("    (─m/--market 로 예상 매도시세를 넣으면 순수익·수익률까지 계산)")
         print(f"    ※ 가정: {iv['_가정']}")
 
+    ra = rep.get('권리분석(등기부)')
+    if ra:
+        print("\n■ 7. 권리분석 (B안 · 등기부 정밀)")
+        line('말소기준권리', ra['말소기준권리'])
+        if ra['인수권리']:
+            print("  인수(매수인 부담) 권리:")
+            for x in ra['인수권리']:
+                d = x.get('접수일'); ds = f"{d[0]}.{d[1]}.{d[2]}" if d else '?'
+                amt = f" {x['금액']:,}원" if x.get('금액') else ''
+                print(f"    🔴 [{x['구분']} {x['순위번호']}] {x['등기목적']}{amt} (접수 {ds}) — {x['사유']}")
+        else:
+            line('인수권리', '없음 (등기부상 인수권리 없음 — 선순위 용익물권/보전처분 없음)')
+        if ra.get('대항력임차인'):
+            for t in ra['대항력임차인']:
+                print(f"    🔴 대항력 임차인 {t['성명']} 보증금 {t['보증금']:,}원"
+                      + (' (배당 회수가능성 있음)' if t.get('회수가능성') else ' (배당요구 미확인 → 인수위험)'))
+        line('정밀 인수금', f"{ra['정밀인수금']:,}원 (등기부 기준)")
+        print(f"    ⚠️ {ra['_주의']}")
+
     print("\n" + "="*70)
     print("⚠️ 투자분석은 '추정'입니다. 취득세(다주택/규제지역 중과)·인수금·명도난이도는 반드시")
     print("   등기사항증명서·전입세대열람·현장확인으로 검증하세요. 명세서는 매각 1주 전부터 공개.")
@@ -770,6 +809,7 @@ def main():
     ap.add_argument('--sale-rate', type=float, default=None, help='예상 매각가율(%%) 직접 지정')
     ap.add_argument('--acq-tax', type=float, default=None, help='취득세율(%%) 직접 지정(다주택/규제지역 중과 시)')
     ap.add_argument('--evict-cost', type=int, default=None, help='명도비용(원) 가정값 조정')
+    ap.add_argument('--deungibu', default=None, help='등기사항전부증명서 PDF 경로 → 정밀 권리분석·인수금(B안)')
     args = ap.parse_args()
 
     year, caseno = parse_case(args)
@@ -818,9 +858,38 @@ def main():
             market = market_info['시세중앙값']
             print(f"  실거래 시세 중앙값 {market:,}원 (표본 {market_info['표본수']}건, {market_info['기간']})")
 
+    # 등기부 정밀 권리분석 (B안) — --deungibu PDF 제공 시
+    rights = None
+    if args.deungibu:
+        print(f"▶ 등기부 권리분석: {args.deungibu} ...")
+        try:
+            from parse_deungibu import parse_deungibu
+            from rights_analysis import analyze_rights
+            parsed = parse_deungibu(args.deungibu)
+            base = data['dma_result'].get('csBaseInfo', {})
+            started = _ymd_tuple(base.get('csCmdcYmd'))
+            # 명세서 임차인(있으면) 전입/확정/배당요구 → 날짜 튜플로 변환해 엔진에 전달
+            m_ten = []
+            myse_d = data.get('myse')
+            if isinstance(myse_d, dict) and myse_d.get('runs0'):
+                dxdy = data['dma_result'].get('dspslGdsDxdyInfo', {})
+                for t in parse_tenant_table(myse_d['runs0'], dxdy.get('tprtyRnkHypthcStngDts', '')).get('임차인', []):
+                    m_ten.append({'성명': t.get('성명'), '보증금': t.get('보증금'),
+                                  '전입신고일': _ymd_tuple(t.get('전입신고일')),
+                                  '확정일자': _ymd_tuple(t.get('확정일자')),
+                                  '배당요구일': _ymd_tuple(t.get('배당요구일'))})
+            rights = analyze_rights(parsed['분석대상'], 경매개시일=started, 명세서임차인=m_ten)
+            print(f"  말소기준 {rights['말소기준권리']} · 인수권리 {len(rights['인수권리'])}건 · 정밀인수금 {rights['정밀인수금']:,}원")
+        except Exception as e:
+            print(f"  ⚠️ 등기부 파싱 실패({type(e).__name__}: {e}) — 명세서 기반 추정으로 진행")
+            rights = None
+
     opts = {'market': market, 'sale_rate': args.sale_rate,
-            'acq_tax': args.acq_tax, 'evict_cost': args.evict_cost}
+            'acq_tax': args.acq_tax, 'evict_cost': args.evict_cost,
+            'deungibu': rights}
     rep = build_report(data, opts)
+    if rights:
+        rep['권리분석(등기부)'] = rights
     if market_info and market_info.get('표본수'):
         rep['투자분석']['시세출처'] = f"국토부 실거래 중앙값 (표본 {market_info['표본수']}건, {market_info['기간']})"
         rep['투자분석']['시세표본'] = market_info.get('최근거래', [])
