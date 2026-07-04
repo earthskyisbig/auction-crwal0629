@@ -5,9 +5,9 @@ description: 대한민국 법원경매(courtauction.go.kr)에서 특정 사건 1
 
 # 법원경매 단일 사건 상세분석기 (courtauction.go.kr)
 
-목록 스크래핑은 **court-auction-scraper** 스킬이 담당한다. 이 스킬은 **사건번호 하나를 상세페이지까지 열어 5개 문서를 분석**한다.
+목록 스크래핑은 **court-auction-scraper** 스킬이 담당한다. 이 스킬은 **사건번호 하나를 상세페이지까지 열어 5개 법원문서를 분석하고, 그 위에 권리분석·수익률(투자분석 A안)을 얹는다**.
 
-## 무엇을 뽑아내는가 (사용자 요청 5개 문서)
+## 무엇을 뽑아내는가 (5개 문서 + 투자분석)
 
 | # | 문서 | 데이터 출처 | 주요 항목 |
 |---|------|------------|----------|
@@ -27,7 +27,8 @@ description: 대한민국 법원경매(courtauction.go.kr)에서 특정 사건 1
 - **취득비용(가정)**: 취득세(1주택·비규제 브래킷 1.1/2.2/3.3%, `--acq-tax`로 중과 조정), 법무등기 0.5%, 명도비 정액(`--evict-cost`).
 - **손익분기 매도가** = 총취득원가. `--market <원>` 입력 시 순수익·수익률(중개보수 0.5% 반영) 계산.
 
-- **시세 자동조회** (`--auto-market`): 국토부 아파트 매매 실거래(PublicDataReader)로 **동일 단지·평형(±3㎡)** 최근 12개월 거래 중앙값을 자동으로 `--market`에 넣는다. `fetch_market_price(시군구코드, 단지명, 전용면적)` — 시군구코드는 경매 데이터의 `rprsAdongSdCd+rprsAdongSggCd`, 단지명·면적은 `gdsDspslObjctLst`에서 자동 도출. **realprice-flow/apt-value와 동일하게 `.env`의 `PUBLIC_DATA_SERVICE_KEY` 필요**(data.go.kr '아파트 매매 실거래가' 활용신청). 키 없음/단지명 없음(다세대)/거래 없음이면 안내 후 시세 없이 진행.
+- **시세 자동조회** (`--auto-market`): 국토부 아파트 매매 실거래(PublicDataReader)로 **동일 단지·평형(±3㎡)** 최근 12개월 거래 중앙값을 자동으로 `--market`에 넣는다. `fetch_market_price(시군구코드, 단지명, 전용면적)` — 시군구코드는 경매 데이터의 `rprsAdongSdCd+rprsAdongSggCd`, 단지명·면적은 `gdsDspslObjctLst`에서 자동 도출. **realprice-flow/apt-value와 동일하게 `.env`의 `PUBLIC_DATA_SERVICE_KEY` 필요**(data.go.kr '아파트 매매 실거래가' 활용신청, **Decoding 키**). 키 없음/단지명 없음(다세대)/거래 없음이면 안내 후 시세 없이 진행.
+  - ⚠️ **실행 위치 주의**: `.env` 는 `find_dotenv` 가 **cwd 상위로만** 찾으므로, 반드시 **프로젝트 폴더(`.env` 있는 곳)에서 실행**해야 키가 잡힌다. 저장소 밖에서 실행하면 "키 미설정"으로 뜬다(export 돼 있으면 예외). 자세한 함정은 `references/trial-and-error.md` #13 참조.
 
 ```bash
 python3 scripts/analyze_case.py --court 남양주지원 --case 2025타경2412 --auto-market   # 시세 자동
