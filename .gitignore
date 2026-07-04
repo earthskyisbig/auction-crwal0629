@@ -16,3 +16,6 @@ auction_*.csv
 
 # 원본 API 덤프 (데이터)
 raw_*.json
+
+# 국토부 API 키 (절대 커밋 금지)
+.env

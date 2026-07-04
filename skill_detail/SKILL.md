@@ -27,11 +27,15 @@ description: 대한민국 법원경매(courtauction.go.kr)에서 특정 사건 1
 - **취득비용(가정)**: 취득세(1주택·비규제 브래킷 1.1/2.2/3.3%, `--acq-tax`로 중과 조정), 법무등기 0.5%, 명도비 정액(`--evict-cost`).
 - **손익분기 매도가** = 총취득원가. `--market <원>` 입력 시 순수익·수익률(중개보수 0.5% 반영) 계산.
 
+- **시세 자동조회** (`--auto-market`): 국토부 아파트 매매 실거래(PublicDataReader)로 **동일 단지·평형(±3㎡)** 최근 12개월 거래 중앙값을 자동으로 `--market`에 넣는다. `fetch_market_price(시군구코드, 단지명, 전용면적)` — 시군구코드는 경매 데이터의 `rprsAdongSdCd+rprsAdongSggCd`, 단지명·면적은 `gdsDspslObjctLst`에서 자동 도출. **realprice-flow/apt-value와 동일하게 `.env`의 `PUBLIC_DATA_SERVICE_KEY` 필요**(data.go.kr '아파트 매매 실거래가' 활용신청). 키 없음/단지명 없음(다세대)/거래 없음이면 안내 후 시세 없이 진행.
+
 ```bash
-python3 scripts/analyze_case.py --court 남양주지원 --case 2025타경2412 --market 340000000
+python3 scripts/analyze_case.py --court 남양주지원 --case 2025타경2412 --auto-market   # 시세 자동
+python3 scripts/analyze_case.py --court 남양주지원 --case 2025타경2412 --market 340000000  # 시세 수동
 python3 scripts/analyze_case.py --court 서울남부지방법원 --case 2025타경9307 --sale-rate 78 --acq-tax 12
 ```
-> ⚠️ 미포함(솔직히 고지): 등기부상 전체 근저당·가압류(→ 정밀 인수금), 양도세·보유비용. 완전 권리분석은 등기사항증명서(인터넷등기소·유료)가 필요 → B안(등기부 업로드 파싱)에서 다룬다. 시세는 `realprice-flow`/`apt-value` 스킬로 뽑아 `--market`에 넣으면 된다.
+> ⚠️ 미포함(솔직히 고지): 등기부상 전체 근저당·가압류(→ 정밀 인수금), 양도세·보유비용. 완전 권리분석은 등기사항증명서(인터넷등기소·유료)가 필요 → B안(등기부 업로드 파싱)에서 다룬다.
+> ⚠️ `--auto-market` 은 **동일 단지 실거래**가 있어야 정확하다. 소규모/신축/다세대는 표본이 없을 수 있고, 그땐 `--market` 수동 입력이나 `realprice-flow` 지역 리포트를 참고하라.
 
 ## ⚠️ 열람 가능 시점 + 매각물건명세서 임차인 추출 (핵심)
 

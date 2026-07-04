@@ -16,7 +16,7 @@
 ⚠️ 매각물건명세서(임차인 상세)는 매각기일 1주 전, 현황조사서/감정평가서는 2주 전부터 열람 가능.
    그 전에는 임차인 표(점유자/전입/확정일자/보증금/배당요구)가 비어 있을 수 있다.
 """
-import argparse, json, re, sys, time
+import argparse, json, os, re, sys, time
 from playwright.sync_api import sync_playwright
 
 SEARCH_URL = "https://www.courtauction.go.kr/pgj/index.on?w2xPath=/pgj/ui/pgj100/PGJ151F00.xml"
@@ -492,6 +492,79 @@ def build_report(data, opts=None):
             '인근매각물건사례': near, '투자분석': invest}
 
 
+def fetch_market_price(sigungu_code, complex_name, area_m2, months_back=12, area_tol=3.0):
+    """국토부 아파트 매매 실거래(PublicDataReader)로 특정 단지·평형 시세(중앙값) 조회.
+
+    realprice-flow/apt-value 스킬과 동일하게 .env 의 PUBLIC_DATA_SERVICE_KEY 를 쓴다.
+    키 없음/라이브러리 없음/단지명 없음(다세대 등) → None(자동조회 불가).
+    반환: {'시세중앙값':원, '표본수':n, '기간':'YYYYMM~YYYYMM', '최근거래':[{금액,면적,층,계약}]}
+    """
+    if not (sigungu_code and complex_name and area_m2):
+        return None
+    try:
+        import PublicDataReader as pdr
+        from dotenv import load_dotenv, find_dotenv
+    except Exception:
+        return None
+    load_dotenv(find_dotenv(usecwd=True))
+    for c in ('.env', os.path.join(os.getcwd(), '.env'),
+              os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env')):
+        if os.path.exists(c):
+            load_dotenv(c)
+    key = os.getenv('PUBLIC_DATA_SERVICE_KEY')
+    if not key or '입력' in key:
+        return {'오류': 'no_key'}   # 키 미설정 → 호출부에서 안내
+    from datetime import datetime
+    now = datetime.now()
+    ey, em = (now.year, now.month - 1) if now.month > 1 else (now.year - 1, 12)
+    yms = []
+    y, m = ey, em
+    for _ in range(months_back):
+        yms.append(f'{y}{m:02d}')
+        m -= 1
+        if m < 1:
+            y, m = y - 1, 12
+    api = pdr.TransactionPrice(key)
+    core = re.sub(r'\s+', '', complex_name)
+    rows = []
+    for ym in yms:
+        try:
+            df = api.get_data(property_type='아파트', trade_type='매매',
+                              sigungu_code=str(sigungu_code), year_month=ym, verbose=False)
+        except Exception:
+            continue
+        if df is None or len(df) == 0:
+            continue
+        namecol = '단지명' if '단지명' in df.columns else ('아파트' if '아파트' in df.columns else None)
+        if not namecol:
+            continue
+        for _, r in df.iterrows():
+            nm = re.sub(r'\s+', '', str(r.get(namecol, '')))
+            if not (core in nm or nm in core or core[:5] and core[:5] in nm):
+                continue
+            try:
+                area = float(r.get('전용면적'))
+            except (TypeError, ValueError):
+                continue
+            if abs(area - area_m2) > area_tol:
+                continue
+            if str(r.get('해제여부', '')).strip() == 'O':
+                continue
+            try:
+                amt = int(str(r.get('거래금액', '')).replace(',', '').strip()) * 10000
+            except ValueError:
+                continue
+            rows.append({'금액': amt, '면적': area, '층': r.get('층', ''),
+                         '계약': f"{r.get('계약년도','')}.{str(r.get('계약월','')).zfill(2)}", 'ym': ym})
+    if not rows:
+        return {'표본수': 0, '기간': f'{yms[-1]}~{yms[0]}'}
+    amts = sorted(r['금액'] for r in rows)
+    n = len(amts)
+    median = amts[n // 2] if n % 2 else (amts[n // 2 - 1] + amts[n // 2]) // 2
+    return {'시세중앙값': median, '표본수': n, '기간': f'{yms[-1]}~{yms[0]}',
+            '최근거래': sorted(rows, key=lambda r: r['ym'], reverse=True)[:8]}
+
+
 def _acq_tax_rate(price):
     """주택 취득세율(1주택·비규제 가정, 지방교육세 포함 근사). 다주택/규제지역 중과는 별도."""
     if price <= 600_000_000:
@@ -691,6 +764,7 @@ def main():
     ap.add_argument('--no-headless', action='store_true', help='브라우저 표시(디버그)')
     # 투자분석(A안) 옵션
     ap.add_argument('--market', type=int, default=None, help='예상 매도 시세(원) — 입력 시 수익률 계산')
+    ap.add_argument('--auto-market', action='store_true', help='국토부 실거래가로 시세 자동조회(.env PUBLIC_DATA_SERVICE_KEY 필요)')
     ap.add_argument('--sale-rate', type=float, default=None, help='예상 매각가율(%%) 직접 지정')
     ap.add_argument('--acq-tax', type=float, default=None, help='취득세율(%%) 직접 지정(다주택/규제지역 중과 시)')
     ap.add_argument('--evict-cost', type=int, default=None, help='명도비용(원) 가정값 조정')
@@ -720,9 +794,34 @@ def main():
     except Exception as e:
         print(f"  명세서 추출 최종 실패({e}) — 나머지 4개 문서로 진행")
         data['myse'] = []
-    opts = {'market': args.market, 'sale_rate': args.sale_rate,
+    # 시세 자동조회 (realprice-flow 연동: 국토부 실거래가) — --market 없고 --auto-market 일 때
+    market = args.market
+    market_info = None
+    if market is None and args.auto_market:
+        obj = (data['dma_result'].get('gdsDspslObjctLst') or [{}])[0]
+        sgg = f"{str(obj.get('rprsAdongSdCd','')).zfill(2)}{str(obj.get('rprsAdongSggCd','')).zfill(3)}"
+        cx = obj.get('bldNm')
+        am = re.search(r'([\d.]+)\s*㎡', obj.get('objctArDts') or '')
+        area = float(am.group(1)) if am else None
+        print(f"▶ 시세 자동조회(국토부 실거래): {cx} {area}㎡ / 시군구 {sgg} ...")
+        market_info = fetch_market_price(sgg, cx, area)
+        if market_info is None:
+            print("  자동조회 불가(단지명 없음/라이브러리 없음) — 시세 없이 진행")
+        elif market_info.get('오류') == 'no_key':
+            print("  ⚠️ .env 에 PUBLIC_DATA_SERVICE_KEY 미설정 → 국토부 실거래 조회 불가.")
+            print("     공공데이터포털(data.go.kr) '아파트 매매 실거래가' 활용신청 후 키를 .env 에 넣으세요.")
+        elif market_info.get('표본수', 0) == 0:
+            print(f"  최근 {market_info.get('기간')} 동일단지·평형 매매 실거래 없음 — 시세 없이 진행")
+        else:
+            market = market_info['시세중앙값']
+            print(f"  실거래 시세 중앙값 {market:,}원 (표본 {market_info['표본수']}건, {market_info['기간']})")
+
+    opts = {'market': market, 'sale_rate': args.sale_rate,
             'acq_tax': args.acq_tax, 'evict_cost': args.evict_cost}
     rep = build_report(data, opts)
+    if market_info and market_info.get('표본수'):
+        rep['투자분석']['시세출처'] = f"국토부 실거래 중앙값 (표본 {market_info['표본수']}건, {market_info['기간']})"
+        rep['투자분석']['시세표본'] = market_info.get('최근거래', [])
     print_report(rep)
 
     out = args.output or f"case_{year}타경{caseno}.json"
