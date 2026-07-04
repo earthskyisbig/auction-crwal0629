@@ -89,6 +89,79 @@ def _slice(text, starts, ends):
     return text[si:ei]
 
 
+# ── 매각물건명세서 임차인 표 구조화 (StreamDocs 좌표 기반) ──────────────
+_DATE = re.compile(r'20\d{2}\.\s?\d{1,2}\.\s?\d{1,2}\.?')
+_AMT = re.compile(r'\d{1,3}(?:,\d{3})+')
+_NAME = re.compile(r'^([가-힣]{2,5})\s')
+
+
+def _reconstruct_lines(runs):
+    """StreamDocs runs(rect 포함) → 시각적 라인 리스트(y 내림차순, 각 라인은 x로 정렬).
+    텍스트를 그냥 이어붙이면 표 셀이 뒤섞이므로 좌표로 행을 복원한다."""
+    items = []
+    for r in runs:
+        rect = r.get('rect') or []
+        if not rect:
+            continue
+        items.append((rect[0].get('bottom', 0), rect[0].get('left', 0), r.get('text', '')))
+    items.sort(key=lambda t: (-t[0], t[1]))
+    lines = []
+    for y, x, txt in items:
+        for ln in lines:
+            if abs(ln['y'] - y) <= 5:
+                ln['parts'].append((x, txt))
+                break
+        else:
+            lines.append({'y': y, 'parts': [(x, txt)]})
+    out = []
+    for ln in lines:
+        ln['parts'].sort(key=lambda p: p[0])
+        out.append({'y': ln['y'], 'text': ' '.join(p[1] for p in ln['parts']).strip()})
+    return out
+
+
+def parse_tenant_table(runs0, chosun_setting=''):
+    """명세서 1페이지 runs → 임차인 구조화 + 대항력(인수) 판정.
+
+    반환: {'없음':bool, '임차인':[{성명,보증금,임대차기간시작,전입신고일,확정일자,배당요구일,원문행}],
+           '인수위험':bool, '대항력앞선임차인':[성명…]}
+    ⚠️ 성명이 줄바꿈된 기관명(예: 주택도시보증공사)은 조각으로 잡힐 수 있어 '원문행'을 항상 병기한다.
+    """
+    lines = _reconstruct_lines(runs0)
+    y_hdr = next((l['y'] for l in lines if '성  명' in l['text'] or '성 명' in l['text']), None)
+    y_bigo = next((l['y'] for l in lines if '<비고>' in l['text']), None)
+    band = [l for l in lines if (y_bigo or 0) < l['y'] < (y_hdr or 10 ** 9)]
+    joined = ' '.join(l['text'] for l in band)
+    if '임차내역없음' in joined or '임차 내역 없음' in joined:
+        return {'없음': True, '임차인': [], '인수위험': False, '대항력앞선임차인': []}
+    tenants = []
+    for l in band:
+        t = l['text']
+        if not (_AMT.search(t) and _DATE.search(t)):
+            continue
+        amt_m = max(_AMT.finditer(t), key=lambda m: int(m.group().replace(',', '')))
+        before = [d.strip() for d in _DATE.findall(t[:amt_m.start()])]
+        after = [d.strip() for d in _DATE.findall(t[amt_m.end():])]
+        nm = _NAME.match(t)
+        tenants.append({
+            '성명': nm.group(1) if nm else '(원문참조)',
+            '보증금': int(amt_m.group().replace(',', '')),
+            '임대차기간시작': before[0] if before else '',
+            '전입신고일': after[0] if len(after) > 0 else '',
+            '확정일자': after[1] if len(after) > 1 else '',
+            '배당요구일': after[2] if len(after) > 2 else '',
+            '원문행': re.sub(r'\s{2,}', ' ', t).strip(),
+        })
+    # 대항력 판정: 전입신고일 < 최선순위설정일 → 보증금 매수인 인수 위험
+    def _norm(d):
+        m = re.match(r'(20\d{2})\.\s?(\d{1,2})\.\s?(\d{1,2})', (d or '').replace(' ', ''))
+        return tuple(int(x) for x in m.groups()) if m else None
+    cm = _DATE.search((chosun_setting or '').replace(' ', ''))
+    base = _norm(cm.group()) if cm else None
+    risky = [t['성명'] for t in tenants if base and _norm(t['전입신고일']) and _norm(t['전입신고일']) < base]
+    return {'없음': False, '임차인': tenants, '인수위험': bool(risky), '대항력앞선임차인': risky}
+
+
 def collect(court, year, caseno, headless=True):
     """검색 → 상세 진입 → dma_result + 현황조사서 + 인근매각/진행 반환."""
     captures = []
@@ -131,8 +204,8 @@ def collect(court, year, caseno, headless=True):
                 break
         if not got_row:
             browser.close()
-            sys.exit(f"❌ 검색 결과 없음: {court} {year}타경{caseno} "
-                     f"(법원명/사건번호 확인, 또는 사이트 응답 지연)")
+            raise RuntimeError(f"검색 결과 없음: {court} {year}타경{caseno} "
+                               f"(법원명/사건번호 확인, 또는 사이트 응답 지연)")
 
         # 상세 진입 (검증된 네비게이션: 주소 링크 onclick=moveDtlPage(idx))
         # ⚠️ 파이프라인 패턴: 첫 moveDtlPage(0)는 지연되어 실제 이동을 안 하는 경우가 많다.
@@ -149,13 +222,13 @@ def collect(court, year, caseno, headless=True):
                 break
         if not got_detail:
             browser.close()
-            sys.exit("❌ 상세 데이터(selectAuctnCsSrchRslt) 캡처 실패")
+            raise RuntimeError("상세 데이터(selectAuctnCsSrchRslt) 캡처 실패")
         time.sleep(2)
 
         detail = [c for c in captures if 'selectAuctnCsSrchRslt' in c['url']]
         if not detail:
             browser.close()
-            sys.exit("❌ 상세 데이터(selectAuctnCsSrchRslt) 캡처 실패")
+            raise RuntimeError("상세 데이터(selectAuctnCsSrchRslt) 캡처 실패")
         dma = detail[-1]['body']['data']['dma_result']
 
         base = dma['csBaseInfo']
@@ -261,7 +334,7 @@ def fetch_myseseo(court, year, caseno, headless=True):
             return []
         docid = docids[-1]
         base = f"https://pvo.scourt.go.kr/streamdocs/v4/documents/{docid}"
-        pages = []
+        pages, runs0 = [], None
         for i in range(15):
             try:
                 r = ctx.request.get(f"{base}/texts/{i}")
@@ -273,9 +346,11 @@ def fetch_myseseo(court, year, caseno, headless=True):
                 runs = r.json()
             except Exception:
                 break
+            if i == 0:
+                runs0 = runs   # 1페이지 원본 runs(좌표) → 임차인 표 구조화용
             pages.append(''.join(run.get('text', '') for run in runs))
         browser.close()
-    return pages
+    return {'texts': pages, 'runs0': runs0 or []}
 
 
 def build_report(data):
@@ -317,27 +392,36 @@ def build_report(data):
         '배당요구종기': fmt_ymd(demn.get('dstrtDemnLstprdYmd')),
         '비고': (dxdy.get('gdsSpcfcRmk') or '').strip(),
     }
-    myse_pages = data.get('myse_pages')
-    if myse_pages is None:
+    myse_res = data.get('myse')
+    myse_texts = myse_res.get('texts') if isinstance(myse_res, dict) else myse_res
+    myse_runs0 = myse_res.get('runs0') if isinstance(myse_res, dict) else None
+    if myse_res is None:
         myse['공개여부'] = '미공개 (매각기일 1주 전부터 열람 — 아직 버튼 없음)'
-    elif not myse_pages:
+    elif not myse_texts:
         myse['공개여부'] = '공개(버튼 존재) 되었으나 PDF 텍스트 추출 실패 — 재시도 필요'
     else:
         myse['공개여부'] = '공개'
-        full = '\n'.join(myse_pages)
-        # 임차인·권리 사항은 통상 1페이지에 위치. 점유자 표 ~ <비고>/특별매각조건 구간.
-        p0 = myse_pages[0]
+        full = '\n'.join(myse_texts)
+        # 임차인 표 구조화 (좌표 기반)
+        parsed = parse_tenant_table(myse_runs0 or [], myse.get('최선순위설정', ''))
+        if parsed.get('없음'):
+            myse['임차인'] = []
+            myse['임차인_비고'] = '명세서상 "조사된 임차내역 없음"'
+        else:
+            myse['임차인'] = parsed['임차인']
+            myse['인수위험'] = parsed['인수위험']
+            if parsed['인수위험']:
+                myse['대항력앞선임차인'] = parsed['대항력앞선임차인']
+        # 점유자 표 원문(구조화 실패/검증 대비 항상 병기)
+        p0 = myse_texts[0]
         occ = _slice(p0, ['점유자', '점유의', '성  명', '성명'], ['등기된 부동산', '매각에 따라', '※1'])
         myse['점유자_권리_전문'] = re.sub(r'\s{2,}', ' ', occ).strip() if occ else ''
-        # 대항력 인수 주의 문구
+        # 대항력 인수 주의 문구 / 특별매각조건
         m = re.search(r'※\s*최선순위[^※]*?바랍니다\.', full)
         if m: myse['인수주의'] = re.sub(r'\s{2,}', ' ', m.group(0)).strip()
-        # 특별매각조건
         m = re.search(r'특별매각조건[^\n]*', full)
         if m: myse['특별매각조건'] = re.sub(r'\s{2,}', ' ', m.group(0)).strip()
-        # 임차인 존재 휴리스틱
-        myse['임차인_존재추정'] = bool(re.search(r'(전입|보증금|임차권|임차인).*?(20\d{2}\.\s*\d|[\d,]{6,}\s*원|[\d,]{9,})', occ or ''))
-        myse['_전문'] = myse_pages   # 원본 보존(출력 시 전체 표시)
+        myse['_전문'] = myse_texts   # 원본 보존
     # 4) 기일이력
     dxdy_lst = []
     for d in dma.get('gdsDspslDxdyLst', []):
@@ -419,11 +503,20 @@ def print_report(rep):
     m = rep['매각물건명세서']
     for k in ['공개여부', '명세서작성일', '최선순위설정', '배당요구종기', '비고']:
         if m.get(k): line(k, m[k])
-    if m.get('점유자_권리_전문'):
-        print("  ── 점유자·임대차 (명세서 원문) ──")
-        print("    " + m['점유자_권리_전문'])
-    if m.get('임차인_존재추정') is not None:
-        line('임차인존재추정', 'Y (임대차 정보 기재됨)' if m['임차인_존재추정'] else 'N (기재 없음)')
+    # 구조화 임차인
+    if '임차인' in m:
+        if not m['임차인']:
+            line('임차인', m.get('임차인_비고', '없음'))
+        else:
+            print(f"  ── 임차인 {len(m['임차인'])}명 (명세서 구조화) ──")
+            for t in m['임차인']:
+                print(f"    · {t['성명']:<8} 보증금 {t['보증금']:,}원 "
+                      f"| 전입 {t['전입신고일'] or '-'} 확정 {t['확정일자'] or '-'} "
+                      f"배당요구 {t['배당요구일'] or '-'}")
+                print(f"      원문: {t['원문행']}")
+            if m.get('인수위험'):
+                print(f"  🔴 인수위험: 최선순위설정보다 대항요건 앞선 임차인 → {', '.join(m.get('대항력앞선임차인', []))} "
+                      f"(보증금 매수인 인수 가능)")
     if m.get('인수주의'): print("  ⚠️ " + m['인수주의'])
     if m.get('특별매각조건'): print("  ★ " + m['특별매각조건'])
 
@@ -466,6 +559,20 @@ def print_report(rep):
     print("="*70)
 
 
+def run_with_retry(fn, label, attempts=3, delay=5):
+    """사이트 flakiness 대응 — fn()을 최대 attempts회 재시도. 마지막 실패는 그대로 raise."""
+    last = None
+    for i in range(1, attempts + 1):
+        try:
+            return fn()
+        except Exception as e:
+            last = e
+            print(f"  [{label}] 시도 {i}/{attempts} 실패: {e}")
+            if i < attempts:
+                time.sleep(delay)
+    raise last
+
+
 def main():
     ap = argparse.ArgumentParser(description='법원경매 단일 사건 상세분석기')
     ap.add_argument('--court', required=True, help='법원명 (예: 남양주지원, 서울중앙지방법원)')
@@ -477,11 +584,29 @@ def main():
     args = ap.parse_args()
 
     year, caseno = parse_case(args)
+    hl = not args.no_headless
     print(f"▶ 분석 대상: {args.court} {year}타경{caseno}")
-    data = collect(args.court, year, caseno, headless=not args.no_headless)
-    # 매각물건명세서는 별도 세션에서 추출(window.open 뷰어 안정성 위해)
+    try:
+        data = run_with_retry(lambda: collect(args.court, year, caseno, headless=hl),
+                              '4개문서 수집', attempts=3)
+    except Exception as e:
+        sys.exit(f"❌ 수집 실패(3회 재시도 후): {e}")
+
+    # 매각물건명세서는 별도 세션에서 추출(window.open 뷰어 안정성 위해).
+    #   None=미공개, []=추출실패 → []면 1회 더 재시도, 그래도 []면 그대로 둔다(명세서만 실패, 나머지 유지).
     print("▶ 매각물건명세서 추출(별도 세션)...")
-    data['myse_pages'] = fetch_myseseo(args.court, year, caseno, headless=not args.no_headless)
+    def _myse():
+        r = fetch_myseseo(args.court, year, caseno, headless=hl)
+        if isinstance(r, dict) and not r.get('texts'):
+            raise RuntimeError("명세서 PDF 텍스트 추출 실패")
+        if r == []:
+            raise RuntimeError("명세서 뷰어 docId 미포착")
+        return r
+    try:
+        data['myse'] = run_with_retry(_myse, '명세서', attempts=2)
+    except Exception as e:
+        print(f"  명세서 추출 최종 실패({e}) — 나머지 4개 문서로 진행")
+        data['myse'] = []
     rep = build_report(data)
     print_report(rep)
 
