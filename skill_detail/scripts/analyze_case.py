@@ -353,7 +353,7 @@ def fetch_myseseo(court, year, caseno, headless=True):
     return {'texts': pages, 'runs0': runs0 or []}
 
 
-def build_report(data):
+def build_report(data, opts=None):
     """캡처 데이터 → 사람이 읽는 요약 dict."""
     dma = data['dma_result']
     base = dma['csBaseInfo']
@@ -484,9 +484,97 @@ def build_report(data):
             near['동일읍면동_평균매각가율'] = round(sum(rates)/len(rates), 1)
             near['동일읍면동_매각가율범위'] = [min(rates), max(rates)]
 
+    # 6) 투자분석 (A안: 법원 데이터 기반 추정)
+    invest = compute_investment(dxdy, myse, near, opts or {})
+
     return {'사건상세조회': case, '물건개요': prop, '매각물건명세서': myse,
             '기일내역': dxdy_lst, '현황조사서': curst_out, '감정평가서요약': aee,
-            '인근매각물건사례': near}
+            '인근매각물건사례': near, '투자분석': invest}
+
+
+def _acq_tax_rate(price):
+    """주택 취득세율(1주택·비규제 가정, 지방교육세 포함 근사). 다주택/규제지역 중과는 별도."""
+    if price <= 600_000_000:
+        return 0.011          # 1.1%
+    if price <= 900_000_000:
+        return 0.022          # 1~3% 구간 근사(중간값)
+    return 0.033              # 3.3%
+
+
+def compute_investment(dxdy, myse, near, opts):
+    """예상낙찰가·인수금·취득원가·손익분기 매도가, (시세 입력 시) 예상수익·수익률.
+
+    ⚠️ 전부 '추정'이다: 취득세·명도비·법무비는 가정값(옵션으로 조정), 인수금은 보수적 상한,
+       예상낙찰가는 인근 매각가율 기반. 실제 입찰 전 등기부·현장확인 필수.
+    """
+    gam = int(dxdy.get('aeeEvlAmt') or 0)
+    low = int(dxdy.get('fstPbancLwsDspslPrc') or 0)
+    if not gam:
+        return {'가능': False, '사유': '감정가 없음'}
+
+    # 예상낙찰가: 매각가율 우선순위 = 사용자지정 > 동일단지평균(≥2건) > 동일읍면동평균 > 현재저감율
+    #   단일 comp는 아웃라이어(예: 특수물건 51%) 위험이 커 2건 이상일 때만 동일단지 평균 사용.
+    same_cx = [c['매각가율'] for c in near.get('동일단지사례', []) if c.get('매각가율')]
+    floor_rate = round(low / gam * 100, 1)
+    if opts.get('sale_rate'):
+        rate, rate_src = float(opts['sale_rate']), '사용자지정'
+    elif len(same_cx) >= 2:
+        rate, rate_src = round(sum(same_cx)/len(same_cx), 1), f'동일단지 {len(same_cx)}건 평균'
+    elif near.get('동일읍면동_평균매각가율'):
+        rate, rate_src = near['동일읍면동_평균매각가율'], '동일읍면동 평균'
+    else:
+        rate, rate_src = floor_rate, '현재 최저가율(비교사례 부족)'
+    raw_bid = round(gam * rate / 100)
+    if raw_bid < low:   # 현재 최저가 미만으로는 낙찰 불가 → 하한 적용
+        expected_bid = low
+        rate, rate_src = floor_rate, f'현재 최저가 하한(비교 {rate_src} {rate}%는 최저가 이하)'
+    else:
+        expected_bid = raw_bid
+
+    # 인수 보증금(보수적 상한): 특별매각조건 '반환청구권 포기'면 0, 아니면 대항력 임차인 보증금 합
+    특조 = myse.get('특별매각조건', '') or ''
+    risky_names = set(myse.get('대항력앞선임차인', []))
+    risky_deposit = sum(t.get('보증금', 0) for t in myse.get('임차인', []) if t.get('성명') in risky_names)
+    if risky_deposit and ('포기' in 특조 and '반환' in 특조):
+        인수금, 인수주석 = 0, '특별매각조건상 채권자 보증금반환청구권 포기 → 매수인 인수 부담 없음'
+    elif risky_deposit:
+        # 배당요구+확정일자 있으면 배당으로 상당분 회수 가능 → 실제 인수는 상한보다 작을 수 있음
+        배당가능 = any(t.get('배당요구일') and t.get('확정일자') for t in myse.get('임차인', []) if t.get('성명') in risky_names)
+        인수금 = risky_deposit
+        인수주석 = ('대항력 임차인 보증금(보수적 상한). '
+                  + ('배당요구·확정일자 있어 배당으로 상당분 회수 가능성 → 실제 인수는 더 적을 수 있음(배당표 확인)'
+                     if 배당가능 else '배당요구 미확인 → 전액 인수 위험'))
+    else:
+        인수금, 인수주석 = 0, '대항력 인수 임차인 없음(명세서 기준)'
+
+    # 취득비용 (가정값, opts로 조정 가능)
+    tax_rate = float(opts['acq_tax']) / 100 if opts.get('acq_tax') else _acq_tax_rate(expected_bid)
+    취득세 = round(expected_bid * tax_rate)
+    법무등기 = round(expected_bid * 0.005)                      # 낙찰가 0.5% 가정
+    명도비 = int(opts.get('evict_cost') or (5_000_000 if 인수금 or myse.get('임차인') else 3_000_000))
+    총원가 = expected_bid + 인수금 + 취득세 + 법무등기 + 명도비
+
+    result = {
+        '가능': True,
+        '예상낙찰가': expected_bid, '매각가율': rate, '매각가율출처': rate_src,
+        '인수보증금': 인수금, '인수주석': 인수주석,
+        '취득세': 취득세, '취득세율': round(tax_rate*100, 2),
+        '법무등기비': 법무등기, '명도비': 명도비,
+        '총취득원가': 총원가,
+        '손익분기매도가': 총원가,   # 이 값 이상에 팔아야 원금 회수(양도세·중개보수 제외)
+        '_가정': '취득세=1주택·비규제 가정 / 법무등기=낙찰가0.5% / 명도비 정액 / 양도세·중개보수·보유비용 제외',
+    }
+    market = opts.get('market')
+    if market:
+        market = int(market)
+        중개 = round(market * 0.005)          # 매도 중개보수 0.5% 가정
+        순수익 = market - 총원가 - 중개
+        result.update({
+            '입력시세': market, '매도중개보수': 중개,
+            '예상순수익': 순수익,
+            '수익률': round(순수익 / 총원가 * 100, 1) if 총원가 else None,
+        })
+    return result
 
 
 def print_report(rep):
@@ -554,8 +642,28 @@ def print_report(rep):
         for c in n['동일단지사례']:
             print(f"      {c['사건']} {c['단지']} {c['면적']} | 감정 {c['감정가']/1e8:.2f}억 낙찰 {c['낙찰가']/1e8:.2f}억 ({c['매각가율']}%) 유찰{c['유찰']}")
     print(f"    ▶ 동일읍면동 사례 {len(n['동일읍면동사례'])}건 (상세는 JSON 참조)")
+
+    print("\n■ 6. 투자분석 (A안 · 법원 데이터 기반 추정)")
+    iv = rep.get('투자분석', {})
+    if not iv.get('가능'):
+        line('산출', iv.get('사유', '불가'))
+    else:
+        eok = lambda v: f"{v/1e8:.2f}억"
+        line('예상낙찰가', f"{iv['예상낙찰가']:,}원 ({eok(iv['예상낙찰가'])}) — 감정가×{iv['매각가율']}% ({iv['매각가율출처']})")
+        line('인수보증금', f"{iv['인수보증금']:,}원 — {iv['인수주석']}")
+        line('취득비용', f"취득세 {iv['취득세']:,}({iv['취득세율']}%) + 법무등기 {iv['법무등기비']:,} + 명도 {iv['명도비']:,}")
+        line('총취득원가', f"{iv['총취득원가']:,}원 ({eok(iv['총취득원가'])})")
+        line('손익분기 매도가', f"{iv['손익분기매도가']:,}원 이상이어야 원금회수")
+        if iv.get('입력시세'):
+            line('입력 시세', f"{iv['입력시세']:,}원 ({eok(iv['입력시세'])})")
+            line('예상 순수익', f"{iv['예상순수익']:,}원 ({eok(iv['예상순수익'])})  ·  수익률 {iv['수익률']}%")
+        else:
+            print("    (─m/--market 로 예상 매도시세를 넣으면 순수익·수익률까지 계산)")
+        print(f"    ※ 가정: {iv['_가정']}")
+
     print("\n" + "="*70)
-    print("⚠️ 매각물건명세서 임차인 상세는 매각기일 1주 전부터 공개. 등기부·전입세대열람 별도 확인 필수.")
+    print("⚠️ 투자분석은 '추정'입니다. 취득세(다주택/규제지역 중과)·인수금·명도난이도는 반드시")
+    print("   등기사항증명서·전입세대열람·현장확인으로 검증하세요. 명세서는 매각 1주 전부터 공개.")
     print("="*70)
 
 
@@ -581,6 +689,11 @@ def main():
     ap.add_argument('--caseno', help='사건번호 숫자 (예: 2412)')
     ap.add_argument('-o', '--output', default=None, help='원본 JSON 저장 경로')
     ap.add_argument('--no-headless', action='store_true', help='브라우저 표시(디버그)')
+    # 투자분석(A안) 옵션
+    ap.add_argument('--market', type=int, default=None, help='예상 매도 시세(원) — 입력 시 수익률 계산')
+    ap.add_argument('--sale-rate', type=float, default=None, help='예상 매각가율(%%) 직접 지정')
+    ap.add_argument('--acq-tax', type=float, default=None, help='취득세율(%%) 직접 지정(다주택/규제지역 중과 시)')
+    ap.add_argument('--evict-cost', type=int, default=None, help='명도비용(원) 가정값 조정')
     args = ap.parse_args()
 
     year, caseno = parse_case(args)
@@ -607,7 +720,9 @@ def main():
     except Exception as e:
         print(f"  명세서 추출 최종 실패({e}) — 나머지 4개 문서로 진행")
         data['myse'] = []
-    rep = build_report(data)
+    opts = {'market': args.market, 'sale_rate': args.sale_rate,
+            'acq_tax': args.acq_tax, 'evict_cost': args.evict_cost}
+    rep = build_report(data, opts)
     print_report(rep)
 
     out = args.output or f"case_{year}타경{caseno}.json"

@@ -9,12 +9,15 @@
 | **① 목록 수집** | `scrape_uijeongbu_apt.py` (스킬: `skill/` = court-auction-scraper) | 검색조건(법원·지역·용도·유찰) → **CSV(다건)** | 후보 스크리닝 |
 | **② 상세 분석** | `skill_detail/scripts/analyze_case.py` (스킬: court-auction-detail) | **사건번호 1건** → 5개 법원문서 | 입찰 전 실사 |
 
-②는 사건번호 1건을 상세페이지까지 열어 **매각물건명세서·사건상세조회·현황조사서·감정평가서요약·인근매각물건사례**를 분석한다. 매각물건명세서는 대법원 전자문서(StreamDocs) 텍스트 레이어를 긁어 **임차인(성명·보증금·전입·확정일자·배당요구) + 대항력 인수위험 판정**까지 구조화한다.
+②는 사건번호 1건을 상세페이지까지 열어 **매각물건명세서·사건상세조회·현황조사서·감정평가서요약·인근매각물건사례**를 분석한다. 매각물건명세서는 대법원 전자문서(StreamDocs) 텍스트 레이어를 긁어 **임차인(성명·보증금·전입·확정일자·배당요구) + 대항력 인수위험 판정**까지 구조화하고, 이를 바탕으로 **투자분석(예상낙찰가·인수금·취득원가·손익분기가, 시세 입력 시 수익률)** 까지 추정한다.
 
 ```bash
 # ② 상세 분석 예시
 python3 skill_detail/scripts/analyze_case.py --court 서울남부지방법원 --case 2025타경9307
 python3 skill_detail/scripts/analyze_case.py --court 남양주지원 --case 2025타경2412 -o out.json
+
+# 투자분석: 예상 매도 시세를 넣으면 순수익·수익률까지
+python3 skill_detail/scripts/analyze_case.py --court 남양주지원 --case 2025타경2412 --market 340000000
 ```
 
 자세한 내용은 `skill_detail/SKILL.md` 참조.
