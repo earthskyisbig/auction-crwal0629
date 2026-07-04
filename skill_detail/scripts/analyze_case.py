@@ -502,6 +502,8 @@ def fetch_market_price(sigungu_code, complex_name, area_m2, months_back=12, area
     if not (sigungu_code and complex_name and area_m2):
         return None
     try:
+        import warnings
+        warnings.filterwarnings('ignore')   # pandas 3.0 ChainedAssignment FutureWarning 억제
         import PublicDataReader as pdr
         from dotenv import load_dotenv, find_dotenv
     except Exception:
