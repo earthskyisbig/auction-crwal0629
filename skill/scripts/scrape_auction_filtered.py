@@ -218,8 +218,35 @@ def load_search_form(page):
     time.sleep(2)
 
 
-def run_search(page, args, court, response_flag, all_items):
-    """단일 법원에 대해 검색 조건 설정 → 검색 실행 → 다중 페이지그룹 수집."""
+def _unique_count(all_items):
+    return len({build_case_no(it) for it in all_items})
+
+
+def _click_and_wait_for_growth(page, response_flag, all_items, click_js, max_retries=3, wait_secs=15):
+    """클릭 → 응답 대기 → '고유 건수가 실제로 늘었는지' 검증. 안 늘면 재시도.
+    반환: (응답_수신여부, 신규건수_증가여부)"""
+    before = _unique_count(all_items)
+    for attempt in range(1, max_retries + 1):
+        response_flag[0] = False
+        page.evaluate(click_js)
+        got_response = False
+        for _ in range(wait_secs):
+            time.sleep(1)
+            if response_flag[0]:
+                got_response = True
+                break
+        time.sleep(0.3)
+        after = _unique_count(all_items)
+        if after > before:
+            return True, True
+        if attempt < max_retries:
+            print(f"    [재시도 {attempt}/{max_retries - 1}] 응답={got_response} 신규건수 증가 없음 → 재클릭")
+            time.sleep(1.5)
+    return got_response, False
+
+
+def run_search(page, args, court, response_flag, all_items, total_cnt_holder):
+    """단일 법원에 대해 검색 조건 설정 → 검색 실행 → 다중 페이지그룹 수집(검증·재시도 포함)."""
     # 검색 후 폼이 결과 화면으로 바뀌므로 매 법원마다 폼을 새로 로드
     load_search_form(page)
 
@@ -257,6 +284,7 @@ def run_search(page, args, court, response_flag, all_items):
 
     # 검색 실행
     print("▶ 검색 실행...")
+    total_cnt_holder[0] = None
     response_flag[0] = False
     page.evaluate("() => { document.getElementById('mf_wfm_mainFrame_btn_gdsDtlSrch').click(); }")
     for _ in range(30):
@@ -266,49 +294,64 @@ def run_search(page, args, court, response_flag, all_items):
             break
     time.sleep(2)
 
+    if total_cnt_holder[0] is not None:
+        print(f"  ▶ 사이트 보고 총건수(totalCnt): {total_cnt_holder[0]}")
+    else:
+        print("  [경고] totalCnt를 응답에서 못 읽음 — 정합성 검증 불가")
+
     # 페이지네이션 — 다중 페이지그룹 수집 (100건/10페이지 한도 극복)
     # WebSquare 페이저는 그룹마다 페이지 라벨(1~10)을 재사용하므로, 그룹 내 라벨 순회 →
-    # 다음그룹(nextPage_btn) 클릭을 반복하고, 버튼이 last/disabled이거나 두 그룹 연속
-    # 새 항목이 없으면 종료한다. (안전 캡 30그룹)
+    # 다음그룹(nextPage_btn) 클릭을 반복한다.
+    # ⚠️ 파이프라인 지연 때문에 클릭→응답이 와도 실제로는 '이전 페이지의 지연 응답'일 수 있어
+    #    응답 수신만으로는 페이지 이동을 신뢰할 수 없다. 그래서 클릭마다 '고유 건수가
+    #    실제로 늘었는지'를 검증하고, 안 늘면 같은 자리에서 재클릭한다(_click_and_wait_for_growth).
     def _labels():
         return page.evaluate("""() => [...document.querySelectorAll('[id*="pgl_gdsDtlSrchPage_page_"]')]
             .map(e => { const m = e.id.match(/_page_(\\d+)$/); return m ? +m[1] : 0; })
             .filter(x => x > 1)""")
-    group, dry = 0, 0
-    while group < 30:
+    group, dry, failed_clicks = 0, 0, []
+    while group < 60:
         # 단일 페이지(다음 페이지·그룹 없음)면 즉시 종료
         if not _labels() and page.evaluate("""() => {
             const e = document.getElementById('mf_wfm_mainFrame_pgl_gdsDtlSrchPage_nextPage_btn');
             return !e || /last|disabled|end/.test(e.className); }"""):
             break
-        before = len(all_items)
+        before = _unique_count(all_items)
+        remaining_target = total_cnt_holder[0] is None or _unique_count(all_items) < total_cnt_holder[0]
         for n in sorted(set(_labels())):
-            response_flag[0] = False
-            page.evaluate(f"() => {{ const e = document.getElementById('mf_wfm_mainFrame_pgl_gdsDtlSrchPage_page_{n}'); if (e) e.click(); }}")
-            for _ in range(15):
-                time.sleep(1)
-                if response_flag[0]:
-                    break
-            time.sleep(0.3)
+            if not remaining_target:
+                break
+            click_js = f"() => {{ const e = document.getElementById('mf_wfm_mainFrame_pgl_gdsDtlSrchPage_page_{n}'); if (e) e.click(); }}"
+            got_resp, grew = _click_and_wait_for_growth(page, response_flag, all_items, click_js)
+            if not grew:
+                # 마지막 페이지라 정말 신규가 없는 경우일 수도 있으니 totalCnt로만 판단
+                if total_cnt_holder[0] is not None and _unique_count(all_items) < total_cnt_holder[0]:
+                    failed_clicks.append(f"그룹{group}-페이지{n}")
+                    print(f"    [경고] 그룹{group} 페이지{n}: 재시도 후에도 신규 없음 (누적 {_unique_count(all_items)}/{total_cnt_holder[0]})")
+            remaining_target = total_cnt_holder[0] is None or _unique_count(all_items) < total_cnt_holder[0]
         # 다음 페이지그룹으로 이동
-        response_flag[0] = False
         state = page.evaluate("""() => {
             const e = document.getElementById('mf_wfm_mainFrame_pgl_gdsDtlSrchPage_nextPage_btn');
             if (!e) return 'none';
             if (/last|disabled|end/.test(e.className)) return 'last';
-            const a = e.querySelector('a'); (a || e).click(); return 'moved';
+            return 'movable';
         }""")
         if state in ('none', 'last'):
             break
-        for _ in range(15):
-            time.sleep(1)
-            if response_flag[0]:
-                break
+        move_js = """() => { const e = document.getElementById('mf_wfm_mainFrame_pgl_gdsDtlSrchPage_nextPage_btn');
+            const a = e && e.querySelector('a'); if (e) (a || e).click(); }"""
+        got_resp, grew = _click_and_wait_for_growth(page, response_flag, all_items, move_js)
+        if not grew and total_cnt_holder[0] is not None and _unique_count(all_items) < total_cnt_holder[0]:
+            print(f"    [경고] 그룹{group}→다음그룹 이동: 재시도 후에도 신규 없음 (누적 {_unique_count(all_items)}/{total_cnt_holder[0]})")
+            failed_clicks.append(f"그룹{group}-다음그룹")
         group += 1
-        dry = dry + 1 if len(all_items) == before else 0
-        if dry >= 2:   # 두 그룹 연속 신규 없음 → 종료
+        dry = dry + 1 if _unique_count(all_items) == before else 0
+        if dry >= 3:   # 세 그룹 연속 신규 없음 → 종료 (totalCnt 미달이어도 무한루프 방지)
             break
-    print(f"▶ 페이지그룹 {group + 1}개 순회 (누적 {len(all_items)}건)")
+    print(f"▶ 페이지그룹 {group + 1}개 순회 (누적 고유 {_unique_count(all_items)}건)")
+    if failed_clicks:
+        print(f"  [경고] 재시도에도 실패한 클릭 {len(failed_clicks)}건: {failed_clicks[:10]}{'...' if len(failed_clicks) > 10 else ''}")
+    return total_cnt_holder[0]
 
 
 def main():
@@ -324,15 +367,23 @@ def main():
     else:
         courts = [args.court]
 
-    all_items     = []
-    response_flag = [False]
+    all_items       = []
+    response_flag   = [False]
+    total_cnt_holder = [None]
 
     def on_response(response):
         if 'searchControllerMain' not in response.url:
             return
         try:
             body  = response.json()
-            items = body.get('data', {}).get('dlt_srchResult', [])
+            data  = body.get('data', {})
+            items = data.get('dlt_srchResult', [])
+            page_info = data.get('dma_pageInfo') or {}
+            if page_info.get('totalCnt') is not None:
+                try:
+                    total_cnt_holder[0] = int(page_info['totalCnt'])
+                except (TypeError, ValueError):
+                    pass
             if items:
                 all_items.extend(items)
                 response_flag[0] = True
@@ -363,9 +414,25 @@ def main():
         page = context.new_page()
         page.on("response", on_response)
 
-        # ── 법원별 순차 검색 (각 검색 전 폼 리로드) ────────────────────
+        # ── 법원별 순차 검색 (각 검색 전 폼 리로드, 정합성 미달 시 재시도) ──
+        shortfall_courts = []
         for court in courts:
-            run_search(page, args, court, response_flag, all_items)
+            before_idx = len(all_items)
+            max_attempts = 2
+            for attempt in range(1, max_attempts + 1):
+                run_search(page, args, court, response_flag, all_items, total_cnt_holder)
+                court_unique = len({build_case_no(it) for it in all_items[before_idx:]})
+                expected = total_cnt_holder[0]
+                if expected is None:
+                    print(f"  [정합성검증 불가] {court}: totalCnt 미확인 (수집 {court_unique}건)")
+                    break
+                if court_unique >= expected:
+                    print(f"  [정합성검증 통과] {court}: {court_unique}/{expected}건")
+                    break
+                print(f"  [정합성검증 실패] {court}: {court_unique}/{expected}건 — "
+                      f"{'재시도' if attempt < max_attempts else '재시도 소진'}")
+                if attempt >= max_attempts:
+                    shortfall_courts.append((court, court_unique, expected))
 
         browser.close()
 
@@ -382,6 +449,12 @@ def main():
     all_items = deduped
 
     print(f"\n▶ 최종 수집: {len(all_items)}개")
+
+    if shortfall_courts:
+        print("\n❌ 정합성 검증 실패 — 아래 법원은 사이트 totalCnt보다 적게 수집되었습니다(누락 가능성):")
+        for court, got, expected in shortfall_courts:
+            print(f"   - {court}: {got}/{expected}건 (누락 {expected - got}건)")
+        print("   ⚠️ 결과 CSV를 그대로 신뢰하지 말고, 위 법원은 재실행하거나 사이트에서 직접 재확인하세요.\n")
 
     if not all_items:
         print("❌ 데이터 없음")
@@ -411,6 +484,15 @@ def main():
         writer.writerows(rows)
 
     print(f"✅ {len(rows)}행 → {output}")
+
+    if shortfall_courts:
+        warn_path = output.rsplit('.', 1)[0] + '.WARNING.txt'
+        with open(warn_path, 'w', encoding='utf-8') as f:
+            f.write("정합성 검증 실패 — 이 CSV는 누락된 물건이 있을 수 있습니다.\n\n")
+            for court, got, expected in shortfall_courts:
+                f.write(f"- {court}: {got}/{expected}건 수집 (누락 {expected - got}건)\n")
+        print(f"⚠️  경고 파일 생성: {warn_path}")
+
     print("\n[미리보기]")
     for i, r in enumerate(rows[:10], 1):
         print(f"  [{i:02d}] 사건번호: {r['사건번호']}")
