@@ -1,0 +1,248 @@
+<title>서울 아파트 파인더</title>
+<style>
+:root{ --dark:#141413; --light:#faf9f5; --light-gray:#e8e6dc; --mid-gray:#b0aea5;
+  --orange:#d97757; --orange-deep:#cf6a48; --blue:#3f7fb8; --green:#4f7d3a;
+  --mute:rgba(20,20,19,0.62); --line:rgba(20,20,19,0.1);
+  --heading:'Poppins','Apple SD Gothic Neo','Malgun Gothic',Arial,sans-serif;
+  --body:'Apple SD Gothic Neo','Malgun Gothic',Arial,sans-serif;
+  --ease:cubic-bezier(.16,1,.3,1); }
+*{ box-sizing:border-box; }
+body{ margin:0; background:var(--light); color:var(--dark); font-family:var(--body); line-height:1.55; -webkit-font-smoothing:antialiased; }
+h1,h2,h3{ margin:0; font-family:var(--heading); font-weight:600; letter-spacing:-0.01em; }
+.wrap{ max-width:1180px; margin:0 auto; padding:0 20px; }
+header{ padding:26px 0 14px; }
+header .sub{ color:var(--mute); font-size:0.85rem; margin-top:4px; }
+.eyebrow{ font-family:var(--heading); font-size:0.68rem; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--mute);
+  display:inline-flex; align-items:center; gap:0.5em; background:var(--light-gray); padding:5px 13px; border-radius:999px; }
+.eyebrow::before{ content:''; width:6px; height:6px; background:var(--orange); border-radius:50%; }
+.filters{ position:sticky; top:0; z-index:20; background:rgba(250,249,245,0.93); backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--line); padding:10px 0; }
+.filters .row{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+select,input[type=text]{ font-family:var(--body); font-size:0.86rem; background:var(--light); color:var(--dark);
+  border:1px solid var(--line); border-radius:10px; padding:8px 10px; }
+select:hover,input:hover{ border-color:rgba(217,119,87,0.4); }
+input[type=text]{ flex:1; min-width:140px; }
+:focus-visible{ outline:2px solid var(--orange); outline-offset:2px; }
+.count{ font-size:0.8rem; color:var(--mute); margin-left:auto; white-space:nowrap; }
+main{ display:grid; grid-template-columns:370px 1fr; gap:18px; padding:18px 0 60px; }
+@media (max-width:880px){ main{ grid-template-columns:1fr; } .list{ max-height:44vh; } }
+.list{ background:var(--light); border:1px solid var(--line); border-radius:16px; overflow-y:auto; max-height:calc(100vh - 150px); }
+.item{ padding:12px 16px; border-bottom:1px solid var(--line); cursor:pointer; display:flex; justify-content:space-between; gap:10px; transition:background 0.15s; }
+.item:hover{ background:rgba(217,119,87,0.06); }
+.item.sel{ background:rgba(217,119,87,0.12); border-left:3px solid var(--orange); padding-left:13px; }
+.item .nm{ font-family:var(--heading); font-weight:600; font-size:0.92rem; }
+.item .meta{ font-size:0.76rem; color:var(--mute); margin-top:2px; }
+.item .px{ text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.item .px .v{ font-family:var(--heading); font-weight:600; font-size:0.9rem; }
+.badge{ font-size:0.72rem; font-weight:600; font-family:var(--heading); }
+.badge.up{ color:var(--orange-deep); } .badge.dn{ color:var(--blue); } .badge.na{ color:var(--mid-gray); }
+.panel{ min-width:0; }
+.empty{ border:1px dashed var(--mid-gray); border-radius:16px; padding:60px 30px; text-align:center; color:var(--mute); }
+.card{ background:var(--light); border:1px solid var(--line); border-radius:16px; padding:18px 20px; margin-bottom:14px; }
+.chips{ display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+.chip{ font-size:0.74rem; font-family:var(--heading); font-weight:500; background:var(--light-gray); border-radius:999px; padding:4px 11px; color:var(--mute); }
+.chip b{ color:var(--dark); font-weight:600; }
+.stats{ display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; margin-top:14px; }
+.stat{ background:var(--light-gray); border-radius:12px; padding:10px 14px; }
+.stat .v{ font-family:var(--heading); font-weight:600; font-size:1.15rem; font-variant-numeric:tabular-nums; }
+.stat .k{ font-size:0.68rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--mute); font-family:var(--heading); }
+.card h3{ font-size:0.95rem; margin-bottom:10px; }
+.card h3 .note{ font-weight:400; font-size:0.74rem; color:var(--mute); margin-left:6px; }
+.fl-bars,.sz-rows{ display:grid; gap:8px; }
+.fl-row{ display:grid; grid-template-columns:74px 1fr 84px; align-items:center; gap:10px; font-size:0.84rem; }
+.fl-track{ background:var(--light-gray); border-radius:6px; height:16px; overflow:hidden; }
+.fl-fill{ height:100%; border-radius:6px; background:var(--orange-deep); opacity:0.8; }
+.fl-val{ text-align:right; font-variant-numeric:tabular-nums; color:var(--mute); }
+.loc{ display:grid; gap:10px; }
+.loc-row{ display:flex; gap:10px; font-size:0.86rem; align-items:baseline; }
+.loc-row .ic{ flex:none; width:64px; font-family:var(--heading); font-weight:600; font-size:0.76rem; color:var(--mute); text-transform:uppercase; letter-spacing:0.04em; }
+.hoje li{ margin-bottom:4px; font-size:0.86rem; }
+.hoje ul{ margin:0; padding-left:18px; }
+.foot-note{ font-size:0.74rem; color:var(--mute); margin-top:8px; }
+#tip{ position:fixed; pointer-events:none; background:var(--dark); color:var(--light); font-family:var(--heading);
+  font-size:0.76rem; padding:6px 10px; border-radius:8px; opacity:0; transition:opacity 0.12s; z-index:60; max-width:260px; }
+footer{ padding:10px 0 40px; color:var(--mute); font-size:0.78rem; }
+</style>
+
+<div id="tip"></div>
+<header>
+  <div class="wrap">
+    <span class="eyebrow">국토부 실거래 · __BUILD_DATE__ 기준</span>
+    <h1 style="font-size:1.5rem;margin-top:10px;">서울 아파트 파인더</h1>
+    <div class="sub">서울 25개 구 · 실거래 24개월 기반 단지 검색과 분석. 목록에서 단지를 고르면 분석 패널이 열립니다.</div>
+  </div>
+</header>
+
+<div class="filters"><div class="wrap"><div class="row">
+  <select id="fGu" aria-label="구 선택"><option value="">전체 구</option></select>
+  <select id="fDong" aria-label="동 선택"><option value="">전체 동</option></select>
+  <select id="fHh" aria-label="세대수">
+    <option value="0">세대수 전체</option><option value="300">300세대+</option>
+    <option value="500">500세대+</option><option value="1000">1,000세대+</option><option value="2000">2,000세대+</option>
+  </select>
+  <select id="fBuilt" aria-label="준공">
+    <option value="0">준공 전체</option><option value="5">5년 이내</option>
+    <option value="10">10년 이내</option><option value="20">20년 이내</option><option value="-20">20년 초과</option>
+  </select>
+  <select id="fSort" aria-label="정렬">
+    <option value="chg">상승률순</option><option value="last">평당가순</option>
+    <option value="hh">세대수순</option><option value="t">거래량순</option><option value="n">이름순</option>
+  </select>
+  <input type="text" id="fQ" placeholder="단지명 검색 (예: 한라비발디)" aria-label="단지명 검색">
+  <span class="count" id="cnt"></span>
+</div></div></div>
+
+<div class="wrap"><main>
+  <div class="list" id="list" role="listbox" aria-label="단지 목록"></div>
+  <div class="panel" id="panel">
+    <div class="empty">👈 단지를 선택하면 실거래 트렌드 · 층별 가격 · 전세가율 · 입지 분석이 여기에 표시됩니다.<br><br>
+      필터로 구·동·세대수·준공을 좁히거나 단지명을 검색해 보세요.</div>
+  </div>
+</main></div>
+
+<footer><div class="wrap">
+  국토교통부 아파트 매매(24개월)·전월세(6개월) 실거래가 + K-apt 공동주택 기본정보 기준. 중앙값 기반 참고용 통계이며,
+  거래가 적은 단지는 수치가 튈 수 있습니다. 호재는 __BUILD_DATE__ 기준 참고 정리로, 사업 일정은 변동될 수 있습니다.
+</div></footer>
+
+<script>
+const DATA = __DATA_JSON__;
+const HOJAE = __HOJAE_JSON__;
+const M = DATA.months, C = DATA.complexes;
+C.forEach((c,i)=>c.id=i);
+
+const $ = s=>document.querySelector(s);
+const tip = $('#tip');
+function bindTips(root){
+  root.querySelectorAll('[data-tip]').forEach(el=>{
+    el.addEventListener('mousemove',e=>{ tip.textContent=el.getAttribute('data-tip');
+      tip.style.left=Math.min(e.clientX+14,innerWidth-270)+'px'; tip.style.top=(e.clientY-34)+'px'; tip.style.opacity=1; });
+    el.addEventListener('mouseleave',()=>tip.style.opacity=0);
+  });
+}
+const fmt = n=>n==null?'—':n.toLocaleString('ko-KR');
+const eok = n=>n==null?'—':(n/10000).toFixed(n>=100000?0:1)+'억';
+const yy = new Date().getFullYear();
+
+// ── 필터 초기화 ──
+const gus=[...new Set(C.map(c=>c.g))].sort();
+gus.forEach(g=>$('#fGu').insertAdjacentHTML('beforeend',`<option>${g}</option>`));
+function fillDong(){
+  const g=$('#fGu').value, sel=$('#fDong');
+  sel.innerHTML='<option value="">전체 동</option>';
+  if(g) [...new Set(C.filter(c=>c.g===g).map(c=>c.d))].sort().forEach(d=>sel.insertAdjacentHTML('beforeend',`<option>${d}</option>`));
+}
+fillDong();
+
+let selId=null;
+function filtered(){
+  const g=$('#fGu').value, d=$('#fDong').value, hh=+$('#fHh').value, bt=+$('#fBuilt').value,
+        q=$('#fQ').value.trim().toLowerCase().replace(/\s/g,'');
+  let r=C.filter(c=>
+    (!g||c.g===g)&&(!d||c.d===d)&&
+    (!hh||(c.hh&&c.hh>=hh))&&
+    (!bt|| (c.bt && (bt>0 ? yy-+c.bt.slice(0,4)<=bt : yy-+c.bt.slice(0,4)>20)))&&
+    (!q||c.n.toLowerCase().replace(/\s/g,'').includes(q)));
+  const k=$('#fSort').value;
+  r.sort((a,b)=> k==='n'?a.n.localeCompare(b.n,'ko'):((b[k]??-1e9)-(a[k]??-1e9)));
+  return r;
+}
+function badge(c){
+  if(c.chg==null) return '<span class="badge na">—</span>';
+  return c.chg>=0?`<span class="badge up">+${c.chg}%</span>`:`<span class="badge dn">${c.chg}%</span>`;
+}
+function renderList(){
+  const r=filtered();
+  $('#cnt').textContent=`${r.length.toLocaleString()}개 단지`;
+  $('#list').innerHTML=r.slice(0,400).map(c=>`
+    <div class="item${c.id===selId?' sel':''}" role="option" tabindex="0" data-id="${c.id}">
+      <div><div class="nm">${c.n}</div>
+        <div class="meta">${c.g} ${c.d} · ${c.hh?fmt(c.hh)+'세대':'세대수 미상'} · ${c.bt?c.bt.slice(0,4)+'년':'준공 미상'}</div></div>
+      <div class="px"><div class="v">${c.last?fmt(c.last)+'만/평':'—'}</div><div>${badge(c)}</div></div>
+    </div>`).join('') + (r.length>400?`<div style="padding:14px;text-align:center;color:var(--mute);font-size:0.8rem;">상위 400개만 표시 — 필터를 좁혀보세요</div>`:'');
+  $('#list').querySelectorAll('.item').forEach(el=>{
+    const go=()=>{ selId=+el.dataset.id; renderList(); renderPanel(C[selId]); };
+    el.addEventListener('click',go);
+    el.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault();go();} });
+  });
+}
+
+// ── 차트 ──
+function lineChart(c){
+  const w=640,h=220,pl=52,pr=14,pt=12,pb=26;
+  const vals=c.s.filter(v=>v!=null);
+  if(vals.length<2) return '<div class="foot-note">표본이 적어 차트를 그릴 수 없습니다.</div>';
+  const lo=Math.min(...vals)*0.94, hi=Math.max(...vals)*1.05;
+  const X=i=>pl+(w-pl-pr)*i/(M.length-1), Y=v=>pt+(h-pt-pb)*(1-(v-lo)/(hi-lo));
+  let s=`<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;" role="img" aria-label="월별 평당가">`;
+  const step=Math.max(1,Math.round((hi-lo)/4/100)*100);
+  for(let g=Math.ceil(lo/step)*step; g<hi; g+=step){
+    s+=`<line x1="${pl}" y1="${Y(g)}" x2="${w-pr}" y2="${Y(g)}" stroke="rgba(20,20,19,0.07)"/>`;
+    s+=`<text x="${pl-6}" y="${Y(g)+4}" font-size="10" fill="rgba(20,20,19,0.5)" text-anchor="end">${fmt(g)}</text>`;
+  }
+  M.forEach((m,i)=>{ if(m.endsWith('01')||m.endsWith('07'))
+    s+=`<text x="${X(i)}" y="${h-8}" font-size="10" fill="rgba(20,20,19,0.5)" text-anchor="middle">${m.slice(2,4)}.${m.slice(4)}</text>`; });
+  let path='';
+  c.s.forEach((v,i)=>{ if(v!=null) path+=(path?'L':'M')+X(i).toFixed(1)+','+Y(v).toFixed(1); });
+  s+=`<path d="${path}" fill="none" stroke="#cf6a48" stroke-width="2.5" stroke-linejoin="round"/>`;
+  c.s.forEach((v,i)=>{ if(v!=null)
+    s+=`<circle data-tip="${M[i].slice(0,4)}.${M[i].slice(4)} — 평당 ${fmt(v)}만원 (${c.c[i]}건)" cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="7" fill="transparent" stroke="none"/>
+        <circle cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="2.4" fill="#cf6a48" pointer-events="none"/>`; });
+  return s+'</svg>';
+}
+
+function renderPanel(c){
+  const swOK=c.sw&&(c.sw[0]||c.sw[1]);
+  const pkTotal=(+(c.pk||0))+(+(c.pku||0));
+  const hoje=HOJAE[c.g]||[];
+  const flKeys=Object.keys(c.fl||{});
+  const flMax=flKeys.length?Math.max(...flKeys.map(k=>c.fl[k])):0;
+  $('#panel').innerHTML=`
+  <div class="card">
+    <h2 style="font-size:1.25rem;">${c.n}</h2>
+    <div class="chips">
+      <span class="chip"><b>${c.g} ${c.d}</b></span>
+      <span class="chip">세대수 <b>${c.hh?fmt(c.hh):'미상'}</b></span>
+      <span class="chip">동 <b>${c.bd?Math.round(+c.bd):'—'}</b></span>
+      <span class="chip">준공 <b>${c.bt?c.bt.slice(0,4)+'.'+c.bt.slice(4):'미상'}</b></span>
+      <span class="chip">최고 <b>${c.tf?Math.round(+c.tf)+'층':'—'}</b></span>
+      ${c.ht?`<span class="chip">${c.ht}</span>`:''}
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="v">${c.last?fmt(c.last):'—'}</div><div class="k">최근 8개월 평당(만원)</div></div>
+      <div class="stat"><div class="v">${c.chg!=null?(c.chg>=0?'+':'')+c.chg+'%':'—'}</div><div class="k">2년 변화</div></div>
+      <div class="stat"><div class="v">${c.jr!=null?c.jr+'%':'—'}</div><div class="k">전세가율</div></div>
+      <div class="stat"><div class="v">${c.t}</div><div class="k">24개월 거래</div></div>
+    </div>
+  </div>
+  <div class="card"><h3>실거래 트렌드 <span class="note">월별 중앙값 평당가 · 점에 올리면 값·건수</span></h3>${lineChart(c)}</div>
+  ${flKeys.length?`<div class="card"><h3>층별 가격 <span class="note">24개월 중앙값 평당가</span></h3>
+    <div class="fl-bars">${flKeys.map(k=>`
+      <div class="fl-row"><span>${k}층</span>
+        <div class="fl-track"><div class="fl-fill" style="width:${(c.fl[k]/flMax*100).toFixed(0)}%"></div></div>
+        <span class="fl-val">${fmt(c.fl[k])}만/평</span></div>`).join('')}
+    </div></div>`:''}
+  <div class="card"><h3>평형별 거래 <span class="note">전용면적 기준 · 최근가는 최근 6개월 중앙값</span></h3>
+    <div class="sz-rows">${['~40','40~62','62~85','85~110','110+'].filter(b=>c.sz[b]).map(b=>[b,c.sz[b]]).map(([b,s])=>`
+      <div class="fl-row"><span>${b}㎡</span>
+        <div class="fl-track"><div class="fl-fill" style="width:${(s.n/c.t*100).toFixed(0)}%;background:#3f7fb8;"></div></div>
+        <span class="fl-val">${s.n}건 · ${s.p?eok(s.p):'—'}</span></div>`).join('')}
+    </div></div>
+  <div class="card"><h3>입지 · 역세권 · 학세권</h3>
+    <div class="loc">
+      <div class="loc-row"><span class="ic">역세권</span><span>${swOK?`${c.sw[0]||''} ${c.sw[1]||''}${c.sw[2]?` · 도보 ${c.sw[2]}`:''}`:'K-apt 등재 정보 없음'}</span></div>
+      <div class="loc-row"><span class="ic">학세권</span><span>${(c.edu||'').replace(/\s*\(\s*\)/g,'').trim()||'K-apt 등재 정보 없음'}</span></div>
+      <div class="loc-row"><span class="ic">주차</span><span>${pkTotal&&c.hh?`총 ${fmt(pkTotal)}면 · 세대당 ${(pkTotal/c.hh).toFixed(2)}대`:'—'}</span></div>
+      <div class="loc-row"><span class="ic">입지</span><span>${c.g} ${c.d} · ${c.hh?(c.hh>=2000?'초대형':c.hh>=1000?'대단지':c.hh>=500?'중대형 단지':'중소 단지'):'규모 미상'}${c.bt?` · ${yy-+c.bt.slice(0,4)}년차`:''}</span></div>
+    </div></div>
+  <div class="card hoje"><h3>${c.g} 주요 개발 재료 <span class="note">2026.08 기준 참고 정리 — 일정·실현 여부 변동 가능</span></h3>
+    ${hoje.length?`<ul>${hoje.map(h=>`<li>${h}</li>`).join('')}</ul>`:'<div class="foot-note">정리된 항목 없음</div>'}
+  </div>`;
+  bindTips($('#panel'));
+  if(innerWidth<880) $('#panel').scrollIntoView({behavior:'smooth'});
+}
+
+['fGu','fDong','fHh','fBuilt','fSort'].forEach(id=>$('#'+id).addEventListener('change',()=>{ if(id==='fGu')fillDong(); renderList(); }));
+$('#fQ').addEventListener('input',renderList);
+renderList();
+</script>
