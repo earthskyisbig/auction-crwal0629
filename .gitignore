@@ -17,5 +17,9 @@ auction_*.csv
 # 원본 API 덤프 (데이터)
 raw_*.json
 
+# 서울 구별 리포트 원본 실거래 CSV (refresh_all.sh가 매번 삭제·재수집)
+realprice_서울구별/sale_*.csv
+realprice_서울구별/rent_*.csv
+
 # 국토부 API 키 (절대 커밋 금지)
 .env
