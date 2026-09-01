@@ -13,6 +13,8 @@ description: 서울 25개 구 아파트 실거래 분석 자산 운영·확장 �
 | 자산 | 위치/URL | 갱신 방법 |
 |---|---|---|
 | 구별 평당가 리포트 (지도·히트맵·버블·벨트 동별·전세가율) | https://claude.ai/code/artifact/49f6f0eb-0c9f-490e-b382-2f44eb107ff1 | `bash refresh_all.sh` → `Artifact(url=위 URL)` |
+| 단지별 리포트 (상위 30·구별 대장/상승 1위·사분면·대단지·갭·전체 표) | https://claude.ai/code/artifact/31d16e3e-d96d-424d-b100-def3cead57a7 | `compute_complex.py` → `build_complex_report.py` → `Artifact(url=위 URL)` (refresh_all.sh 에 포함) |
+| 3D 평당가 지형 타임랩스 (구 압출·24개월 재생·거래 불꽃) | https://claude.ai/code/artifact/3b2c19a4-150e-4ce1-954a-47d2e055ed58 | `build_terrain.py` → `Artifact(url=위 URL)` |
 | 아파트 파인더 (3,435개 단지 검색+분석기) | https://claude.ai/code/artifact/706eb608-7d2c-46a9-9a88-415c478eab26 | `build_app_data.py` → `build_app.py` → `Artifact(url=위 URL)` |
 | 분기 자동 갱신 루틴 | trig_019RU1R2bHGnkBpvQmovieE2 (1·4·7·10월 15일 09:17 KST) | RemoteTrigger로 관리, 삭제는 claude.ai/code/routines |
 
@@ -27,6 +29,9 @@ matched_index.py   동일 단지·평형 매칭 지수 (구성편향 보정) →
 compute_jeonse.py  전세가율 (동일 단지·평형 전세÷매매) → jeonse_ratio.json
 compute_belt_dong.py  한강벨트 5개 구 법정동 분해 → belt_dong.json
 build_seoul_report.py  charts_extra.py(지도·히트맵·버블·벨트·전세맵) → seoul_report.html
+compute_complex.py  단지별 매칭 지수·대표 평형 매매/전세/갭 (app_data.json 의 K-apt 세대수 결합) → complex_index.json
+build_complex_report.py  단지별 리포트(상위 30·구별 대장/상승 1위·사분면·대단지·갭·전체 표) → seoul_complex_report.html
+build_terrain.py  3D 평당가 지형 타임랩스(three.js r128 cdnjs, 구 경계 압출·월별 높이·거래 불꽃) → seoul_terrain.html
 ```
 - 날짜는 전부 `windows.py`(롤링 24개월, **지난달 종료** — 이번 달은 신고 지연으로 제외) 기준. `collect_seoul.py` 가 전 구 수집을 마치면 `windows_manifest.json` 에 기간을 기록하고, 분석 스크립트는 그 기간을 그대로 써서 달이 바뀌어도 CSV 와 어긋나지 않는다(refresh_all.sh 가 시작 시 삭제).
 - 리포트의 기간·전세가율·벨트 동·착시 사례 문장은 전부 데이터에서 생성한다(2026-09-02 하드코딩 제거). 축 범위도 데이터로 계산.

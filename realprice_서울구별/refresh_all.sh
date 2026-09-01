@@ -24,4 +24,7 @@ python3 matched_index.py
 python3 compute_jeonse.py
 python3 compute_belt_dong.py
 python3 build_seoul_report.py
+python3 compute_complex.py
+python3 build_complex_report.py
+python3 build_terrain.py
 echo "REFRESH_DONE"
