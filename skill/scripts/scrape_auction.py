@@ -17,7 +17,7 @@
 
 출력: auction_list.csv (사건번호, 물건소재지, 감정가, 최저가, 유찰횟수)
 
-조건 변경: OUTPUT, cortOfcCd(법원코드), bidBgngYmd/bidEndYmd(입찰기간) 수정
+조건 변경은 scrape_auction_filtered.py(템플릿·CLI) 또는 collect_api.py 를 쓰는 것을 권장. 이 파일은 최소 예제.
 """
 
 import csv
@@ -25,8 +25,8 @@ import time
 from playwright.sync_api import sync_playwright
 
 TARGET_URL = "https://www.courtauction.go.kr/pgj/index.on?w2xPath=/pgj/ui/pgj100/PGJ151F00.xml"
-OUTPUT = "/Users/leomyung/auction_list.csv"
-COLUMNS = ['사건번호', '물건소재지', '감정가', '최저가', '유찰횟수']
+OUTPUT = "auction_list.csv"   # 실행 디렉터리에 저장
+COLUMNS = ['사건번호', '물건번호', '물건소재지', '감정가', '최저가', '유찰횟수']
 
 def fmt_money(val):
     try:
@@ -49,9 +49,10 @@ def build_case_no(item):
 def convert_item(item):
     return {
         '사건번호':  build_case_no(item),
+        '물건번호':  str(item.get('dspslGdsSeq') or item.get('maemulSer') or ''),
         '물건소재지': build_address(item),
         '감정가':    fmt_money(item.get('gamevalAmt','')),
-        '최저가':    fmt_money(item.get('minmaePrice','')),
+        '최저가':    fmt_money(item.get('notifyMinmaePrice1') or item.get('minmaePrice','')),   # notifyMinmaePrice1 이 현재 최저가
         '유찰횟수':  str(item.get('yuchalCnt','')),
     }
 

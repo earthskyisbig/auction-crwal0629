@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 """한강벨트 5개 구 법정동별 매칭 지수 → belt_dong.json"""
-import csv, json, os, statistics
+import json, os, statistics
 W = os.path.dirname(os.path.abspath(__file__))
 import sys; sys.path.insert(0, W)
 from windows import A, B
+from sales_io import load_sales
 PYEONG = 3.3058
 BELT = ['성동구','광진구','동작구','송파구','강동구']
 out = {}
 for gu in BELT:
     dongs = {}
-    for r in csv.DictReader(open(os.path.join(W, f'sale_{gu}.csv'), encoding='utf-8-sig')):
-        if r['cdealType'] == 'O': continue
+    for r in load_sales(gu, W):
         try:
             amt = float(r['dealAmount'].replace(',', '')); ar = float(r['excluUseAr'])
         except ValueError: continue

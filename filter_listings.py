@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """수집된 경매 CSV에 후처리 필터 적용.
 
-조건 (기본값, CLI로 변경 가능):
+조건 (기본값 — 상수 PRICE_MIN/PRICE_MAX/AREA_MAX/YUCHAL 로 변경, CLI 인자는 입출력 경로만):
   - 유찰횟수 == 1
   - 최저가 2억 ~ 5억
   - 전용면적 85㎡ 이하
@@ -85,7 +85,7 @@ def main():
     # 최저가 오름차순
     out.sort(key=lambda r: parse_money(r.get('최저가', '')))
 
-    cols = ['사건번호', '물건소재지', '전용면적', '감정가', '최저가', '저감율', '유찰횟수', '매각기일']
+    cols = ['사건번호', '물건번호', '물건소재지', '전용면적', '감정가', '최저가', '저감율', '유찰횟수', '유찰추정', '매각기일']
     with open(DST, 'w', newline='', encoding='utf-8-sig') as f:
         w = csv.DictWriter(f, fieldnames=cols, extrasaction='ignore')
         w.writeheader()

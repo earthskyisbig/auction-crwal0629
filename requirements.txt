@@ -1,0 +1,13 @@
+# 공통 (수집·분석 스크립트 전부)
+requests>=2.31
+python-dotenv>=1.0
+urllib3>=2.0
+
+# 법원경매 스크래핑 (skill/, skill_detail/) — 설치 후 `python3 -m playwright install chromium`
+playwright>=1.45
+
+# 등기부 PDF 파싱 (skill_detail/scripts/parse_deungibu.py) — 선택
+pdfplumber>=0.11
+
+# 테스트
+pytest>=8.0

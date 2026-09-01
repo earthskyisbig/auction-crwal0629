@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 """아파트 검색·분석기 데이터 빌더 → app_data.json
    실거래(24M)·전세(6M)·K-apt 프로파일을 단지 단위로 결합"""
-import csv, glob, json, os, re, statistics
+import json, os, re, statistics
 W = os.path.dirname(os.path.abspath(__file__))
 import sys; sys.path.insert(0, W)
 from windows import MONTHS, B
+from sales_io import load_sales, load_rent, list_gus
 PYEONG = 3.3058
 MIN_TRADES = 6
 
@@ -17,32 +18,48 @@ def fnum(x):
     except (TypeError, ValueError): return None
 
 complexes = []
-for f in sorted(glob.glob(os.path.join(W, 'sale_*.csv'))):
-    gu = os.path.basename(f)[5:-4]
+for gu in list_gus(W):
     # K-apt 프로파일 인덱스 (동 우선 → 전체)
     kapt = []
     kf = os.path.join(W, f'kapt_{gu}.json')
     if os.path.exists(kf):
         kapt = json.load(open(kf, encoding='utf-8'))
-    kidx = {}
+    # (법정동, 이름) 우선 → 이름+준공연도(±1) → 이름 단독 순으로 매칭 (동명 단지: 삼성·신동아·현대… 오매칭 방지)
+    kidx_dong, kidx_name = {}, {}
     for k in kapt:
-        kidx.setdefault(norm(k['name']), k)
+        kidx_dong.setdefault((k.get('dong_nm') or '', norm(k['name'])), k)
+        kidx_name.setdefault(norm(k['name']), []).append(k)
+    def match_kapt(dong, nk, build_year):
+        k = kidx_dong.get((dong, nk))
+        if k: return k
+        cands = kidx_name.get(nk) or []
+        if build_year:
+            for c in cands:
+                by = (c.get('built') or '')[:4]
+                if by.isdigit() and abs(int(by) - build_year) <= 1:
+                    return c
+        if len(cands) == 1:
+            return cands[0]
+        # 부분 일치는 같은 법정동 안에서만
+        for (d, kn), c in kidx_dong.items():
+            if d == dong and (nk in kn or kn in nk):
+                return c
+        return None
     # 전세: (단지norm, 면적int) → 보증금 리스트
-    je = {}
-    rf = os.path.join(W, f'rent_{gu}.csv')
-    if os.path.exists(rf):
-        for r in csv.DictReader(open(rf, encoding='utf-8-sig')):
-            dep, mr, ar = fnum(r['deposit']), fnum(r['monthlyRent'] or 0), fnum(r['excluUseAr'])
-            if not dep or (mr and mr > 0) or not ar: continue
-            je.setdefault((norm(r['aptNm']), int(ar)), []).append(dep)
+    je = {}   # (법정동, 단지norm) → {면적int: [보증금]}
+    for r in load_rent(gu, W):
+        if (r.get('contractType') or '').strip() == '갱신': continue
+        dep, mr, ar = fnum(r['deposit']), fnum(r['monthlyRent'] or 0), fnum(r['excluUseAr'])
+        if not dep or (mr and mr > 0) or not ar: continue
+        je.setdefault((r.get('umdNm', ''), norm(r['aptNm'])), {}).setdefault(int(ar), []).append(dep)
     # 매매 그룹핑
     groups = {}
-    for r in csv.DictReader(open(f, encoding='utf-8-sig')):
-        if r['cdealType'] == 'O': continue
+    for r in load_sales(gu, W):
         amt, ar = fnum(r['dealAmount']), fnum(r['excluUseAr'])
         if not amt or not ar: continue
         key = (r['umdNm'], norm(r['aptNm']))
-        g = groups.setdefault(key, {'nm': r['aptNm'], 'rows': []})
+        g = groups.setdefault(key, {'nm': r['aptNm'], 'rows': [], 'by': []})
+        if (r.get('buildYear') or '').isdigit(): g['by'].append(int(r['buildYear']))
         try: fl = int(float(r['floor']))
         except (TypeError, ValueError): fl = None
         g['rows'].append((r['ym'], amt, ar, fl, amt / (ar / PYEONG)))
@@ -78,11 +95,11 @@ for f in sorted(glob.glob(os.path.join(W, 'sale_*.csv'))):
         sale_by_ar = {}
         for ym, amt, ar, fl, pp in rows:
             if ym in B: sale_by_ar.setdefault(int(ar), []).append(amt)
-        for (jnk, jar), deps in je.items():
-            if jnk == nk and jar in sale_by_ar and len(deps) >= 2:
+        for jar, deps in (je.get((dong, nk)) or {}).items():
+            if jar in sale_by_ar and len(deps) >= 2:
                 jr_pairs.append(statistics.median(deps) / statistics.median(sale_by_ar[jar]))
         jr = round(statistics.median(jr_pairs) * 100, 1) if jr_pairs else None
-        k = kidx.get(nk) or next((v for kn, v in kidx.items() if nk in kn or kn in nk), None)
+        k = match_kapt(dong, nk, statistics.mode(g['by']) if g['by'] else None)
         rec = {'n': g['nm'], 'g': gu, 'd': dong, 't': len(rows), 'chg': chg,
                'last': round(statistics.mean(last)) if last else None,
                's': series, 'c': cnt, 'fl': floors, 'sz': sizes, 'jr': jr}

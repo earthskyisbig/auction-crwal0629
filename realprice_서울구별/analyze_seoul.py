@@ -1,18 +1,17 @@
 # -*- coding: utf-8 -*-
 """구별 평당가(전용 기준, 만원/평) 월별 중앙값 + 3개월 이동중앙값, 양끝 6개월 평균 변화율.
    원칙(realprice-flow gotchas): 해제거래 제외, 상하위 1% 컷, 단일월 비교 금지."""
-import csv, glob, json, os, statistics
+import json, os, statistics
 WORKDIR = os.path.dirname(os.path.abspath(__file__))
 PYEONG = 3.3058
 import sys; sys.path.insert(0, WORKDIR)
 from windows import MONTHS
+from sales_io import load_sales, list_gus
 
 result = {}
-for f in sorted(glob.glob(os.path.join(WORKDIR, 'sale_*.csv'))):
-    gu = os.path.basename(f)[5:-4]
+for gu in list_gus(WORKDIR):
     prices = []  # (ym, 평당가)
-    for r in csv.DictReader(open(f, encoding='utf-8-sig')):
-        if r['cdealType'] == 'O': continue
+    for r in load_sales(gu, WORKDIR):   # 해제 그룹·중복 제거된 행
         try:
             amt = float(r['dealAmount'].replace(',', ''))
             ar = float(r['excluUseAr'])

@@ -35,7 +35,7 @@ python3 skill_detail/scripts/analyze_case.py --court 남양주지원 --case 2025
 ## 사용법
 
 ```bash
-pip3 install playwright
+pip3 install -r requirements.txt
 python3 -m playwright install chromium
 
 # 기본 (의정부지방법원 / 아파트 / 유찰 1회 이상)
@@ -108,23 +108,51 @@ python3 scrape_uijeongbu_apt.py -t templates/uijeongbu_apt.json --flbd-min 3회
 
 ```
 auction-crwal0629/
-├── scrape_uijeongbu_apt.py        # 메인 스크래퍼 (CLI 인자 지원)
-├── auction_list.csv               # 초기 수집 결과 샘플
-├── templates/                     # 검색 조건 템플릿
-│   ├── uijeongbu_apt.json         # 의정부지방법원 / 아파트 / 유찰1회
-│   ├── uijeongbu_yangju_apt.json  # 의정부지방법원 / 양주시 / 아파트 / 유찰1회
-│   └── nambu_geumcheon_dasedae.json  # 서울남부 / 금천구 / 다세대주택 / 유찰1회
-└── skill/                         # Claude Code 재사용 스킬
-    ├── SKILL.md                   # 올바른 패턴, 드롭다운 체계, API 필드 매핑
-    ├── references/
-    │   └── trial-and-error.md    # 시행착오 12개 케이스 기록
-    └── scripts/
-        └── scrape_auction.py     # 기본 스크래퍼 번들 (서울중앙지방법원 기준)
+├── CLAUDE.md                      # 작업 지침·지도 (Claude Code가 먼저 읽음)
+├── requirements.txt               # pip 의존성 (+ python3 -m playwright install chromium)
+├── scrape_uijeongbu_apt.py        # ① 목록 수집 진입점 — skill/scripts/scrape_auction_filtered.py 로 위임하는 래퍼
+├── filter_listings.py             # 수집 CSV 후처리(저감율 기반 유찰 판정·가격·면적 필터)
+├── templates/                     # 검색 조건 템플릿 (skill/scripts/templates/ 와 동일 내용 유지)
+├── skill/                         # court-auction-scraper 스킬 원본
+│   ├── SKILL.md                   # 올바른 패턴, 드롭다운 체계, API 필드 매핑
+│   ├── references/trial-and-error.md
+│   └── scripts/
+│       ├── scrape_auction_filtered.py   # UI 페이징 수집기 (다중 페이지그룹·수신 시점 중복 제거)
+│       ├── collect_api.py               # API 직접 페이징 수집기 v3 (totalCnt 전량 검증, 가격·면적 서버필터)
+│       └── scrape_auction.py            # 최소 예제(서울중앙지방법원 고정)
+├── skill_detail/                  # court-auction-detail 스킬 원본 (② 상세 분석)
+│   └── scripts/analyze_case.py · rights_analysis.py · parse_deungibu.py
+├── skills/
+│   ├── auction-priority-pipeline/ # 수집→필터→단지보강→실거래 관문→권리분석 오케스트레이션
+│   └── seoul-apt-analytics/       # 서울 구별 리포트·아파트 파인더 운영 지침
+├── realprice_서울구별/             # 서울 25개 구 실거래 파이프라인 (refresh_all.sh)
+├── knowledge-base/                # 정책·세금·법령 근거 + AI 오답노트
+├── docs/                          # 강의 자료·개선 기록
+└── tests/                         # pytest 단위 테스트 (python3 -m pytest -q tests)
 ```
 
-`skill/` 폴더는 Claude Code 스킬 형식으로 작성된 재사용 가이드입니다.
+`skill/`·`skill_detail/`·`skills/*` 는 `~/.claude/skills/` 에 같은 이름으로 복사되어 Claude Code 스킬로 쓰인다.
 이 사이트를 처음 접할 때 반복하기 쉬운 실수들(IP 차단, headless 감지, 파이프라인 딜레이 등)을
-사전에 방지하기 위해 시행착오와 해결 패턴을 문서화했습니다.
+사전에 방지하기 위해 시행착오와 해결 패턴을 `references/trial-and-error.md` 에 문서화했다.
+
+### 전량 수집이 중요할 때: `collect_api.py`
+
+UI 페이징 방식은 WebSquare 지연으로 페이지 이동이 씹힐 수 있다. 수집 건수가 사이트 총건수와 일치해야 하면
+API 직접 페이징 수집기를 쓴다(검색 폼은 UI로 세팅해 세션을 확보한 뒤, 페이지 번호만 올려 in-page fetch).
+
+```bash
+python3 skill/scripts/collect_api.py --court 서울남부지방법원 --sido 서울특별시 --sgg 금천구 \
+  --scl 다세대주택 --flbd-min 1회 --max-price 500000000 --area-max 85 -o out.csv
+```
+
+## 테스트
+
+```bash
+pip install -r requirements.txt
+python3 -m pytest -q tests
+```
+
+네트워크·브라우저가 필요 없는 순수 로직(권리분석 엔진, 등기부 파서, 유찰 판정, 분석 기간 계산)만 검증한다.
 
 ## 기술 스택
 

@@ -43,8 +43,9 @@ async ([url, bodyObj]) => { try {
 
 
 def set_select(page, el_id, value):
+    v = json.dumps(str(value), ensure_ascii=False)   # 따옴표 포함 값도 안전하게 JS 문자열로
     return page.evaluate(f"""() => {{const s=document.getElementById('{el_id}'); if(!s)return false;
-        const o=Array.from(s.options).find(o=>o.value==='{value}'||o.text==='{value}'||o.text.includes('{value}'));
+        const o=Array.from(s.options).find(o=>o.value==={v}||o.text==={v}||o.text.includes({v}));
         if(!o)return false; s.value=o.value; s.dispatchEvent(new Event('change',{{bubbles:true}})); return true;}}""")
 
 
@@ -63,6 +64,8 @@ def parse_case(args):
 
 
 def fmt_won(v):
+    if v in (None, ''):
+        return ''
     try: return f"{int(v):,}원"
     except Exception: return str(v)
 
@@ -103,7 +106,7 @@ def _slice(text, starts, ends):
 
 
 # ── 매각물건명세서 임차인 표 구조화 (StreamDocs 좌표 기반) ──────────────
-_DATE = re.compile(r'20\d{2}\.\s?\d{1,2}\.\s?\d{1,2}\.?')
+_DATE = re.compile(r'(?:19|20)\d{2}\.\s?\d{1,2}\.\s?\d{1,2}\.?')   # 19xx 전입(장기 임차인)도 잡는다
 _AMT = re.compile(r'\d{1,3}(?:,\d{3})+')
 _NAME = re.compile(r'^([가-힣]{2,5})\s')
 
@@ -148,6 +151,7 @@ def parse_tenant_table(runs0, chosun_setting=''):
     if '임차내역없음' in joined or '임차 내역 없음' in joined:
         return {'없음': True, '임차인': [], '인수위험': False, '대항력앞선임차인': []}
     tenants = []
+    prev_name = None
     for l in band:
         t = l['text']
         if not (_AMT.search(t) and _DATE.search(t)):
@@ -156,21 +160,33 @@ def parse_tenant_table(runs0, chosun_setting=''):
         before = [d.strip() for d in _DATE.findall(t[:amt_m.start()])]
         after = [d.strip() for d in _DATE.findall(t[amt_m.end():])]
         nm = _NAME.match(t)
-        tenants.append({
-            '성명': nm.group(1) if nm else '(원문참조)',
+        name = nm.group(1) if nm else None
+        if name in ('권리신고', '현황조사', '임차인'):   # 정보출처 구분 라벨이 성명 자리에 온 경우
+            name = None
+        rec = {
+            '성명': name or prev_name or '(원문참조)',
             '보증금': int(amt_m.group().replace(',', '')),
             '임대차기간시작': before[0] if before else '',
             '전입신고일': after[0] if len(after) > 0 else '',
             '확정일자': after[1] if len(after) > 1 else '',
             '배당요구일': after[2] if len(after) > 2 else '',
             '원문행': re.sub(r'\s{2,}', ' ', t).strip(),
-        })
+        }
+        # 명세서는 한 임차인을 '현황조사'행 + '권리신고'행 두 줄로 싣는 경우가 많다(성명은 첫 줄에만).
+        # 같은 보증금·전입일이 바로 앞 행과 같으면 같은 임차인 → 빈 항목만 보강하고 합산하지 않는다.
+        dup = next((x for x in tenants if x['보증금'] == rec['보증금'] and x['전입신고일'] == rec['전입신고일']), None)
+        if dup:
+            for k in ('확정일자', '배당요구일', '임대차기간시작'):
+                if not dup[k] and rec[k]:
+                    dup[k] = rec[k]
+            dup['원문행'] += ' / ' + rec['원문행']
+            continue
+        tenants.append(rec)
+        if name:
+            prev_name = name
     # 대항력 판정: 전입신고일 < 최선순위설정일 → 보증금 매수인 인수 위험
-    def _norm(d):
-        m = re.match(r'(20\d{2})\.\s?(\d{1,2})\.\s?(\d{1,2})', (d or '').replace(' ', ''))
-        return tuple(int(x) for x in m.groups()) if m else None
-    cm = _DATE.search((chosun_setting or '').replace(' ', ''))
-    base = _norm(cm.group()) if cm else None
+    _norm = _ymd_tuple                       # '2022.3.25.' / '2022-03-25' / '20220325' 모두 처리
+    base = _ymd_tuple(chosun_setting)        # 최선순위설정 문자열의 첫 날짜
     risky = [t['성명'] for t in tenants if base and _norm(t['전입신고일']) and _norm(t['전입신고일']) < base]
     return {'없음': False, '임차인': tenants, '인수위험': bool(risky), '대항력앞선임차인': risky}
 
@@ -391,7 +407,7 @@ def build_report(data, opts=None):
         '동호': obj.get('bldDtlDts',''), '면적': (obj.get('objctArDts') or '').strip(),
         '감정평가액': fmt_won(dxdy.get('aeeEvlAmt')),
         '최저매각가격': fmt_won(dxdy.get('fstPbancLwsDspslPrc')),
-        '저감율': f"{round(_low/_gam*100)}%" if _gam and _low else '',
+        '최저가율': f"{round(_low/_gam*100)}%" if _gam and _low else '',   # 감정가 대비 현재 최저가(저감율 아님)
         '유찰횟수': dxdy.get('flbdNcnt',''),
         '매각기일': f"{fmt_ymd(dxdy.get('dspslDxdyYmd'))} {str(dxdy.get('fstDspslHm','')).zfill(4)[:2]}:{str(dxdy.get('fstDspslHm','')).zfill(4)[2:]}",
         '매각장소': dxdy.get('dspslPlcNm',''),
@@ -437,9 +453,9 @@ def build_report(data, opts=None):
         myse['_전문'] = myse_texts   # 원본 보존
     # 4) 기일이력
     dxdy_lst = []
+    RSLT = {'002': '유찰', '001': '매각', '003': '변경', '004': '취하', '005': '기각'}
+    KND = {'01': '매각기일', '02': '매각결정기일', '03': '대금지급기한'}
     for d in dma.get('gdsDspslDxdyLst', []):
-        RSLT = {'002': '유찰', '001': '매각', '003': '변경', '004': '취하', '005': '기각'}
-        KND = {'01': '매각기일', '02': '매각결정기일', '03': '대금지급기한'}
         dxdy_lst.append({
             '기일': f"{fmt_ymd(d.get('dxdyYmd'))} {str(d.get('dxdyHm','')).zfill(4)[:2]}:{str(d.get('dxdyHm','')).zfill(4)[2:]}",
             '종류': KND.get(d.get('auctnDxdyKndCd',''), d.get('auctnDxdyKndCd','')),
@@ -488,7 +504,7 @@ def build_report(data, opts=None):
     near = {
         '조건': f"{obj.get('adongSggNm') or ''} {same_dong} 인근".strip(),
         '전체매각완료건수': len(sold),
-        '동일단지사례': [c for c in sold if bld4 and bld4 in c['단지']],
+        '동일단지사례': [c for c in sold if bld4 and bld4 in c['단지'] and c['읍면동'] == same_dong],   # 브랜드명(자이·e편한세상…) 오매칭 방지: 같은 읍면동으로 한정
         '동일읍면동사례': [c for c in sold if c['읍면동'] == same_dong][:40],
     }
     if sold:
@@ -497,29 +513,116 @@ def build_report(data, opts=None):
             near['동일읍면동_평균매각가율'] = round(sum(rates)/len(rates), 1)
             near['동일읍면동_매각가율범위'] = [min(rates), max(rates)]
 
-    # 6) 투자분석 (A안: 법원 데이터 기반 추정)
-    invest = compute_investment(dxdy, myse, near, opts or {})
+    # 6) 투자분석 (A안: 법원 데이터 기반 추정) — 전용면적은 농특세(85㎡ 초과) 판정용
+    _am = re.search(r'([\d.]+)\s*㎡', obj.get('objctArDts') or '')
+    invest = compute_investment(dxdy, myse, near, {**(opts or {}), 'area_m2': float(_am.group(1)) if _am else None})
 
     return {'사건상세조회': case, '물건개요': prop, '매각물건명세서': myse,
             '기일내역': dxdy_lst, '현황조사서': curst_out, '감정평가서요약': aee,
             '인근매각물건사례': near, '투자분석': invest}
 
 
-def fetch_market_price(sigungu_code, complex_name, area_m2, months_back=12, area_tol=3.0):
-    """국토부 아파트 매매 실거래(PublicDataReader)로 특정 단지·평형 시세(중앙값) 조회.
+RTMS_URL = 'https://apis.data.go.kr/1613000/RTMSDataSvcAptTradeDev/getRTMSDataSvcAptTradeDev'
 
-    realprice-flow/apt-value 스킬과 동일하게 .env 의 PUBLIC_DATA_SERVICE_KEY 를 쓴다.
-    키 없음/라이브러리 없음/단지명 없음(다세대 등) → None(자동조회 불가).
+
+def _recent_months(months_back=12, today=None):
+    """지난달부터 거꾸로 months_back 개월의 YYYYMM (이번 달은 신고 지연으로 제외)."""
+    from datetime import date
+    now = today or date.today()
+    y, m = (now.year, now.month - 1) if now.month > 1 else (now.year - 1, 12)
+    out = []
+    for _ in range(months_back):
+        out.append(f'{y}{m:02d}')
+        m -= 1
+        if m < 1:
+            y, m = y - 1, 12
+    return out
+
+
+def _rtms_month(key, sigungu_code, ym, sleep=0.35):
+    """RTMS 아파트 매매 XML 1개월 전량(페이지 순회). 초당 제한·에러XML 백오프. 실패 시 []."""
+    import time, xml.etree.ElementTree as ET
+    try:
+        import requests, urllib3
+        urllib3.disable_warnings()
+    except ImportError:
+        return []
+    rows, page = [], 1
+    while page <= 10:
+        root = None
+        for attempt in range(5):
+            time.sleep(sleep)
+            try:
+                r = requests.get(RTMS_URL, params={'serviceKey': key, 'LAWD_CD': sigungu_code, 'DEAL_YMD': ym,
+                                                   'numOfRows': 1000, 'pageNo': page}, verify=False, timeout=30)
+                doc = ET.fromstring(r.text)
+            except Exception:
+                time.sleep(2); continue
+            if doc.findtext('.//returnReasonCode') or doc.findtext('.//resultCode') not in ('000', None):
+                time.sleep(2 + attempt * 2); continue
+            root = doc; break
+        if root is None:
+            return rows
+        for it in root.findall('.//item'):
+            rows.append({c.tag: (c.text or '').strip() for c in it})
+        total = int(root.findtext('.//totalCount') or 0)
+        if page * 1000 >= total:
+            break
+        page += 1
+    return rows
+
+
+def summarize_market(rows, complex_name, area_m2, area_tol=3.0, dong=None):
+    """RTMS 행(aptNm, umdNm, excluUseAr, dealAmount[만원], floor, dealYear, dealMonth, cdealType, ym) →
+    동일 단지·평형 시세 중앙값(원). 순수 함수 — 해제거래 제외, 단지명 포함일치, 면적 ±area_tol,
+    dong 이 주어지면 같은 법정동만(브랜드명 접두 오매칭 방지)."""
+    core = re.sub(r'\s+', '', complex_name or '')
+    out = []
+    for r in rows:
+        nm = re.sub(r'\s+', '', str(r.get('aptNm') or ''))
+        if not core or not nm:
+            continue
+        if dong and str(r.get('umdNm') or '').strip() and str(r.get('umdNm')).strip() != dong:
+            continue
+        if not (core in nm or nm in core):
+            continue
+        try:
+            area = float(r.get('excluUseAr'))
+        except (TypeError, ValueError):
+            continue
+        if abs(area - area_m2) > area_tol:
+            continue
+        if str(r.get('cdealType') or '').strip() == 'O':
+            continue
+        try:
+            amt = int(str(r.get('dealAmount') or '').replace(',', '').strip()) * 10000
+        except ValueError:
+            continue
+        ym = r.get('ym') or f"{r.get('dealYear','')}{str(r.get('dealMonth','')).zfill(2)}"
+        out.append({'금액': amt, '면적': area, '층': r.get('floor', ''),
+                    '계약': f"{r.get('dealYear','')}.{str(r.get('dealMonth','')).zfill(2)}", 'ym': ym})
+    if not out:
+        return None
+    amts = sorted(x['금액'] for x in out)
+    n = len(amts)
+    median = amts[n // 2] if n % 2 else (amts[n // 2 - 1] + amts[n // 2]) // 2
+    return {'시세중앙값': median, '표본수': n,
+            '최근거래': sorted(out, key=lambda x: x['ym'], reverse=True)[:8]}
+
+
+def fetch_market_price(sigungu_code, complex_name, area_m2, months_back=12, area_tol=3.0, dong=None):
+    """국토부 아파트 매매 실거래(RTMS XML 직접 호출)로 특정 단지·평형 시세(중앙값) 조회.
+
+    ⚠️ PublicDataReader 는 이 환경에서 segfault 가 나 쓰지 않는다(프로젝트 규칙). realprice_서울구별·
+       eval_priority.py 와 같은 RTMS 직접 호출 방식. .env 의 PUBLIC_DATA_SERVICE_KEY 사용.
+    키 없음/단지명 없음(다세대 등) → None(자동조회 불가) 또는 {'오류':'no_key'}.
     반환: {'시세중앙값':원, '표본수':n, '기간':'YYYYMM~YYYYMM', '최근거래':[{금액,면적,층,계약}]}
     """
     if not (sigungu_code and complex_name and area_m2):
         return None
     try:
-        import warnings
-        warnings.filterwarnings('ignore')   # pandas 3.0 ChainedAssignment FutureWarning 억제
-        import PublicDataReader as pdr
         from dotenv import load_dotenv, find_dotenv
-    except Exception:
+    except ImportError:
         return None
     load_dotenv(find_dotenv(usecwd=True))
     for c in ('.env', os.path.join(os.getcwd(), '.env'),
@@ -529,64 +632,36 @@ def fetch_market_price(sigungu_code, complex_name, area_m2, months_back=12, area
     key = os.getenv('PUBLIC_DATA_SERVICE_KEY')
     if not key or '입력' in key:
         return {'오류': 'no_key'}   # 키 미설정 → 호출부에서 안내
-    from datetime import datetime
-    now = datetime.now()
-    ey, em = (now.year, now.month - 1) if now.month > 1 else (now.year - 1, 12)
-    yms = []
-    y, m = ey, em
-    for _ in range(months_back):
-        yms.append(f'{y}{m:02d}')
-        m -= 1
-        if m < 1:
-            y, m = y - 1, 12
-    api = pdr.TransactionPrice(key)
-    core = re.sub(r'\s+', '', complex_name)
+    yms = _recent_months(months_back)
     rows = []
     for ym in yms:
-        try:
-            df = api.get_data(property_type='아파트', trade_type='매매',
-                              sigungu_code=str(sigungu_code), year_month=ym, verbose=False)
-        except Exception:
-            continue
-        if df is None or len(df) == 0:
-            continue
-        namecol = '단지명' if '단지명' in df.columns else ('아파트' if '아파트' in df.columns else None)
-        if not namecol:
-            continue
-        for _, r in df.iterrows():
-            nm = re.sub(r'\s+', '', str(r.get(namecol, '')))
-            if not (core in nm or nm in core or core[:5] and core[:5] in nm):
-                continue
-            try:
-                area = float(r.get('전용면적'))
-            except (TypeError, ValueError):
-                continue
-            if abs(area - area_m2) > area_tol:
-                continue
-            if str(r.get('해제여부', '')).strip() == 'O':
-                continue
-            try:
-                amt = int(str(r.get('거래금액', '')).replace(',', '').strip()) * 10000
-            except ValueError:
-                continue
-            rows.append({'금액': amt, '면적': area, '층': r.get('층', ''),
-                         '계약': f"{r.get('계약년도','')}.{str(r.get('계약월','')).zfill(2)}", 'ym': ym})
-    if not rows:
-        return {'표본수': 0, '기간': f'{yms[-1]}~{yms[0]}'}
-    amts = sorted(r['금액'] for r in rows)
-    n = len(amts)
-    median = amts[n // 2] if n % 2 else (amts[n // 2 - 1] + amts[n // 2]) // 2
-    return {'시세중앙값': median, '표본수': n, '기간': f'{yms[-1]}~{yms[0]}',
-            '최근거래': sorted(rows, key=lambda r: r['ym'], reverse=True)[:8]}
+        for r in _rtms_month(key, str(sigungu_code), ym):
+            r['ym'] = ym
+            rows.append(r)
+    period = f'{yms[-1]}~{yms[0]}'
+    summary = summarize_market(rows, complex_name, area_m2, area_tol, dong=dong)
+    if not summary:
+        return {'표본수': 0, '기간': period}
+    summary['기간'] = period
+    return summary
 
 
-def _acq_tax_rate(price):
-    """주택 취득세율(1주택·비규제 가정, 지방교육세 포함 근사). 다주택/규제지역 중과는 별도."""
+def _acq_tax_rate(price, area_m2=None):
+    """1주택·비규제 주택 취득세율(지방교육세 포함). 
+    지방세법 §11①8: 6억 이하 1% / 6억 초과~9억 이하 (취득가×2/3억 − 3)% 를 소수점 둘째 자리까지 /
+    9억 초과 3%. 지방교육세는 취득세율의 1/10 (§151①1). 전용 85㎡ 초과는 농어촌특별세 0.2% 가산.
+    다주택·조정대상지역 중과(8%·12%)는 --acq-tax 로 지정. (2020.8.12 체계 기준 — 개정 여부 확인 필요)
+    """
     if price <= 600_000_000:
-        return 0.011          # 1.1%
-    if price <= 900_000_000:
-        return 0.022          # 1~3% 구간 근사(중간값)
-    return 0.033              # 3.3%
+        base = 1.0
+    elif price <= 900_000_000:
+        base = round(price * 2 / 300_000_000 - 3, 2)
+    else:
+        base = 3.0
+    rate = base * 1.1 / 100
+    if area_m2 and area_m2 > 85:
+        rate += 0.002
+    return round(rate, 5)
 
 
 def compute_investment(dxdy, myse, near, opts):
@@ -643,7 +718,7 @@ def compute_investment(dxdy, myse, near, opts):
         인수금, 인수주석 = 0, '대항력 인수 임차인 없음(명세서 기준)'
 
     # 취득비용 (가정값, opts로 조정 가능)
-    tax_rate = float(opts['acq_tax']) / 100 if opts.get('acq_tax') else _acq_tax_rate(expected_bid)
+    tax_rate = float(opts['acq_tax']) / 100 if opts.get('acq_tax') else _acq_tax_rate(expected_bid, opts.get('area_m2'))
     취득세 = round(expected_bid * tax_rate)
     법무등기 = round(expected_bid * 0.005)                      # 낙찰가 0.5% 가정
     명도비 = int(opts.get('evict_cost') or (5_000_000 if 인수금 or myse.get('임차인') else 3_000_000))
@@ -657,7 +732,7 @@ def compute_investment(dxdy, myse, near, opts):
         '법무등기비': 법무등기, '명도비': 명도비,
         '총취득원가': 총원가,
         '손익분기매도가': 총원가,   # 이 값 이상에 팔아야 원금 회수(양도세·중개보수 제외)
-        '_가정': '취득세=1주택·비규제 가정 / 법무등기=낙찰가0.5% / 명도비 정액 / 양도세·중개보수·보유비용 제외',
+        '_가정': '취득세=1주택·비규제 가정(85㎡ 초과 농특세 포함) / 법무등기=낙찰가0.5% / 명도비 정액 / 양도세·중개보수·보유비용 제외',
     }
     market = opts.get('market')
     if market:
@@ -753,7 +828,7 @@ def print_report(rep):
             line('입력 시세', f"{iv['입력시세']:,}원 ({eok(iv['입력시세'])})")
             line('예상 순수익', f"{iv['예상순수익']:,}원 ({eok(iv['예상순수익'])})  ·  수익률 {iv['수익률']}%")
         else:
-            print("    (─m/--market 로 예상 매도시세를 넣으면 순수익·수익률까지 계산)")
+            print("    (--market 으로 예상 매도시세를 넣으면 순수익·수익률까지 계산, --auto-market 은 국토부 실거래 자동조회)")
         print(f"    ※ 가정: {iv['_가정']}")
 
     ra = rep.get('권리분석(등기부)')
@@ -846,7 +921,7 @@ def main():
         am = re.search(r'([\d.]+)\s*㎡', obj.get('objctArDts') or '')
         area = float(am.group(1)) if am else None
         print(f"▶ 시세 자동조회(국토부 실거래): {cx} {area}㎡ / 시군구 {sgg} ...")
-        market_info = fetch_market_price(sgg, cx, area)
+        market_info = fetch_market_price(sgg, cx, area, dong=obj.get('adongEmdNm') or None)
         if market_info is None:
             print("  자동조회 불가(단지명 없음/라이브러리 없음) — 시세 없이 진행")
         elif market_info.get('오류') == 'no_key':

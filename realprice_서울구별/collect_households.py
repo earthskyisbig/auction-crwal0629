@@ -6,8 +6,11 @@ warnings.filterwarnings('ignore')
 import requests, urllib3
 urllib3.disable_warnings()
 from dotenv import load_dotenv
-load_dotenv('/Users/leomyung/auction-crwal0629/.env')
+_ENV = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '.env')
+load_dotenv(_ENV if os.path.exists(_ENV) else None)   # 저장소 루트 .env (경로 하드코딩 제거, 클라우드 루틴 호환)
 KEY = os.getenv('PUBLIC_DATA_SERVICE_KEY')
+if not KEY:
+    sys.exit('PUBLIC_DATA_SERVICE_KEY 가 없습니다 — 저장소 루트 .env 확인 (.env.example 참고)')
 LIST = 'https://apis.data.go.kr/1613000/AptListService3/getSigunguAptList3'
 BASS = 'https://apis.data.go.kr/1613000/AptBasisInfoServiceV4/getAphusBassInfoV4'
 W = os.path.dirname(os.path.abspath(__file__))
@@ -46,22 +49,28 @@ def apt_list(code):
         page += 1
     return out
 
-for gu in (sys.argv[1:] or list(GUS)):
-    out = os.path.join(W, f'hh_{gu}.json')
-    if os.path.exists(out):
-        print(f'skip {gu}', flush=True)
-        continue
-    lst = apt_list(GUS[gu])
-    total, done, miss = 0, 0, 0
-    for a in lst:
-        b = jget(BASS, {'kaptCode': a['kaptCode']})
-        it = (b or {}).get('item') or {}
-        hh = it.get('kaptdaCnt') or it.get('hoCnt') or 0
-        try: hh = int(float(hh))
-        except (TypeError, ValueError): hh = 0
-        if hh > 0: total += hh; done += 1
-        else: miss += 1
-    json.dump({'gu': gu, 'complexes': len(lst), 'with_data': done, 'missing': miss,
-               'households': total}, open(out, 'w', encoding='utf-8'), ensure_ascii=False)
-    print(f'{gu}: 단지 {len(lst)}개, 세대수 {total:,} (누락 {miss})', flush=True)
-print('done')
+def main():
+    """구별 증분 수집 (파일 있으면 스킵). import 만으로 실행되지 않도록 가드."""
+    for gu in (sys.argv[1:] or list(GUS)):
+        out = os.path.join(W, f'hh_{gu}.json')
+        if os.path.exists(out):
+            print(f'skip {gu}', flush=True)
+            continue
+        lst = apt_list(GUS[gu])
+        total, done, miss = 0, 0, 0
+        for a in lst:
+            b = jget(BASS, {'kaptCode': a['kaptCode']})
+            it = (b or {}).get('item') or {}
+            hh = it.get('kaptdaCnt') or it.get('hoCnt') or 0
+            try: hh = int(float(hh))
+            except (TypeError, ValueError): hh = 0
+            if hh > 0: total += hh; done += 1
+            else: miss += 1
+        json.dump({'gu': gu, 'complexes': len(lst), 'with_data': done, 'missing': miss,
+                   'households': total}, open(out, 'w', encoding='utf-8'), ensure_ascii=False)
+        print(f'{gu}: 단지 {len(lst)}개, 세대수 {total:,} (누락 {miss})', flush=True)
+    print('done')
+
+
+if __name__ == '__main__':
+    main()

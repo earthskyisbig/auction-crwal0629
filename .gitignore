@@ -23,3 +23,18 @@ realprice_서울구별/rent_*.csv
 
 # 국토부 API 키 (절대 커밋 금지)
 .env
+
+# ── 2026-09-02 추가 ─────────────────────────────
+# 사건 상세 원본 덤프(수 MB, analyze_case.py -o 출력)
+case_*.json
+# 우선순위 파이프라인 중간 산출물
+priority_eval.json
+enriched_*.json
+# 서울 구별 파이프라인: 구별 세대수 증분 캐시·스크린샷·파이썬 캐시
+realprice_서울구별/hh_*.json
+realprice_서울구별/shot*.png
+realprice_서울구별/__pycache__/
+# 테스트 캐시
+.pytest_cache/
+realprice_서울구별/_prev/
+realprice_서울구별/windows_manifest.json

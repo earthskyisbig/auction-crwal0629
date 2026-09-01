@@ -5,8 +5,11 @@ warnings.filterwarnings('ignore')
 import requests, urllib3
 urllib3.disable_warnings()
 from dotenv import load_dotenv
-load_dotenv('/Users/leomyung/auction-crwal0629/.env')
+_ENV = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '.env')
+load_dotenv(_ENV if os.path.exists(_ENV) else None)   # 저장소 루트 .env (경로 하드코딩 제거, 클라우드 루틴 호환)
 KEY = os.getenv('PUBLIC_DATA_SERVICE_KEY')
+if not KEY:
+    sys.exit('PUBLIC_DATA_SERVICE_KEY 가 없습니다 — 저장소 루트 .env 확인 (.env.example 참고)')
 RTMS = 'https://apis.data.go.kr/1613000/RTMSDataSvcAptTradeDev/getRTMSDataSvcAptTradeDev'
 WORKDIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -57,19 +60,34 @@ def collect_gu(gu):
     all_rows = []
     for ym in MONTHS:
         rows = fetch_month(code, ym)
-        if True:
-            for d in rows:
-                all_rows.append({'gu': gu, 'ym': f"{d.get('dealYear')}{int(d.get('dealMonth') or 0):02d}",
-                                 'umdNm': d.get('umdNm'), 'aptNm': d.get('aptNm'),
-                                 'excluUseAr': d.get('excluUseAr'), 'dealAmount': d.get('dealAmount'),
-                                 'floor': d.get('floor'), 'buildYear': d.get('buildYear'),
-                                 'dealDay': d.get('dealDay'), 'cdealType': d.get('cdealType')})
+        for d in rows:
+            all_rows.append({'gu': gu, 'ym': f"{d.get('dealYear')}{int(d.get('dealMonth') or 0):02d}",
+                             'umdNm': d.get('umdNm'), 'aptNm': d.get('aptNm'),
+                             'excluUseAr': d.get('excluUseAr'), 'dealAmount': d.get('dealAmount'),
+                             'floor': d.get('floor'), 'buildYear': d.get('buildYear'),
+                             'dealDay': d.get('dealDay'), 'cdealType': d.get('cdealType')})
     w = csv.DictWriter(open(out, 'w', encoding='utf-8-sig', newline=''), fieldnames=FIELDS)
     w.writeheader(); w.writerows(all_rows)
     print(f'{gu}: {len(all_rows)}건', flush=True)
 
+def collect_gu_retry(gu, attempts=2):
+    """fetch_month 의 '재시도 초과'는 구 단위로 한 번 더 시도한다(refresh_all.sh 의 set -e 로 전체가 죽지 않게)."""
+    for i in range(1, attempts + 1):
+        try:
+            return collect_gu(gu)
+        except RuntimeError as e:
+            print(f'  [{gu}] 시도 {i}/{attempts} 실패: {e}', flush=True)
+            if i == attempts:
+                raise
+            time.sleep(10)
+
+
 if __name__ == '__main__':
     targets = sys.argv[1:] or list(GUS)
     for gu in targets:
-        collect_gu(gu)
+        collect_gu_retry(gu)
+    if not sys.argv[1:]:
+        # 25개 구 전부 끝났을 때만 기간 매니페스트 기록 → 이후 분석 스크립트는 이 기간을 쓴다
+        from windows import write_manifest
+        write_manifest(MONTHS)
     print('done')

@@ -28,9 +28,12 @@ compute_jeonse.py  전세가율 (동일 단지·평형 전세÷매매) → jeons
 compute_belt_dong.py  한강벨트 5개 구 법정동 분해 → belt_dong.json
 build_seoul_report.py  charts_extra.py(지도·히트맵·버블·벨트·전세맵) → seoul_report.html
 ```
-- 날짜는 전부 `windows.py`(롤링 24개월) 기준 — 하드코딩 없음. 헤드라인 수치도 데이터에서 자동 생성.
+- 날짜는 전부 `windows.py`(롤링 24개월, **지난달 종료** — 이번 달은 신고 지연으로 제외) 기준. `collect_seoul.py` 가 전 구 수집을 마치면 `windows_manifest.json` 에 기간을 기록하고, 분석 스크립트는 그 기간을 그대로 써서 달이 바뀌어도 CSV 와 어긋나지 않는다(refresh_all.sh 가 시작 시 삭제).
+- 리포트의 기간·전세가율·벨트 동·착시 사례 문장은 전부 데이터에서 생성한다(2026-09-02 하드코딩 제거). 축 범위도 데이터로 계산.
+- 해제거래는 `sales_io.load_sales()` 가 원본행+해제행 쌍을 통째로 버린다(O행만 버리면 원본이 남아 약 5% 해제 거래가 통계에 섞였음). 매매·전세 매칭 키는 (법정동, 단지, 면적) — 동명 단지 혼입 방지. 전세가율은 신규 계약만(갱신 제외).
+- `refresh_all.sh` 는 기존 CSV 를 `_prev/` 로 옮겨 두고 수집하며, 실패 시 되돌린다.
 - 파인더: `collect_kapt_detail.py`(K-apt 프로파일, kapt_*.json) → `build_app_data.py` → `app_template.html` 주입.
-- 정적 데이터: `apt_households.json`(K-apt 세대수 합), `seoul_geo.json`(구 경계), 종사자수는 build 스크립트 내 5개 구만(나머지 KOSIS 수동 필요).
+- 정적 데이터: `apt_households.json`(K-apt 세대수 합), `seoul_geo.json`(구 경계), 종사자수는 build 스크립트 내 5개 구만(나머지 KOSIS 수동 필요). `population_202607.json` 은 파일명 고정이며 내용에 `asof`(기준월)를 담는다.
 
 ## 원칙과 함정 (실측)
 

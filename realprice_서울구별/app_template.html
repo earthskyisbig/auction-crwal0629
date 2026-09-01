@@ -235,7 +235,7 @@ function renderPanel(c){
       <div class="loc-row"><span class="ic">주차</span><span>${pkTotal&&c.hh?`총 ${fmt(pkTotal)}면 · 세대당 ${(pkTotal/c.hh).toFixed(2)}대`:'—'}</span></div>
       <div class="loc-row"><span class="ic">입지</span><span>${c.g} ${c.d} · ${c.hh?(c.hh>=2000?'초대형':c.hh>=1000?'대단지':c.hh>=500?'중대형 단지':'중소 단지'):'규모 미상'}${c.bt?` · ${yy-+c.bt.slice(0,4)}년차`:''}</span></div>
     </div></div>
-  <div class="card hoje"><h3>${c.g} 주요 개발 재료 <span class="note">2026.08 기준 참고 정리 — 일정·실현 여부 변동 가능</span></h3>
+  <div class="card hoje"><h3>${c.g} 주요 개발 재료 <span class="note">__BUILD_DATE__ 기준 참고 정리 — 일정·실현 여부 변동 가능</span></h3>
     ${hoje.length?`<ul>${hoje.map(h=>`<li>${h}</li>`).join('')}</ul>`:'<div class="foot-note">정리된 항목 없음</div>'}
   </div>`;
   bindTips($('#panel'));

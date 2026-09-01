@@ -26,13 +26,14 @@ court-auction-scraper 스킬의 스텔스 + WebSquare 패턴을 기반으로, �
 import argparse
 import csv
 import json
+import math
 import os
 import re
 import time
 from playwright.sync_api import sync_playwright
 
 TARGET_URL = "https://www.courtauction.go.kr/pgj/index.on?w2xPath=/pgj/ui/pgj100/PGJ151F00.xml"
-COLUMNS = ['사건번호', '물건번호', '물건소재지', '전용면적', '감정가', '최저가', '저감율', '유찰횟수', '매각기일']
+COLUMNS = ['사건번호', '물건번호', '물건소재지', '전용면적', '감정가', '최저가', '저감율', '유찰횟수', '유찰추정', '매각기일']
 AREA_RE = re.compile(r'([\d,]+(?:\.\d+)?)\s*㎡')
 
 # 법원 그룹 — 여러 법원을 한 번에 순차 검색
@@ -99,7 +100,7 @@ def parse_args():
 def make_output_path(args):
     if args.output:
         return args.output
-    court = args.court.replace('지방법원', '').replace('전체', '전국')
+    court = (args.court or '전체').replace('지방법원', '').replace('전체', '전국')
     # --sido가 쉼표로 여러 지역일 경우 축약
     if args.sido:
         sido_parts = [s.strip().replace('특별시','').replace('광역시','').replace('특별자치도','').replace('도','') for s in args.sido.split(',')]
@@ -107,7 +108,7 @@ def make_output_path(args):
     else:
         area = args.sgg or ''
     scl   = args.scl if args.scl != '전체' else args.mcl
-    flbd  = args.flbd_min.replace('전체', '전체유찰')
+    flbd  = (args.flbd_min or '전체').replace('전체', '전체유찰')
     price = f'최저{args.max_price//100000000}억이하' if args.max_price else ''
     parts = [p for p in [court, area, scl, f'유찰{flbd}', price] if p]
     name  = f"auction_{'_'.join(parts)}.csv"
@@ -154,6 +155,23 @@ def fmt_giil(v):
     return f"{s[:4]}.{s[4:6]}.{s[6:]}" if len(s) == 8 else s
 
 
+def infer_yuchal(gam, low, court=''):
+    """감정가 대비 현재 최저가 비율로 실제 유찰횟수를 역산한다.
+    yuchalCnt 필드는 신경매·재매각 시 리셋되거나 누적돼 부정확하므로(SKILL.md 참고) 별도 컬럼으로 병기.
+    저감율은 법원마다 다르다: 서울 5개 지법(중앙·동부·서부·남부·북부) 20%, 그 외 대부분 30% — 휴리스틱."""
+    try:
+        gam, low = int(gam or 0), int(low or 0)
+    except (TypeError, ValueError):
+        return ''
+    if gam <= 0 or low <= 0:
+        return ''
+    ratio = low / gam
+    if ratio >= 0.95:
+        return '0'
+    step = 0.8 if '서울' in (court or '') else 0.7
+    return str(max(1, round(math.log(ratio) / math.log(step))))
+
+
 def parse_area(item):
     """전용면적(㎡) — convAddr/areaList/pjbBuldList 의 ㎡ 값 중 최댓값."""
     src = ' '.join(str(item.get(k, '') or '') for k in ('convAddr', 'areaList', 'pjbBuldList'))
@@ -173,6 +191,7 @@ def convert_item(item):
         '최저가':     fmt_money(low_price(item)),
         '저감율':     f"{rate}%" if rate not in (None, '') else '',
         '유찰횟수':   str(item.get('yuchalCnt', '')),
+        '유찰추정':   infer_yuchal(item.get('gamevalAmt'), low_price(item), item.get('jiwonNm', '')),
         '매각기일':   fmt_giil(item.get('maeGiil', '')),
     }
 
@@ -188,12 +207,13 @@ def get_max_page(page):
 
 
 def set_select(page, el_id, value):
+    v = json.dumps(str(value), ensure_ascii=False)   # 따옴표가 든 값도 안전하게 JS 문자열로
     result = page.evaluate(f"""
     () => {{
         const sel = document.getElementById('{el_id}');
         if (!sel) return {{ok: false, err: 'not found'}};
         const opts = Array.from(sel.options);
-        const opt  = opts.find(o => o.value === '{value}' || o.text === '{value}' || o.text.includes('{value}'));
+        const opt  = opts.find(o => o.value === {v} || o.text === {v} || o.text.includes({v}));
         if (!opt) return {{ok: false, opts: opts.map(o => o.text)}};
         sel.value = opt.value;
         sel.dispatchEvent(new Event('change', {{bubbles: true}}));
@@ -346,7 +366,10 @@ def main():
                 # 페이지그룹 루프의 '신규 없음(dry)' 종료 조건이 정상 작동한다 (2026-08 버그픽스)
                 new_items = []
                 for it in items:
-                    k = build_case_no(it) or json.dumps(it, sort_keys=True, ensure_ascii=False)[:200]
+                    # 사건번호 + 물건번호 + 소재지 복합키 — 한 사건에 물건이 여럿이면 사건번호 단독 키는 물건을 잃는다
+                    k = (build_case_no(it) or json.dumps(it, sort_keys=True, ensure_ascii=False)[:200],
+                         str(it.get('dspslGdsSeq') or it.get('maemulSer') or ''),
+                         (it.get('printSt') or '').strip())
                     if k in seen_keys:
                         continue
                     seen_keys.add(k)

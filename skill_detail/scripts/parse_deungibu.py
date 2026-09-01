@@ -44,6 +44,10 @@ def _purpose(text):
     head = (text.strip().split('\n')[0] if text.strip() else '')[:40]
     if '말소' in head:               # 'N번근저당권설정등기말소' → 근저당 아님, 말소로 분류
         return '말소'
+    if re.search(r'\d+번[^\s]*(이전|변경|경정)', head):   # '2번근저당권이전' 등 부기등기 → 독립 권리 아님
+        return '부기등기'
+    if '가등기' in head:             # 담보가등기(말소기준 후보) / 소유권이전청구권가등기(보전, 선순위면 인수)
+        return '담보가등기' if '담보' in head else '소유권이전청구권가등기'
     for kw in ('근저당권설정', '저당권설정', '전세권설정', '지상권설정', '지역권설정',
                '주택임차권', '임차권설정', '가압류', '압류', '가처분', '가등기',
                '소유권이전청구권', '환매특약', '강제경매개시결정', '임의경매개시결정',
@@ -108,12 +112,12 @@ def parse_deungibu(pdf_path):
         if (e['구분'], e['순위번호']) in malso_targets:
             e['말소여부'] = True
     # 말소 항목 자체는 분석에서 제외
-    live = [e for e in allrows if '말소' not in e['등기목적']]
+    live = [e for e in allrows if e['등기목적'] not in ('말소', '부기등기') and '말소' not in e['등기목적']]
     return {'갑구': gap, '을구': eul, '전체': allrows, '분석대상': live}
 
 
 def _extract_person(text):
-    m = re.search(r'(?:권리자|근저당권자|전세권자|가처분권자|채권자|소유자|임차권자)\s*[:：]?\s*([가-힣A-Za-z0-9()\s]{2,20})', text)
+    m = re.search(r'(?:권리자|근저당권자|전세권자|가처분권자|채권자|소유자|임차권자|가등기권자)\s*[:：]?\s*([가-힣A-Za-z0-9()]{2,20})', text)
     return m.group(1).strip() if m else ''
 
 
@@ -182,8 +186,11 @@ def main():
         print(f"  [{e['구분']} {e['순위번호']}] {e['등기목적']} | 접수 {접수} | 금액 {금액} | {e['권리자']}")
 
     started = None
-    if a.started and len(a.started) == 8:
-        started = (int(a.started[:4]), int(a.started[4:6]), int(a.started[6:8]))
+    if a.started:
+        dm = re.search(r'(\d{4})\D*(\d{1,2})\D*(\d{1,2})', a.started)
+        if not dm:
+            ap.error(f'--started 형식 오류: {a.started} (예: 20250625, 2025-06-25)')
+        started = tuple(int(x) for x in dm.groups())
     from rights_analysis import analyze_rights
     r = analyze_rights(parsed['분석대상'], 경매개시일=started)
     print("\n=== 권리분석 ===")
@@ -198,5 +205,6 @@ def main():
 
 
 if __name__ == '__main__':
-    sys.path.insert(0, __file__.rsplit('/', 1)[0])
+    import os
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     main()

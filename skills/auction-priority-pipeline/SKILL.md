@@ -15,8 +15,8 @@ description: 경매 아파트 물건을 사용자 우선순위 기준으로 걸�
 |---|---|---|
 | 1. 수집 | court-auction-scraper 스킬 (`scrape_auction_filtered.py`) — **법원당 1회 실행**으로 분리 | 법원별 CSV |
 | 2. 기본 필터 + 단지 보강 | `scripts/enrich_complex.py` | 유찰 1~2회·전용 59~84㎡ + 세대수·준공 |
-| 3. 조건 확정 | (기본값) 준공 10년 이내 + 500세대 이상 | 후보 목록 |
-| 4. 실거래 관문 | `scripts/eval_priority.py` | 회전율·동평형 실거래가·역/학교, 통과/탈락 |
+| 3. 조건 확정 | (기본값) 준공 10년 이내 + 500세대 이상 — **스크립트 없음, enriched.csv 의 세대수·준공 컬럼으로 수동 선별** | 후보 목록 |
+| 4. 실거래 관문 | `scripts/eval_priority.py` | 회전율·동평형 실거래가 → PASS 판정. 역/학교(연식·역거리·학세권)는 **기록만 하고 임계값 없음** — 통과분 중 수동 우선순위 |
 | 5. 권리분석 | court-auction-detail 스킬 (`analyze_case.py --auto-market`) 통과분만 순차 | 인수금·투자분석 |
 
 리포트는 algo-design 톤 HTML → Artifact 발행 (artifact-design·dataviz 스킬 먼저 로드).
@@ -30,10 +30,13 @@ python3 ~/.claude/skills/court-auction-scraper/scripts/scrape_auction_filtered.p
 # 경기 관할: 의정부·고양·수원·성남·안산·안양·부천·평택·여주 (인천지법 본원은 경기 물건 없음)
 
 # 2단계: 병합 CSV → 필터+보강 (프로젝트 루트에서, .env의 PUBLIC_DATA_SERVICE_KEY 필요)
-python3 scripts/enrich_complex.py merged.csv enriched.csv
+python3 skills/auction-priority-pipeline/scripts/enrich_complex.py merged.csv enriched.csv   # --flbd 1,2 --area 59-84.99 로 조정 가능
 
-# 4단계: 우선순위 평가 (ITEMS 리스트를 후보 물건으로 채워서)
-python3 scripts/eval_priority.py
+# 4단계: 우선순위 평가 — 후보를 items.json 으로 넘긴다 (필드: case,name,tkey,sggs,dong,area,appr,low,flbd,day,built,households)
+python3 skills/auction-priority-pipeline/scripts/eval_priority.py --items items.json -o priority_eval.json
+#   예) [{"case":"수원 2025타경58196","name":"수원하늘채더퍼스트2단지","tkey":"하늘채더퍼스트","sggs":["41113"],
+#        "dong":"곡반정동","area":84.96,"appr":66000,"low":46200,"flbd":1,"day":"8.24","built":"2022.06","households":1833}]
+#   (금액은 만원 단위. --items 생략 시 파일 내 ITEMS 상수 사용 — 구방식 호환)
 ```
 
 ## 함정 (전부 실측)

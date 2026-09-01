@@ -16,7 +16,8 @@
 # 말소기준권리가 될 수 있는 권리(=매각으로 항상 소멸, 최선순위면 기준선)
 _MALSO_BASE = ('저당권', '근저당권', '압류', '가압류', '담보가등기', '경매개시결정', '경매기입')
 # 말소기준보다 앞서면 '인수'되는 권리(용익물권·보전처분·보전가등기 등)
-_INSU_IF_SENIOR = ('전세권', '지상권', '지역권', '임차권', '가처분', '환매', '소유권이전청구권')
+_INSU_IF_SENIOR = ('전세권', '지상권', '지역권', '임차권', '가처분', '환매', '소유권이전청구권', '가등기')
+# '가등기'는 보수적 포괄 항목: 담보가등기는 위 _MALSO_BASE 가 먼저 잡고, 나머지 가등기(보전가등기)는 선순위면 인수
 # 이들은 등기목적에 '가등기'가 있어도 담보가등기가 아니라 '보전(소유권이전청구권)가등기'로 인수 대상
 
 
@@ -47,7 +48,10 @@ def analyze_rights(entries, 경매개시일=None, 명세서임차인=None):
         edate = _d(e['접수일'])
         목적 = e['등기목적']
         senior = (edate is not None and base_date is not None and edate <= base_date)
-        if _is(목적, _MALSO_BASE):
+        if base_date is None and not _is(목적, _MALSO_BASE):
+            # 말소기준도 경매개시일도 없으면 선후를 가릴 수 없다 → '소멸'로 단정하지 않는다
+            판정, 사유 = '판정불가', '말소기준권리·경매개시일 없음 → 선후 판정 불가(등기부·사건정보 확인)'
+        elif _is(목적, _MALSO_BASE):
             판정, 사유 = '소멸', '(근)저당·(가)압류·담보가등기·경매개시 → 매각으로 소멸'
         elif _is(목적, _INSU_IF_SENIOR):
             if senior:
@@ -79,7 +83,9 @@ def analyze_rights(entries, 경매개시일=None, 명세서임차인=None):
 
     return {
         '말소기준권리': (f"{base['등기목적']} ({base['접수일'][0]}.{base['접수일'][1]}.{base['접수일'][2]})"
-                    if base else ('경매개시결정' if 경매개시일 else '판정불가(소멸성 권리 없음)')),
+                    if base and base.get('접수일') else
+                    (f"{base['등기목적']} (접수일 미상)" if base else
+                     ('경매개시결정' if 경매개시일 else '판정불가(소멸성 권리 없음)'))),
         '말소기준일': base_date,
         '권리목록': results,
         '인수권리': [r for r in results if r['판정'] == '인수'],

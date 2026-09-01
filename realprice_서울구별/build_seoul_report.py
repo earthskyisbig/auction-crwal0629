@@ -1,37 +1,64 @@
 # -*- coding: utf-8 -*-
-"""서울 구별 평당가 2년 변화 검토보고 HTML 생성 (algo-design 톤, 인라인 SVG 차트)"""
-import json, os, html
+"""서울 구별 평당가 2년 변화 검토보고 HTML 생성 (algo-design 톤, 인라인 SVG 차트)
+   기간·수치 서술은 전부 데이터(seoul_gu_insights/matched/jeonse/belt_dong/population)에서 만든다 — 하드코딩 금지."""
+import json, os, html, statistics
+from datetime import date
 W = os.path.dirname(os.path.abspath(__file__))
+import sys; sys.path.insert(0, W)
 ins = json.load(open(os.path.join(W, 'seoul_gu_insights.json')))
 mat = json.load(open(os.path.join(W, 'seoul_gu_matched.json')))
-pop = json.load(open(os.path.join(W, 'population_202607.json')))
+jr = json.load(open(os.path.join(W, 'jeonse_ratio.json')))
+belt = json.load(open(os.path.join(W, 'belt_dong.json')))
+_pop_raw = json.load(open(os.path.join(W, 'population_202607.json')))
+pop = _pop_raw.get('data', _pop_raw) if isinstance(_pop_raw, dict) and 'data' in _pop_raw else _pop_raw
+pop_asof = _pop_raw.get('asof', '202607') if isinstance(_pop_raw, dict) else '202607'
 apthh = json.load(open(os.path.join(W, 'apt_households.json')))
 # 2023 전국사업체조사 종사자수 — 공표 확인된 상위 5개 구만 (나머지는 KOSIS 확인 필요)
 jobs = {'강남구': 772567, '서초구': 495335, '영등포구': 435180, '중구': 419211, '송파구': 412433}
 
 ORANGE, BLUE, GREEN, PURPLE, GOLD = '#cf6a48', '#3f7fb8', '#4f7d3a', '#8a6bb8', '#b0893a'
-MONTHS = ins['강남구']['months']
+MONTHS = ins['강남구']['months']     # 분석에 실제 쓰인 기간 (insights 가 단일 진실 원천)
 
-rank = sorted(ins.keys(), key=lambda g: -(mat[g]['matched_chg_pct'] or -99))
+def ym_str(ym): return f"{ym[:4]}.{ym[4:]}"
+def period(a, b): return f"{ym_str(a)}~{ym_str(b)}"
+A_STR, B_STR = period(MONTHS[0], MONTHS[5]), period(MONTHS[-6], MONTHS[-1])
+B_SHORT = f"{ym_str(MONTHS[-6])}~{MONTHS[-1][4:]}"
+LAST2 = f"{ym_str(MONTHS[-2])}·{MONTHS[-1][4:]}"
+
+def mchg(g):
+    return mat.get(g, {}).get('matched_chg_pct')
+
+def pct(v, digits=1):
+    """None 안전 부호 포함 퍼센트 문자열."""
+    return '—' if v is None else f"{v:+.{digits}f}%"
+
+def num(v):
+    return '—' if v is None else f"{v:,}"
+
+rank = sorted(ins.keys(), key=lambda g: -(mchg(g) if mchg(g) is not None else -99))
+rank_valid = [g for g in rank if mchg(g) is not None]
 
 # ── 1. 매칭 변화율 가로 막대 ──────────────────────────────
 def bar_chart():
-    rows = [(g, mat[g]['matched_chg_pct']) for g in rank]
+    rows = [(g, mchg(g)) for g in rank_valid]
     w, rh, lab_w, val_w = 940, 26, 90, 60
-    max_v = max(v for _, v in rows)
+    max_v = max((v for _, v in rows), default=1) or 1
+    min_v = min((v for _, v in rows), default=0)
+    span = max(40, max_v, -min_v)
     plot_w = w - lab_w - val_w
     h = len(rows) * rh + 30
     s = [f'<svg viewBox="0 0 {w} {h}" role="img" aria-label="구별 매칭 변화율" style="width:100%;height:auto;">']
-    for gx in range(0, 41, 10):
-        x = lab_w + plot_w * gx / max(40, max_v)
+    for gx in range(0, int(span) + 1, 10):
+        x = lab_w + plot_w * gx / span
         s.append(f'<line x1="{x:.0f}" y1="4" x2="{x:.0f}" y2="{h-26}" stroke="rgba(20,20,19,0.08)"/>')
         s.append(f'<text x="{x:.0f}" y="{h-10}" font-size="11" fill="rgba(20,20,19,0.5)" text-anchor="middle">{gx}%</text>')
     for i, (g, v) in enumerate(rows):
         y = i * rh + 6
-        bw = plot_w * v / max(40, max_v)
+        bw = plot_w * abs(v) / span
+        fill = ORANGE if v >= 0 else BLUE
         s.append(f'<text x="{lab_w-8}" y="{y+13}" font-size="12.5" fill="#141413" text-anchor="end">{g}</text>')
-        s.append(f'<rect class="bar" data-tip="{g} +{v}% ({mat[g]["pairs"]}개 단지·평형 쌍)" x="{lab_w}" y="{y}" width="{bw:.0f}" height="{rh-8}" rx="4" fill="{ORANGE}" fill-opacity="{0.55 + 0.45*v/max_v:.2f}"/>')
-        s.append(f'<text x="{lab_w+bw+6:.0f}" y="{y+13}" font-size="12" fill="rgba(20,20,19,0.75)" font-family="Poppins,Arial">+{v}%</text>')
+        s.append(f'<rect class="bar" data-tip="{g} {pct(v)} ({mat[g]["pairs"]}개 단지·평형 쌍)" x="{lab_w}" y="{y}" width="{bw:.0f}" height="{rh-8}" rx="4" fill="{fill}" fill-opacity="{0.55 + 0.45*abs(v)/span:.2f}"/>')
+        s.append(f'<text x="{lab_w+bw+6:.0f}" y="{y+13}" font-size="12" fill="rgba(20,20,19,0.75)" font-family="Poppins,Arial">{pct(v)}</text>')
     s.append('</svg>')
     return ''.join(s)
 
@@ -39,12 +66,14 @@ def bar_chart():
 LINE_GUS = [('강남구', ORANGE), ('송파구', BLUE), ('성동구', GREEN), ('마포구', PURPLE), ('노원구', GOLD)]
 def line_chart():
     w, h, pl, pr, pt, pb = 940, 430, 64, 96, 16, 40
-    ymin, ymax = 2000, 13000
+    allv = [v for g, _ in LINE_GUS for v in ins[g]['smooth'] if v]
+    ymin = max(0, (min(allv) // 1000 - 1) * 1000) if allv else 0
+    ymax = ((max(allv) // 1000) + 1) * 1000 if allv else 10000
     pw, ph = w - pl - pr, h - pt - pb
     def X(i): return pl + pw * i / (len(MONTHS) - 1)
     def Y(v): return pt + ph * (1 - (v - ymin) / (ymax - ymin))
     s = [f'<svg viewBox="0 0 {w} {h}" role="img" aria-label="구별 평당가 추이" style="width:100%;height:auto;">']
-    for gy in range(2000, 13001, 2000):
+    for gy in range(int(ymin), int(ymax) + 1, 2000):
         s.append(f'<line x1="{pl}" y1="{Y(gy):.0f}" x2="{w-pr}" y2="{Y(gy):.0f}" stroke="rgba(20,20,19,0.08)"/>')
         s.append(f'<text x="{pl-8}" y="{Y(gy)+4:.0f}" font-size="11" fill="rgba(20,20,19,0.5)" text-anchor="end">{gy/10000:.1f}억</text>')
     for i, ym in enumerate(MONTHS):
@@ -58,12 +87,12 @@ def line_chart():
             if v is None: continue
             path.append(f"{'M' if not path else 'L'}{X(i):.1f},{Y(v):.1f}")
         s.append(f'<path d="{" ".join(path)}" fill="none" stroke="{color}" stroke-width="2.5" stroke-linejoin="round"/>')
-        last = next(v for v in reversed(pts) if v is not None)
-        labels.append([Y(last), g[:2], color])
+        last = next((v for v in reversed(pts) if v is not None), None)
+        if last is not None:
+            labels.append([Y(last), g[:2], color])
         for i, v in enumerate(pts):
             if v is None: continue
-            s.append(f'<circle class="pt" data-tip="{g} {MONTHS[i][:4]}.{MONTHS[i][4:]} — 평당 {v:,}만원 ({ins[g]["count"][i]}건)" cx="{X(i):.1f}" cy="{Y(v):.1f}" r="8" fill="transparent"/>')
-    # 끝 라벨 충돌 방지: 위→아래 정렬 후 최소 16px 간격 강제
+            s.append(f'<circle class="pt" data-tip="{g} {ym_str(MONTHS[i])} — 평당 {v:,}만원 ({ins[g]["count"][i]}건)" cx="{X(i):.1f}" cy="{Y(v):.1f}" r="8" fill="transparent"/>')
     labels.sort()
     for j in range(1, len(labels)):
         if labels[j][0] - labels[j-1][0] < 16:
@@ -77,38 +106,56 @@ def line_chart():
 def table():
     rows = []
     for g in rank:
-        d, m = ins[g], mat[g]
+        d, m = ins[g], mat.get(g, {})
         job = f'{jobs[g]:,}' if g in jobs else '<span style="color:var(--mute);">—</span>'
-        jrv = jr[g]['jeonse_ratio']
+        jrv = jr.get(g, {}).get('jeonse_ratio')
         rows.append(f'<tr><td class="name">{g}</td>'
-                    f'<td>{d["first6_avg"]:,}</td><td>{d["last6_avg"]:,}</td>'
-                    f'<td>{"+" if d["chg_pct"]>=0 else ""}{d["chg_pct"]}%</td>'
-                    f'<td><strong>+{m["matched_chg_pct"]}%</strong> <span style="color:var(--mute);font-size:0.8em;">({m["pairs"]}쌍)</span></td>'
-                    f'<td>{jrv}%</td>'
+                    f'<td>{num(d["first6_avg"])}</td><td>{num(d["last6_avg"])}</td>'
+                    f'<td>{pct(d["chg_pct"])}</td>'
+                    f'<td><strong>{pct(m.get("matched_chg_pct"))}</strong> <span style="color:var(--mute);font-size:0.8em;">({m.get("pairs", 0)}쌍)</span></td>'
+                    f'<td>{"—" if jrv is None else f"{jrv}%"}</td>'
                     f'<td>{d["total_trades"]:,}</td>'
-                    f'<td>{pop[g]:,}</td>'
-                    f'<td>{apthh[g]:,}</td>'
+                    f'<td>{num(pop.get(g))}</td>'
+                    f'<td>{num(apthh.get(g))}</td>'
                     f'<td>{job}</td></tr>')
     return ''.join(rows)
 
-top5 = [(g, mat[g]['matched_chg_pct']) for g in rank[:5]]
-bot5 = [(g, mat[g]['matched_chg_pct']) for g in rank[-5:]]
-
-from datetime import date
-import sys; sys.path.insert(0, W)
-from windows import MONTHS as WMONTHS
-top_gu, bot_gu = rank[0], rank[-1]
+top_gu, bot_gu = rank_valid[0], rank_valid[-1]
 total_trades = sum(d['total_trades'] for d in ins.values())
-gangnam_pp = ins['강남구']['last6_avg']
-period_str = f"{WMONTHS[0][:4]}.{WMONTHS[0][4:]} ~ {WMONTHS[-1][:4]}.{WMONTHS[-1][4:]}"
+gangnam_pp = ins['강남구']['last6_avg'] or 0
+period_str = f"{ym_str(MONTHS[0])} ~ {ym_str(MONTHS[-1])}"
 today_str = date.today().strftime('%Y.%m.%d')
+
+# ── 데이터에서 만드는 서술 ───────────────────────────────
+def _jr_of(gs):
+    v = [jr[g]['jeonse_ratio'] for g in gs if jr.get(g, {}).get('jeonse_ratio') is not None]
+    return (f"{min(v):.0f}~{max(v):.0f}%" if v else '—')
+top3, bot3 = rank_valid[:3], rank_valid[-3:]
+jeonse_sentence = (f"<strong>많이 오른 {'·'.join(g[:-1] for g in top3)}은 전세가율 {_jr_of(top3)}</strong>(전세가 못 따라와 갭이 큼), "
+                   f"<strong>덜 오른 {'·'.join(g[:-1] for g in bot3)}은 {_jr_of(bot3)}</strong>(갭이 작아 갭투자 접근이 쉬운 곳)")
+belt_bits = []
+for gu, rs in belt.items():
+    if rs:
+        t = rs[0]
+        belt_bits.append(f"{gu[:-1]} {t['dong']}({pct(t['chg'], 0)})")
+belt_sentence = ("법정동 기준 상승 1위는 " + ', '.join(belt_bits) + "입니다.") if belt_bits else ''
+# 단순 중앙값과 매칭 지수의 부호가 어긋나는 구 (거래 구성 착시 사례)
+mismatch = [g for g in rank_valid if ins[g]['chg_pct'] is not None and ins[g]['chg_pct'] < 0 and mchg(g) > 0]
+if mismatch:
+    ex = ', '.join(f"{g} {pct(ins[g]['chg_pct'])}" for g in mismatch[:3])
+    ex2 = ', '.join(f"{g} {pct(mchg(g))}" for g in mismatch[:3])
+    warn01 = (f"<strong>단순 중앙값의 {ex}는 하락이 아닙니다.</strong> 거래 '구성'이 중저가로 쏠리면 생기는 착시입니다. "
+              f"같은 단지끼리 비교한 매칭 지수로는 {ex2}입니다.")
+    mismatch_note = f" — {'·'.join(g[:-1] for g in mismatch[:3])}의 마이너스가 그 예입니다"
+else:
+    warn01 = "<strong>단순 중앙값 변화율은 거래 구성이 바뀌면 왜곡됩니다.</strong> 헤드라인은 같은 단지·평형끼리 비교한 매칭 지수를 쓰세요."
+    mismatch_note = ''
 
 import charts_extra
 map_svg = charts_extra.choropleth(mat)
 heat_svg = charts_extra.heatmap(ins, mat, rank, MONTHS)
 scatter_svg = charts_extra.scatter(ins, mat, {g: int(v) for g, v in apthh.items()}, rank)
 belt_svg = charts_extra.belt_dongs()
-jr = json.load(open(os.path.join(W, 'jeonse_ratio.json')))
 jeonse_svg = charts_extra.jeonse_map(jr)
 
 html_doc = f'''<title>서울 구별 평당가 2년</title>
@@ -169,8 +216,8 @@ footer{{ padding:36px 0 52px; color:var(--mute); font-size:0.84rem; }}
     <h1>서울 구별 평당가, 2년간 어디가 얼마나 올랐나</h1>
     <p class="lead">서울 25개 구 아파트 매매 {total_trades:,}건(해제 제외)의 전용면적 평당가를 집계했습니다. 헤드라인 변화율은 <strong>동일 단지·동일 평형끼리 두 기간을 직접 비교한 매칭 지수</strong> — 거래 구성이 바뀌어 생기는 착시를 걷어낸 수치입니다.</p>
     <div class="stats">
-      <div class="stat"><div class="v">+{mat[top_gu]["matched_chg_pct"]}%</div><div class="k">상승 1위 {top_gu}</div></div>
-      <div class="stat"><div class="v">+{mat[bot_gu]["matched_chg_pct"]}%</div><div class="k">최하위 {bot_gu}</div></div>
+      <div class="stat"><div class="v">{pct(mchg(top_gu))}</div><div class="k">상승 1위 {top_gu}</div></div>
+      <div class="stat"><div class="v">{pct(mchg(bot_gu))}</div><div class="k">최하위 {bot_gu}</div></div>
       <div class="stat"><div class="v">{gangnam_pp/10000:.2f}억</div><div class="k">강남구 평당 (최근 6개월)</div></div>
       <div class="stat"><div class="v">{total_trades:,}건</div><div class="k">분석 거래</div></div>
     </div>
@@ -181,7 +228,7 @@ footer{{ padding:36px 0 52px; color:var(--mute); font-size:0.84rem; }}
   <div class="wrap sec-head">
     <span class="eyebrow">랭킹</span>
     <h2>구별 2년 상승률 — 매칭 지수 기준</h2>
-    <p>2024.09~2025.02 대비 2026.03~2026.08. 같은 단지·같은 평형에서 양쪽 기간 각 2건 이상 거래된 쌍의 가격 비율 중앙값입니다.</p>
+    <p>{A_STR} 대비 {B_STR}. 같은 단지·같은 평형에서 양쪽 기간 각 2건 이상 거래된 쌍의 가격 비율 중앙값입니다.</p>
     <div class="chartbox">{bar_chart()}</div>
   </div>
 </section>
@@ -199,7 +246,7 @@ footer{{ padding:36px 0 52px; color:var(--mute); font-size:0.84rem; }}
   <div class="wrap sec-head">
     <span class="eyebrow">지도 · 전세가율</span>
     <h2>전세가율 지도 — 상승률의 거울상</h2>
-    <p>같은 기간(2026.03~08) 동일 단지·평형의 전세 보증금 ÷ 매매가입니다. 위의 상승률 지도와 정확히 반대로 칠해집니다: <strong>많이 오른 성동·송파·강남은 전세가율 39~40%</strong>(전세가 못 따라와 갭이 큼), <strong>덜 오른 금천·도봉·강북은 62~64%</strong>(갭이 작아 갭투자 접근이 쉬운 곳). 매매가 급등이 실수요 가격(전세)보다 앞서 나갔다는 뜻이기도 합니다.</p>
+    <p>최근 6개월({B_SHORT}) 동일 법정동·단지·평형의 전세 보증금(신규 계약) ÷ 매매가입니다. 위의 상승률 지도와 대체로 반대로 칠해집니다: {jeonse_sentence}. 매매가 급등이 실수요 가격(전세)보다 앞서 나갔다는 뜻이기도 합니다.</p>
     <div class="chartbox">{jeonse_svg}</div>
   </div>
 </section>
@@ -208,7 +255,7 @@ footer{{ padding:36px 0 52px; color:var(--mute); font-size:0.84rem; }}
   <div class="wrap sec-head">
     <span class="eyebrow">매트릭스</span>
     <h2>25개 구 × 24개월 — 언제, 어디가 움직였나</h2>
-    <p>각 칸은 그 달의 평당가 지수(첫 6개월 평균 = 100)입니다. 주황이 짙을수록 출발점 대비 상승, 파랑은 하락. 위쪽(상승 상위 구)이 2026년 봄부터 일제히 짙어지는 것과, 2025년 6·27 대출규제 직후 몇 달간 색이 옅어지는 것이 보입니다.</p>
+    <p>각 칸은 그 달의 평당가 지수(첫 6개월 평균 = 100)입니다. 주황이 짙을수록 출발점 대비 상승, 파랑은 하락. 위쪽(상승 상위 구)이 어느 달부터 짙어지는지, 규제·금리 이벤트 뒤 몇 달간 색이 옅어지는지를 행 방향으로 읽으세요.</p>
     <div class="chartbox" style="overflow-x:auto;">{heat_svg}</div>
   </div>
 </section>
@@ -242,7 +289,7 @@ footer{{ padding:36px 0 52px; color:var(--mute); font-size:0.84rem; }}
   <div class="wrap sec-head">
     <span class="eyebrow">드릴다운 · 한강벨트</span>
     <h2>벨트 안에서는 어느 동이 끌었나 — 5개 구 법정동 분해</h2>
-    <p>상승 상위 5개 구(성동·광진·동작·송파·강동)를 법정동 단위로 쪼갠 매칭 지수입니다(단지·평형 쌍 4개 이상인 동만). 두드러진 패턴: <strong>대장 동네가 아니라 그 옆 동네가 더 올랐습니다.</strong> 성동은 성수(+33%)보다 금호3가(+57%)·응봉(+48%)·마장(+44%)이, 송파는 잠실(+26%)보다 오금(+42%)·장지(+42%)·거여(+39%)가 높습니다 — 전형적인 갭 메우기 장세입니다.</p>
+    <p>상승 상위 5개 구(성동·광진·동작·송파·강동)를 법정동 단위로 쪼갠 매칭 지수입니다(단지·평형 쌍 4개 이상인 동만). {belt_sentence} 대장 동네보다 그 옆 동네가 더 오른 구가 있다면 전형적인 갭 메우기 장세입니다.</p>
     <div class="chartbox">{belt_svg}</div>
   </div>
 </section>
@@ -251,7 +298,7 @@ footer{{ padding:36px 0 52px; color:var(--mute); font-size:0.84rem; }}
   <div class="wrap sec-head">
     <span class="eyebrow">전체 데이터</span>
     <h2>25개 구 상세</h2>
-    <p>평당가는 만원/평(전용면적 기준). '단순 변화'는 전체 거래 중앙값 기준이라 거래 구성이 바뀌면 왜곡됩니다 — 서초·양천의 마이너스가 그 예입니다. 매칭 지수를 기준으로 읽으세요. 인구는 주민등록인구(행안부, 2026.07), 아파트 세대수는 K-apt 등재 관리단지 합계(국토부 공동주택 기본정보 — 의무관리대상 위주라 실제 전체보다 작음), 종사자수는 2023 사업체조사 공표 확인분(상위 5개 구)만 표기했습니다.</p>
+    <p>평당가는 만원/평(전용면적 기준). '단순 변화'는 전체 거래 중앙값 기준이라 거래 구성이 바뀌면 왜곡됩니다{mismatch_note}. 매칭 지수를 기준으로 읽으세요. 인구는 주민등록인구(행안부, {ym_str(pop_asof)}), 아파트 세대수는 K-apt 등재 관리단지 합계(국토부 공동주택 기본정보 — 의무관리대상 위주라 실제 전체보다 작음), 종사자수는 2023 사업체조사 공표 확인분(상위 5개 구)만 표기했습니다.</p>
     <div class="tablebox">
       <table>
         <thead><tr><th>구</th><th>첫 6개월 평당</th><th>최근 6개월 평당</th><th>단순 변화</th><th>매칭 변화 ★</th><th>전세가율</th><th>거래량</th><th>인구</th><th>아파트 세대수</th><th>종사자수</th></tr></thead>
@@ -266,15 +313,15 @@ footer{{ padding:36px 0 52px; color:var(--mute); font-size:0.84rem; }}
     <span class="eyebrow inv">해석 시 주의</span>
     <h2>숫자를 읽기 전에</h2>
     <div class="warn-list">
-      <div class="warn"><span class="n">01</span><p><strong>단순 중앙값의 서초 −5.4%, 양천 −10.7%는 하락이 아닙니다.</strong> 2025.6.27 대출규제 이후 초고가 거래가 급감하며 거래 '구성'이 중저가로 쏠린 착시입니다. 같은 단지끼리 비교한 매칭 지수로는 서초 +17.2%, 양천 +26.2%입니다.</p></div>
-      <div class="warn"><span class="n">02</span><p><strong>2026년 7~8월 데이터는 아직 덜 신고된 상태입니다.</strong> 실거래 신고는 계약 후 30일 이내라 최근 2개월 수치는 표본이 작고, 이후 갱신될 수 있습니다.</p></div>
+      <div class="warn"><span class="n">01</span><p>{warn01}</p></div>
+      <div class="warn"><span class="n">02</span><p><strong>{LAST2} 데이터는 아직 덜 신고된 상태입니다.</strong> 실거래 신고는 계약 후 30일 이내라 최근 2개월 수치는 표본이 작고, 이후 갱신될 수 있습니다.</p></div>
       <div class="warn"><span class="n">03</span><p><strong>중앙값 기반 참고용 통계입니다.</strong> 한국부동산원·KB 공식 지수와 다를 수 있으며, 개별 단지 판단은 단지별 실거래를 직접 확인해야 합니다.</p></div>
     </div>
   </div>
 </section>
 
 <footer>
-  <div class="wrap">국토교통부 아파트 매매·전월세 실거래가(RTMS) · 해제거래 제외 · 평당가 상하위 1% 이상치 컷 · {today_str} 수집</div>
+  <div class="wrap">국토교통부 아파트 매매·전월세 실거래가(RTMS) · 해제거래(원본행 포함) 제외 · 평당가 상하위 1% 이상치 컷 · {today_str} 생성</div>
 </footer>
 
 <script>

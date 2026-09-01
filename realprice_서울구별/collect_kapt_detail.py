@@ -6,8 +6,11 @@ warnings.filterwarnings('ignore')
 import requests, urllib3
 urllib3.disable_warnings()
 from dotenv import load_dotenv
-load_dotenv('/Users/leomyung/auction-crwal0629/.env')
+_ENV = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '.env')
+load_dotenv(_ENV if os.path.exists(_ENV) else None)   # 저장소 루트 .env (경로 하드코딩 제거, 클라우드 루틴 호환)
 KEY = os.getenv('PUBLIC_DATA_SERVICE_KEY')
+if not KEY:
+    sys.exit('PUBLIC_DATA_SERVICE_KEY 가 없습니다 — 저장소 루트 .env 확인 (.env.example 참고)')
 LIST = 'https://apis.data.go.kr/1613000/AptListService3/getSigunguAptList3'
 BASS = 'https://apis.data.go.kr/1613000/AptBasisInfoServiceV4/getAphusBassInfoV4'
 DTL  = 'https://apis.data.go.kr/1613000/AptBasisInfoServiceV4/getAphusDtlInfoV4'
@@ -39,40 +42,46 @@ def g(d, k):
     v = (d or {}).get(k)
     return None if v in (None, '', ' ', 'null') else v
 
-for gu in (sys.argv[1:] or list(GUS)):
-    out = os.path.join(W, f'kapt_{gu}.json')
-    if os.path.exists(out) and os.path.getsize(out) > 500:
-        print(f'skip {gu}', flush=True)
-        continue
-    lst, page = [], 1
-    while page <= 20:
-        b = jget(LIST, {'sigunguCode': GUS[gu], 'pageNo': page, 'numOfRows': 500})
-        its = (b or {}).get('items') or []
-        if isinstance(its, dict): its = its.get('item') or []
-        if not its: break
-        lst += its
-        if len(its) < 500: break
-        page += 1
-    recs = []
-    for a in lst:
-        kc = a['kaptCode']
-        base = (jget(BASS, {'kaptCode': kc}) or {}).get('item') or {}
-        dtl = (jget(DTL, {'kaptCode': kc}) or {}).get('item') or {}
-        hh = g(base, 'kaptdaCnt') or g(base, 'hoCnt') or 0
-        try: hh = int(float(hh))
-        except (TypeError, ValueError): hh = 0
-        ud = g(base, 'kaptUsedate') or ''
-        recs.append({
-            'code': kc, 'name': g(base, 'kaptName') or a.get('kaptName'),
-            'dong_nm': a.get('as3'), 'hh': hh,
-            'dongs': g(base, 'kaptDongCnt'), 'built': ud[:6],
-            'top_floor': g(base, 'kaptTopFloor'),
-            'heat': g(base, 'codeHeatNm'), 'hall': g(base, 'codeHallNm'),
-            'subway_line': g(dtl, 'subwayLine'), 'subway_st': g(dtl, 'subwayStation'),
-            'subway_time': g(dtl, 'kaptdWtimesub'),
-            'edu': g(dtl, 'educationFacility'),
-            'park': g(dtl, 'kaptdPcnt'), 'park_u': g(dtl, 'kaptdPcntu'),
-        })
-    json.dump(recs, open(out, 'w', encoding='utf-8'), ensure_ascii=False)
-    print(f'{gu}: {len(recs)}개 단지', flush=True)
-print('done')
+def main():
+    """구별 증분 수집 (파일 있으면 스킵). import 만으로 실행되지 않도록 가드."""
+    for gu in (sys.argv[1:] or list(GUS)):
+        out = os.path.join(W, f'kapt_{gu}.json')
+        if os.path.exists(out) and os.path.getsize(out) > 500:
+            print(f'skip {gu}', flush=True)
+            continue
+        lst, page = [], 1
+        while page <= 20:
+            b = jget(LIST, {'sigunguCode': GUS[gu], 'pageNo': page, 'numOfRows': 500})
+            its = (b or {}).get('items') or []
+            if isinstance(its, dict): its = its.get('item') or []
+            if not its: break
+            lst += its
+            if len(its) < 500: break
+            page += 1
+        recs = []
+        for a in lst:
+            kc = a['kaptCode']
+            base = (jget(BASS, {'kaptCode': kc}) or {}).get('item') or {}
+            dtl = (jget(DTL, {'kaptCode': kc}) or {}).get('item') or {}
+            hh = g(base, 'kaptdaCnt') or g(base, 'hoCnt') or 0
+            try: hh = int(float(hh))
+            except (TypeError, ValueError): hh = 0
+            ud = g(base, 'kaptUsedate') or ''
+            recs.append({
+                'code': kc, 'name': g(base, 'kaptName') or a.get('kaptName'),
+                'dong_nm': a.get('as3'), 'hh': hh,
+                'dongs': g(base, 'kaptDongCnt'), 'built': ud[:6],
+                'top_floor': g(base, 'kaptTopFloor'),
+                'heat': g(base, 'codeHeatNm'), 'hall': g(base, 'codeHallNm'),
+                'subway_line': g(dtl, 'subwayLine'), 'subway_st': g(dtl, 'subwayStation'),
+                'subway_time': g(dtl, 'kaptdWtimesub'),
+                'edu': g(dtl, 'educationFacility'),
+                'park': g(dtl, 'kaptdPcnt'), 'park_u': g(dtl, 'kaptdPcntu'),
+            })
+        json.dump(recs, open(out, 'w', encoding='utf-8'), ensure_ascii=False)
+        print(f'{gu}: {len(recs)}개 단지', flush=True)
+    print('done')
+
+
+if __name__ == '__main__':
+    main()

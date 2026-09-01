@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*-
-"""서울 25개 구 아파트 전월세 실거래 최근 6개월(2026.03~08) 수집 — rent_<구>.csv 증분 저장"""
+"""서울 25개 구 아파트 전월세 실거래 최근 6개월(windows.RENT_MONTHS, 롤링) 수집 — rent_<구>.csv 증분 저장"""
 import csv, os, sys, time, warnings, xml.etree.ElementTree as ET
 warnings.filterwarnings('ignore')
 import requests, urllib3
 urllib3.disable_warnings()
 from dotenv import load_dotenv
-load_dotenv('/Users/leomyung/auction-crwal0629/.env')
+_ENV = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '.env')
+load_dotenv(_ENV if os.path.exists(_ENV) else None)   # 저장소 루트 .env (경로 하드코딩 제거, 클라우드 루틴 호환)
 KEY = os.getenv('PUBLIC_DATA_SERVICE_KEY')
+if not KEY:
+    sys.exit('PUBLIC_DATA_SERVICE_KEY 가 없습니다 — 저장소 루트 .env 확인 (.env.example 참고)')
 RTMS = 'https://apis.data.go.kr/1613000/RTMSDataSvcAptRent/getRTMSDataSvcAptRent'
 W = os.path.dirname(os.path.abspath(__file__))
 
@@ -45,11 +48,11 @@ def fetch_month(code, ym):
         page += 1
     return rows
 
-for gu in (sys.argv[1:] or list(GUS)):
+def collect_gu(gu):
     out = os.path.join(W, f'rent_{gu}.csv')
     if os.path.exists(out) and os.path.getsize(out) > 200:
         print(f'skip {gu}', flush=True)
-        continue
+        return
     all_rows = []
     for ym in MONTHS:
         for d in fetch_month(GUS[gu], ym):
@@ -58,7 +61,19 @@ for gu in (sys.argv[1:] or list(GUS)):
                              'excluUseAr': d.get('excluUseAr'), 'deposit': d.get('deposit'),
                              'monthlyRent': d.get('monthlyRent'), 'floor': d.get('floor'),
                              'contractType': d.get('contractType')})
-    w = csv.DictWriter(open(out, 'w', encoding='utf-8-sig', newline=''), fieldnames=FIELDS)
-    w.writeheader(); w.writerows(all_rows)
+    with open(out, 'w', encoding='utf-8-sig', newline='') as fh:
+        w = csv.DictWriter(fh, fieldnames=FIELDS)
+        w.writeheader(); w.writerows(all_rows)
     print(f'{gu}: {len(all_rows)}건', flush=True)
-print('done')
+
+
+if __name__ == '__main__':
+    for gu in (sys.argv[1:] or list(GUS)):
+        for i in (1, 2):
+            try:
+                collect_gu(gu); break
+            except RuntimeError as e:
+                print(f'  [{gu}] 시도 {i}/2 실패: {e}', flush=True)
+                if i == 2: raise
+                time.sleep(10)
+    print('done')
