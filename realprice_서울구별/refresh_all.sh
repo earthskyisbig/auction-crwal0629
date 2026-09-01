@@ -27,4 +27,5 @@ python3 build_seoul_report.py
 python3 compute_complex.py
 python3 build_complex_report.py
 python3 build_terrain.py
+python3 build_galaxy.py
 echo "REFRESH_DONE"
