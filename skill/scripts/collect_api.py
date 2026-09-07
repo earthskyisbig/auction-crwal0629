@@ -41,7 +41,7 @@ async ([url, bodyObj]) => {
 
 def parse_args():
     ap = argparse.ArgumentParser(description='법원경매 수집기 v3 (API 페이징)')
-    ap.add_argument('--court', required=True, help='법원명 (드롭다운 표기)')
+    ap.add_argument('--court', default=None, help='법원명 (드롭다운 표기). 생략 시 전체 법원')
     ap.add_argument('--sido', default=None, help='시/도 (예: 서울특별시)')
     ap.add_argument('--sgg', default=None, help='시/군/구 사후필터 (예: 금천구)')
     ap.add_argument('--emd', default=None, help='읍/면/동 사후필터 (예: 시흥동)')
@@ -55,6 +55,8 @@ def parse_args():
     ap.add_argument('--area-min', type=float, default=None, dest='area_min', help='전용면적 하한(㎡) — API 서버필터')
     ap.add_argument('--area-max', type=float, default=None, dest='area_max', help='전용면적 상한(㎡) — API 서버필터')
     ap.add_argument('--bid-days', type=int, default=None, help='입찰종료일을 오늘+N일로 확장(기본: 사이트 기본 2주)')
+    ap.add_argument('--bid-from', default=None, dest='bid_from', help='매각기일 시작 YYYYMMDD')
+    ap.add_argument('--bid-to', default=None, dest='bid_to', help='매각기일 종료 YYYYMMDD')
     ap.add_argument('-o', '--output', default=None)
     return ap.parse_args()
 
@@ -130,8 +132,18 @@ def main():
         page.goto(TARGET_URL, wait_until="domcontentloaded", timeout=60000)
         page.wait_for_function("() => !!document.getElementById('mf_wfm_mainFrame_btn_gdsDtlSrch')", timeout=60000)
         time.sleep(2)
-        print(f"▶ 폼 세팅: {args.court} / {args.lcl}>{args.mcl}>{args.scl} / 유찰 {args.flbd_min}")
-        set_select(page, 'mf_wfm_mainFrame_sbx_rletCortOfc', args.court)
+        print(f"▶ 폼 세팅: {args.court or '전체법원'} / {args.sido or '전국'} / "
+              f"{args.lcl}>{args.mcl}>{args.scl} / 유찰 {args.flbd_min}")
+        if args.court and args.court != '전체':
+            if not set_select(page, 'mf_wfm_mainFrame_sbx_rletCortOfc', args.court):
+                print(f"  ⚠️ 법원 선택 실패: {args.court}")
+        if args.sido:
+            if not set_select(page, 'mf_wfm_mainFrame_sbx_rletAdongSdS', args.sido):
+                print(f"  ⚠️ 시/도 선택 실패: {args.sido}")
+            time.sleep(2)
+        if args.sgg:
+            set_select(page, 'mf_wfm_mainFrame_sbx_rletAdongSggS', args.sgg)
+            time.sleep(1)
         if args.flbd_min != '전체':
             set_select(page, 'mf_wfm_mainFrame_sbx_rletFlbdCntMin', args.flbd_min)
         time.sleep(1)
@@ -147,6 +159,12 @@ def main():
             print("❌ 검색 요청 본문 캡처 실패 — 중단"); browser.close(); return
         base_body = json.loads(captured['body'])
 
+        # 매각기일(입찰기간) 명시 지정
+        if args.bid_from or args.bid_to:
+            si = base_body['dma_srchGdsDtlSrchInfo']
+            if args.bid_from: si['bidBgngYmd'] = args.bid_from
+            if args.bid_to:   si['bidEndYmd'] = args.bid_to
+            print(f"▶ 매각기일 지정: {si.get('bidBgngYmd')} ~ {si.get('bidEndYmd')}")
         # 입찰기간 확장 옵션
         if args.bid_days is not None:
             import datetime
@@ -157,13 +175,19 @@ def main():
             print(f"▶ 입찰기간 확장: {today:%Y%m%d} ~ {end:%Y%m%d}")
 
         srch = base_body['dma_srchGdsDtlSrchInfo']
+        # 법원 미지정 시 기본값(서울중앙 B000210)이 남아 전국 검색이 되지 않으므로 비운다
+        if not args.court or args.court == '전체':
+            srch['cortOfcCd'] = ''
+            srch['jdbnCd'] = ''
         # 서버사이드 범위 필터 주입 (유찰상한·최저가범위·면적범위)
         if args.flbd_max is not None:  srch['flbdNcntMax'] = str(args.flbd_max)
         if args.min_price is not None: srch['lwsDspslPrcMin'] = str(args.min_price)
         if args.max_price is not None: srch['lwsDspslPrcMax'] = str(args.max_price)
         if args.area_min is not None:  srch['objctArDtsMin'] = str(args.area_min)
         if args.area_max is not None:  srch['objctArDtsMax'] = str(args.area_max)
-        print(f"  필터코드: cortOfcCd={srch.get('cortOfcCd')} scl={srch.get('sclDspslGdsLstUsgCd')} "
+        print(f"  필터코드: cortOfcCd={srch.get('cortOfcCd') or '전체'} "
+              f"sd={srch.get('rprsAdongSdCd') or '-'}/sgg={srch.get('rprsAdongSggCd') or '-'} "
+              f"scl={srch.get('sclDspslGdsLstUsgCd')} "
               f"flbd={srch.get('flbdNcntMin')}~{srch.get('flbdNcntMax') or '∞'} "
               f"가격={srch.get('lwsDspslPrcMin') or '0'}~{srch.get('lwsDspslPrcMax') or '∞'} "
               f"면적={srch.get('objctArDtsMin') or '0'}~{srch.get('objctArDtsMax') or '∞'} "
@@ -222,8 +246,20 @@ def main():
 
     # 사후 필터
     filtered = all_items
+    if args.sido:
+        # 주의: 서버는 rprsAdongSdCd(시/도)를 무시하고 전국 결과를 반환한다(2026-08 검증).
+        # 따라서 시/도는 반드시 소재지 주소 기준 사후필터로 건다.
+        b = len(filtered)
+        key = args.sido[:2]  # '경기도'→'경기', '서울특별시'→'서울'
+        filtered = [i for i in filtered
+                    if (i.get('printSt', '') or '').strip().startswith(key)
+                    or key in (i.get('hjguSido', '') or '')]
+        print(f"  시/도 사후필터: {b} → {len(filtered)} ({args.sido})"
+              + ("  ⚠️ 0건 — 시/도 표기 확인 필요" if not filtered else ""))
     if args.sgg:
-        b = len(filtered); filtered = [i for i in filtered if args.sgg in i.get('hjguSigu', '')]
+        b = len(filtered); filtered = [i for i in filtered
+                                       if args.sgg in (i.get('hjguSigu', '') or '')
+                                       or args.sgg in (i.get('printSt', '') or '')]
         print(f"  시/군/구 필터: {b} → {len(filtered)} ({args.sgg})")
     if args.emd:
         b = len(filtered); filtered = [i for i in filtered
@@ -233,11 +269,23 @@ def main():
         b = len(filtered); filtered = [i for i in filtered if low_price(i) <= args.max_price]
         print(f"  최저가 필터: {b} → {len(filtered)} (≤ {args.max_price:,})")
 
-    output = args.output or f"auction_{args.court.replace('지방법원','')}_{args.sgg or ''}_{args.scl}.csv"
+    _who = (args.court or args.sido or '전국').replace('지방법원', '')
+    output = args.output or f"auction_{_who}_{args.sgg or ''}_{args.scl}.csv"
     rows = [convert_item(it) for it in filtered]
     with open(output, 'w', newline='', encoding='utf-8-sig') as f:
         w = csv.DictWriter(f, fieldnames=COLUMNS); w.writeheader(); w.writerows(rows)
     print(f"✅ {len(rows)}행 → {output}")
+
+    # ── DuckDB 자동 적재 ──
+    try:
+        import sys, datetime
+        sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+        from ingest_to_db import ingest
+        court = (args.court or args.sido or '전국').replace('지방법원', '').replace('지원', '')
+        _src = f"api_{court}_{args.sgg or args.scl}_{datetime.date.today():%Y_%m}"
+        ingest(output, _src)
+    except Exception as e:
+        print(f"⚠️  DB 자동적재 건너뜀: {e}")
 
     if not ok:
         wp = output.rsplit('.', 1)[0] + '.WARNING.txt'

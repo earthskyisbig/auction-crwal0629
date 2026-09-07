@@ -1,0 +1,438 @@
+<title>경기 아파트 경매 스크리닝 분석보고서</title>
+<style>
+  :root{
+    --nav-bg:#1e293b; --nav-bg-2:#0f172a;
+    --bg:#f1f5f9; --card:#ffffff; --ink:#1e293b; --ink-2:#475569; --ink-3:#64748b;
+    --line:#e2e8f0; --line-2:#cbd5e1;
+    --green:#16a34a; --green-bg:#f0fdf4; --green-line:#bbf7d0;
+    --accent:#3b82f6; --accent-bg:#eff6ff; --accent-line:#bfdbfe;
+    --red:#dc2626; --red-bg:#fef2f2; --red-line:#fecaca;
+    --yellow:#d97706; --yellow-bg:#fffbeb; --yellow-line:#fde68a;
+    --shadow:0 1px 3px rgba(15,23,42,.08),0 1px 2px rgba(15,23,42,.04);
+    --shadow-lg:0 10px 30px -10px rgba(15,23,42,.25);
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#0b1220; --card:#111a2b; --ink:#e5edf7; --ink-2:#a9b8cc; --ink-3:#7e8ea3;
+      --line:#22304a; --line-2:#33425f;
+      --green-bg:#0f2418; --green-line:#1c4d31;
+      --accent-bg:#0f2036; --accent-line:#1e3a5f;
+      --red-bg:#2a1414; --red-line:#5a2626;
+      --yellow-bg:#2a2010; --yellow-line:#5a4416;
+      --shadow:0 1px 3px rgba(0,0,0,.4);
+      --shadow-lg:0 12px 34px -12px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="light"]{
+    --bg:#f1f5f9; --card:#fff; --ink:#1e293b; --ink-2:#475569; --ink-3:#64748b;
+    --line:#e2e8f0; --line-2:#cbd5e1;
+    --green-bg:#f0fdf4; --green-line:#bbf7d0; --accent-bg:#eff6ff; --accent-line:#bfdbfe;
+    --red-bg:#fef2f2; --red-line:#fecaca; --yellow-bg:#fffbeb; --yellow-line:#fde68a;
+    --shadow:0 1px 3px rgba(15,23,42,.08),0 1px 2px rgba(15,23,42,.04);
+  }
+  :root[data-theme="dark"]{
+    --bg:#0b1220; --card:#111a2b; --ink:#e5edf7; --ink-2:#a9b8cc; --ink-3:#7e8ea3;
+    --line:#22304a; --line-2:#33425f;
+    --green-bg:#0f2418; --green-line:#1c4d31; --accent-bg:#0f2036; --accent-line:#1e3a5f;
+    --red-bg:#2a1414; --red-line:#5a2626; --yellow-bg:#2a2010; --yellow-line:#5a4416;
+    --shadow:0 1px 3px rgba(0,0,0,.4); --shadow-lg:0 12px 34px -12px rgba(0,0,0,.6);
+  }
+
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+    line-height:1.65;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+
+  header{background:linear-gradient(135deg,var(--nav-bg),var(--nav-bg-2));color:#e5edf7;
+    margin:0 -20px;padding:44px 20px 40px;border-bottom:3px solid var(--accent)}
+  header .inner{max-width:960px;margin:0 auto}
+  .eyebrow{font-size:12.5px;letter-spacing:.16em;text-transform:uppercase;color:#7dd3fc;font-weight:600;margin:0 0 10px}
+  h1{font-size:clamp(26px,4.5vw,38px);margin:0 0 6px;font-weight:800;letter-spacing:-.02em;text-wrap:balance;color:#fff}
+  .sub{color:#a9b8cc;font-size:15px;margin:0}
+  .hdr-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+  .chip{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);
+    color:#cbd5e1;font-size:12.5px;padding:5px 11px;border-radius:999px}
+  .chip b{color:#fff;font-weight:600}
+
+  .verdict{display:flex;gap:16px;align-items:flex-start;margin-top:26px;background:rgba(22,163,74,.12);
+    border:1px solid rgba(74,222,128,.3);border-left:4px solid #22c55e;border-radius:12px;padding:16px 18px}
+  .verdict .badge{background:#16a34a;color:#fff;font-weight:700;font-size:13px;padding:4px 12px;border-radius:8px;white-space:nowrap;margin-top:2px}
+  .verdict p{margin:0;color:#dbe7f5;font-size:14.5px}
+  .verdict b{color:#fff}
+
+  section{margin-top:38px}
+  .sec-head{display:flex;align-items:center;gap:12px;margin:0 0 16px}
+  .sec-num{font-size:13px;font-weight:700;color:var(--accent);border:1.5px solid var(--accent-line);
+    background:var(--accent-bg);width:30px;height:30px;border-radius:8px;display:grid;place-items:center;flex:none}
+  h2{font-size:20px;margin:0;font-weight:750;letter-spacing:-.01em}
+  .sec-head .note{margin-left:auto;font-size:12.5px;color:var(--ink-3)}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;box-shadow:var(--shadow)}
+  .card + .card{margin-top:14px}
+  p{margin:0 0 12px}
+  p:last-child{margin-bottom:0}
+
+  .tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--card);box-shadow:var(--shadow)}
+  table{border-collapse:collapse;width:100%;font-size:14px;min-width:560px}
+  th,td{padding:11px 14px;text-align:left;border-bottom:1px solid var(--line)}
+  thead th{background:var(--bg);font-size:12px;letter-spacing:.03em;color:var(--ink-2);font-weight:700;text-transform:uppercase}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr:hover{background:var(--accent-bg)}
+  td.num,th.num{text-align:right}
+  .muted{color:var(--ink-3)}
+
+  .flow{display:flex;flex-wrap:wrap;align-items:stretch;gap:10px;margin:0}
+  .step{flex:1;min-width:140px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow)}
+  .step .k{font-size:12px;color:var(--ink-3);font-weight:600;letter-spacing:.04em}
+  .step .v{font-size:26px;font-weight:800;letter-spacing:-.02em;margin-top:2px}
+  .step .d{font-size:12.5px;color:var(--ink-2);margin-top:4px}
+  .step.hi{border-color:var(--accent-line);background:var(--accent-bg)}
+
+  .pill{display:inline-block;font-size:11.5px;font-weight:700;padding:2px 9px;border-radius:999px;white-space:nowrap}
+  .pill.ok{background:var(--green-bg);color:var(--green);border:1px solid var(--green-line)}
+  .pill.no{background:var(--red-bg);color:var(--red);border:1px solid var(--red-line)}
+  .pill.warn{background:var(--yellow-bg);color:var(--yellow);border:1px solid var(--yellow-line)}
+
+  .box{border-radius:12px;padding:16px 18px;border:1px solid;margin-top:14px}
+  .box h4{margin:0 0 8px;font-size:14.5px;font-weight:750}
+  .box p{font-size:14px;margin:0 0 8px}
+  .box.red{background:var(--red-bg);border-color:var(--red-line)}
+  .box.red h4{color:var(--red)}
+  .box.yellow{background:var(--yellow-bg);border-color:var(--yellow-line)}
+  .box.yellow h4{color:var(--yellow)}
+  .box.green{background:var(--green-bg);border-color:var(--green-line)}
+  .box.green h4{color:var(--green)}
+  .box.blue{background:var(--accent-bg);border-color:var(--accent-line)}
+  .box.blue h4{color:var(--accent)}
+
+  .prop{border:1px solid var(--line);border-radius:14px;background:var(--card);box-shadow:var(--shadow);overflow:hidden}
+  .prop + .prop{margin-top:16px}
+  .prop-head{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .prop-head .rank{width:26px;height:26px;border-radius:8px;background:var(--nav-bg);color:#fff;
+    display:grid;place-items:center;font-size:13px;font-weight:700;flex:none}
+  .prop-head h3{margin:0;font-size:17px;font-weight:750;letter-spacing:-.01em}
+  .prop-head .spec{font-size:13px;color:var(--ink-3)}
+  .prop-head .verd{margin-left:auto}
+  .prop-body{padding:18px 20px}
+  .kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:14px}
+  .kv div{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+  .kv .k{font-size:11.5px;color:var(--ink-3);font-weight:600}
+  .kv .v{font-size:15px;font-weight:700;margin-top:2px}
+  .prop-body h5{margin:14px 0 6px;font-size:13px;font-weight:750;color:var(--ink-2);letter-spacing:.02em}
+  .prop-body p{font-size:14px;color:var(--ink-2)}
+  .prop-body b{color:var(--ink)}
+
+  footer{margin-top:48px;padding-top:20px;border-top:1px solid var(--line);font-size:12.5px;color:var(--ink-3)}
+  .theme-btn{position:fixed;right:16px;bottom:16px;background:var(--card);border:1px solid var(--line-2);
+    color:var(--ink);border-radius:999px;padding:8px 14px;font-size:12.5px;cursor:pointer;box-shadow:var(--shadow-lg);z-index:9}
+</style>
+
+<header>
+  <div class="inner">
+    <p class="eyebrow">Court Auction · Screening Report</p>
+    <h1>경기 아파트 경매 스크리닝 분석보고서</h1>
+    <p class="sub">유찰 1~2회 · 전용 59~85㎡ · 최저가 1~3억 · 500세대 이상 · 사용승인 2010년 이후</p>
+    <div class="hdr-meta">
+      <span class="chip">기준일 <b>2026-07-16</b></span>
+      <span class="chip">수집 <b>경기 68건</b></span>
+      <span class="chip">조건충족 <b>19건</b></span>
+      <span class="chip">심층분석 <b>상위 5건</b></span>
+      <span class="chip">선정기준 <b>환금성50·준공30·세대10·기타10</b></span>
+      <span class="chip">출처 <b>법원경매 · K-apt · 국토부 실거래</b></span>
+    </div>
+    <div class="verdict">
+      <span class="badge">결론</span>
+      <p>환금성(최근 12개월 실거래 거래량)을 50% 반영해 재선정한 상위 5건 중, <b>인수금 0원으로 검토 가능한 물건은 4건</b>입니다. 가장 안전·유리한 건 <b>더샵지제역센트럴파크3BL</b>(순수익 ≈ +7,400만·20.9%)이며, 거래량 1위 <b>안성 롯데캐슬</b>은 임차권등기 2.7억 인수로 유일한 회피 대상입니다.</p>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- 1. 스크리닝 파이프라인 -->
+  <section>
+    <div class="sec-head"><span class="sec-num">1</span><h2>스크리닝 파이프라인</h2>
+      <span class="note">법원경매 → K-apt 보강 → 조건필터</span></div>
+    <div class="flow">
+      <div class="step"><div class="k">전국 조건검색</div><div class="v">376</div><div class="d">유찰1~2 · 59~85㎡ · 1~3억<br><span class="muted">totalCnt 정합 확인</span></div></div>
+      <div class="step"><div class="k">경기 사후필터</div><div class="v">68</div><div class="d">물건소재지 접두어 기준</div></div>
+      <div class="step hi"><div class="k">세대500+ · 2010년+</div><div class="v">19</div><div class="d">K-apt 공동주택 기본정보 보강</div></div>
+      <div class="step"><div class="k">상위 선별</div><div class="v">5</div><div class="d">환금성40 · 신축30 · 할인30</div></div>
+    </div>
+    <div class="box blue">
+      <h4>지역 필터를 "사후"로 건 이유</h4>
+      <p>courtauction.go.kr의 시/도 드롭다운은 실제 사용자 클릭의 AJAX로만 서버 세션에 등록됩니다. 헤드리스에서 값을 넣으면 서버가 무시해 전국 결과가 나옵니다. 그래서 법원을 비우고 <b>가격·면적·유찰만 서버사이드로</b> 좁힌 뒤, 결과의 물건소재지 접두어로 경기를 걸렀습니다.</p>
+    </div>
+  </section>
+
+  <!-- 2. 데이터 검증 -->
+  <section>
+    <div class="sec-head"><span class="sec-num">2</span><h2>데이터 검증 — 자동매칭 보정 4건</h2>
+      <span class="note">K-apt 등록주소 전수 대조</span></div>
+    <div class="card">
+      <p>경매 목록에는 <b>세대수·준공연도가 없어</b> 단지명으로 K-apt 데이터를 붙여야 합니다. 이 이름 매칭을 그대로 신뢰하지 않고 K-apt 등록주소와 전 건 대조한 결과, <b>4건의 오류</b>가 나왔습니다. 검증을 생략했다면 조건에 맞지 않는 물건이 결과에 남고, 맞는 물건은 빠졌을 것입니다.</p>
+    </div>
+    <div class="tbl-wrap" style="margin-top:14px">
+      <table>
+        <thead><tr><th>구분</th><th>물건</th><th>자동매칭 결과</th><th>실제 (검증 후)</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="pill no">오탐 제외</span></td>
+            <td>파주 조리읍 봉일천리 301</td>
+            <td>해링턴플레이스 GTX 운정<br><span class="muted">목동동 · 1498세대 · 2023</span></td>
+            <td>파주효성해링턴플레이스<br><b>봉일천리 · 490세대</b> → 세대수 미달</td>
+          </tr>
+          <tr>
+            <td><span class="pill warn">매칭 수정</span></td>
+            <td>평택 동삭동 941 <b>3블럭</b></td>
+            <td>더샵지제역센트럴파크<b>1BL</b><br><span class="muted">2124세대 · 2020</span></td>
+            <td>더샵지제역센트럴파크<b>3BL</b><br><b>1280세대 · 2021</b> (조건 충족 유지)</td>
+          </tr>
+          <tr>
+            <td><span class="pill ok">누락 추가</span></td>
+            <td>남양주 화도읍 경춘로2248번길</td>
+            <td class="muted">단지매칭 실패<br><span class="muted">괄호형 주소 파싱 불가</span></td>
+            <td>화도효성해링턴플레이스<br><b>635세대 · 2015</b></td>
+          </tr>
+          <tr>
+            <td><span class="pill ok">누락 추가</span></td>
+            <td>안성 원곡면 만세로 1409</td>
+            <td class="muted">단지매칭 실패</td>
+            <td>안성원곡제일오투그란데<br><b>797세대 · 2018</b></td>
+          </tr>
+          <tr>
+            <td><span class="pill ok">누락 추가</span></td>
+            <td>평택 청북면 옥길리 1104 "부영사랑으로"</td>
+            <td class="muted">단지매칭 실패<br><span class="muted">통칭명으로 등록명 불일치</span></td>
+            <td>평택청북2차부영<br><b>1138세대 · 2011</b></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="box yellow">
+      <h4>확인 불가 5건 (조건 충족 여부 미확정)</h4>
+      <p>의정부 호국로1346번길 125 · 양주 덕계동 646-1 · 의왕 삼동 부곡꿈마을 · 군포 대야미동 미영팰리스 · 파주 금촌동 새꽃마을뜨란채 — K-apt에 해당 이름·주소가 없어 세대수·연식을 확정하지 못했습니다. 500세대 이상 브랜드 단지는 대부분 등록돼 있어 조건 미달일 가능성이 높지만, <b>단정하지 않고 미확인으로 남깁니다.</b></p>
+    </div>
+  </section>
+
+  <!-- 3. 최종 19건 -->
+  <section>
+    <div class="sec-head"><span class="sec-num">3</span><h2>조건 충족 19건</h2>
+      <span class="note">세대수 내림차순 · 평택 12 · 안성 2 · 남양주 2 · 기타 3</span></div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>단지</th><th class="num">세대</th><th class="num">준공</th><th class="num">전용</th><th class="num">최저가</th><th class="num">유찰</th><th>시군구</th><th>매각기일</th></tr></thead>
+        <tbody>
+          <tr><td>안성 롯데캐슬</td><td class="num">2,320</td><td class="num">2016</td><td class="num">77.0㎡</td><td class="num">1.70억</td><td class="num">1</td><td>안성시</td><td>07.21</td></tr>
+          <tr><td>힐스테이트평택2차</td><td class="num">1,443</td><td class="num">2018</td><td class="num">73.5㎡</td><td class="num">2.88억</td><td class="num">1</td><td>평택시</td><td>07.28</td></tr>
+          <tr><td>힐스테이트평택2차</td><td class="num">1,443</td><td class="num">2018</td><td class="num">64.4㎡</td><td class="num">2.23억</td><td class="num">1</td><td>평택시</td><td>07.20</td></tr>
+          <tr><td>평택뉴비전엘크루</td><td class="num">1,396</td><td class="num">2021</td><td class="num">74.8㎡</td><td class="num">2.20억</td><td class="num">1</td><td>평택시</td><td>07.20</td></tr>
+          <tr><td>평택뉴비전엘크루</td><td class="num">1,396</td><td class="num">2021</td><td class="num">74.8㎡</td><td class="num">2.30억</td><td class="num">1</td><td>평택시</td><td>07.28</td></tr>
+          <tr><td>더샵지제역센트럴파크3BL</td><td class="num">1,280</td><td class="num">2021</td><td class="num">75.0㎡</td><td class="num">2.84억</td><td class="num">1</td><td>평택시</td><td>07.28</td></tr>
+          <tr><td>평택청북2차부영</td><td class="num">1,138</td><td class="num">2011</td><td class="num">60.0㎡</td><td class="num">1.06억</td><td class="num">1</td><td>평택시</td><td>07.21</td></tr>
+          <tr><td>파주한양수자인리버팰리스</td><td class="num">1,006</td><td class="num">2015</td><td class="num">84.7㎡</td><td class="num">1.82억</td><td class="num">1</td><td>파주시</td><td>07.22</td></tr>
+          <tr><td>평택센트럴자이1단지</td><td class="num">998</td><td class="num">2017</td><td class="num">59.5㎡</td><td class="num">2.63억</td><td class="num">1</td><td>평택시</td><td>07.28</td></tr>
+          <tr><td>평택센트럴자이2단지</td><td class="num">851</td><td class="num">2017</td><td class="num">59.5㎡</td><td class="num">2.29억</td><td class="num">1</td><td>평택시</td><td>07.21</td></tr>
+          <tr><td>안성원곡제일오투그란데</td><td class="num">797</td><td class="num">2018</td><td class="num">60.0㎡</td><td class="num">1.40억</td><td class="num">1</td><td>안성시</td><td>07.27</td></tr>
+          <tr><td>해동마을한양수자인3차</td><td class="num">764</td><td class="num">2010</td><td class="num">84.9㎡</td><td class="num">2.42억</td><td class="num">1</td><td>양주시</td><td>07.28</td></tr>
+          <tr><td>평택 지제역 동문 디 이스트 5단지</td><td class="num">741</td><td class="num">2024</td><td class="num">85.0㎡</td><td class="num">2.84억</td><td class="num">1</td><td>평택시</td><td>07.21</td></tr>
+          <tr><td>평택소사벌호반베르디움</td><td class="num">737</td><td class="num">2018</td><td class="num">84.2㎡</td><td class="num">2.86억</td><td class="num">1</td><td>평택시</td><td>07.21</td></tr>
+          <tr><td>화도효성해링턴플레이스</td><td class="num">635</td><td class="num">2015</td><td class="num">85.0㎡</td><td class="num">2.59억</td><td class="num">1</td><td>남양주시</td><td>07.16</td></tr>
+          <tr><td>화도효성해링턴플레이스</td><td class="num">635</td><td class="num">2015</td><td class="num">85.0㎡</td><td class="num">2.56억</td><td class="num">1</td><td>남양주시</td><td>07.22</td></tr>
+          <tr><td>이안평택안중역</td><td class="num">610</td><td class="num">2024</td><td class="num">75.0㎡</td><td class="num">1.47억</td><td class="num">2</td><td>평택시</td><td>07.21</td></tr>
+          <tr><td>호수마을이편한세상3단지</td><td class="num">559</td><td class="num">2014</td><td class="num">84.6㎡</td><td class="num">2.92억</td><td class="num">1</td><td>김포시</td><td>07.28</td></tr>
+          <tr><td>가좌마을7단지꿈에그린</td><td class="num">545</td><td class="num">2010</td><td class="num">85.0㎡</td><td class="num">2.52억</td><td class="num">1</td><td>고양일산서구</td><td>07.30</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted" style="font-size:12.5px;margin-top:10px">※ 19건 중 12건이 평택에 집중돼 있습니다. 조건(1~3억 · 59~85㎡ · 대단지 신축)에 맞는 가격대가 경기 남부에 몰려 있는 구조적 결과입니다.</p>
+  </section>
+
+  <!-- 4. 상위 5 권리분석 -->
+  <section>
+    <div class="sec-head"><span class="sec-num">4</span><h2>상위 5건 권리분석</h2>
+      <span class="note">매각물건명세서 · 현황조사서 기준</span></div>
+
+    <div class="tbl-wrap" style="margin-bottom:18px">
+      <table>
+        <thead><tr><th>#</th><th>단지</th><th>최선순위 설정</th><th>임차인 / 보증금</th><th class="num">인수금</th><th>판정</th></tr></thead>
+        <tbody>
+          <tr><td>①</td><td><b>안성 롯데캐슬</b></td><td>2025.12.01 강제경매개시</td><td>임차권등기 <b>2.7억</b><br><span class="muted">전입 2022.05.20 · 확정 2022.04.11</span></td><td class="num"><b>잔액 인수</b></td><td><span class="pill no">회피 권장</span></td></tr>
+          <tr><td>②</td><td><b>평택뉴비전엘크루</b><br><span class="muted">사건 2025타경42081</span></td><td>2022.03.15 근저당</td><td>보증금 1.0억 (반전세)<br><span class="muted">전입 2022.04.20 (근저당보다 늦음)</span></td><td class="num"><b>0원</b></td><td><span class="pill ok">대항력 없음 → 소멸</span></td></tr>
+          <tr><td>③</td><td><b>더샵지제역센트럴파크3BL</b></td><td>2021.07.16 근저당</td><td>권순화 3,000만 + 월 84만<br><span class="muted">전입 2021.08.03 (근저당보다 늦음)</span></td><td class="num"><b>0원</b></td><td><span class="pill ok">대항력 없음 → 소멸</span></td></tr>
+          <tr><td>④</td><td><b>평택센트럴자이1단지</b></td><td>2018.03.05 근저당</td><td class="muted">없음 (소유자 세대 거주)</td><td class="num"><b>0원</b></td><td><span class="pill ok">깨끗 · 명도 용이</span></td></tr>
+          <tr><td>⑤</td><td><b>평택청북2차부영</b></td><td>2019.08.05 근저당</td><td class="muted">없음 (폐문 · 전입세대 없음)</td><td class="num"><b>0원</b></td><td><span class="pill ok">깨끗</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="box red">
+      <h4>⚠️ 거래량 1위 안성 롯데캐슬이 유일한 회피 대상입니다</h4>
+      <p>강제경매라 선순위 근저당이 없어 임차인이 사실상 1순위입니다. 명세서 비고 원문에 "을구 1번 임차권등기(임대차보증금 <b>270,000,000원</b>)"으로 명시돼 있고, 예상 낙찰가(2.1억)가 보증금(2.7억)에 미달합니다. 배당 후 <b>약 6천만원 이상이 매수인에게 인수</b>되어 실질 취득가는 2.75억 안팎 — 시세 2.46억을 넘습니다.</p>
+      <p class="muted">참고: 분석 도구는 인수금을 <b>5.4억</b>으로 산출했는데, 이는 동일 임차인이 명세서에 두 줄(임차권등기 명의자 + 권리신고)로 기재된 것을 중복 합산한 오류라 <b>2.7억</b>으로 정정했습니다. 금액을 바로잡아도 회피 결론은 동일합니다.</p>
+    </div>
+
+    <div class="box blue">
+      <h4>ℹ️ 같은 단지라도 사건마다 권리가 다릅니다 — 평택뉴비전엘크루</h4>
+      <p>이 단지는 진행 중인 경매 사건이 여러 건입니다. 다른 호실 사건(2025타경42667)은 임차인 전입(2022.04.28)이 근저당(2022.08.09)보다 앞서 <b>보증금 2.8억 전액 인수</b> 위험이 있었습니다. 그러나 이번에 선정된 <b>사건 42081은 전입(2022.04.20)이 근저당(2022.03.15)보다 늦어 대항력이 없어 인수 0원</b>입니다.</p>
+      <p>단지명만 보고 "이 단지는 안전/위험"으로 일반화하면 안 되며, <b>반드시 해당 사건번호의 매각물건명세서를 개별 확인</b>해야 합니다. 본 보고서는 각 사건의 실제 명세서를 개별 조회해 판정했습니다.</p>
+    </div>
+  </section>
+
+  <!-- 5. 물건별 상세 -->
+  <section>
+    <div class="sec-head"><span class="sec-num">5</span><h2>물건별 입지·수익 분석</h2>
+      <span class="note">감정평가서 원문 · 국토부 실거래 기준</span></div>
+
+    <p class="muted" style="font-size:12.5px;margin:-6px 0 16px">아래는 <b>새 점수 순서</b>(환금성50·준공30·세대10·기타10)로 나열했습니다. 순위가 곧 추천은 아니며, 판정 배지로 투자 적합성을 표시합니다.</p>
+
+    <!-- 1 -->
+    <div class="prop">
+      <div class="prop-head">
+        <span class="rank">1</span>
+        <h3>안성 롯데캐슬</h3>
+        <span class="spec">안성 대덕면 신령리 · 2,320세대 · 2016 · 77.03㎡ · 거래량 126</span>
+        <span class="verd"><span class="pill no">회피 권장</span></span>
+      </div>
+      <div class="prop-body">
+        <div class="kv">
+          <div><div class="k">최저매각가</div><div class="v">1.70억</div></div>
+          <div><div class="k">예상 낙찰가</div><div class="v">2.10억</div></div>
+          <div><div class="k">실거래 시세</div><div class="v">2.46억</div></div>
+          <div><div class="k">인수 보증금</div><div class="v" style="color:var(--red)">2.7억<br><span style="font-size:12px;font-weight:600">중 잔액 인수</span></div></div>
+          <div><div class="k">실질 취득가</div><div class="v" style="color:var(--red)">≈2.75억</div></div>
+        </div>
+        <h5>왜 1위인데 회피인가</h5>
+        <p>12개월 실거래 <b>126건</b>으로 환금성 1위, 2,320세대 최대 단지라 점수는 최고입니다. 그러나 강제경매라 선순위 근저당이 없어 임차인이 사실상 1순위입니다. 명세서 비고에 "을구 1번 임차권등기(보증금 <b>2.7억</b>, 전입 2022.5.20)"이 명시돼, 예상 낙찰가 2.1억이 보증금에 미달 → <b>약 6천만원 이상 인수</b>. 실질 취득가 2.75억 &gt; 시세 2.46억으로 <b>낙찰 즉시 손실</b>입니다.</p>
+        <h5>입지 (참고)</h5>
+        <p>어울초 남측, 제2종일반주거. 환금성·입지 자체는 양호하나 <b>입지가 아니라 권리 때문에 탈락</b>합니다. 매각기일 <b>2026.07.21</b> · 사건 2025타경43104.</p>
+      </div>
+    </div>
+
+    <!-- 2 -->
+    <div class="prop">
+      <div class="prop-head">
+        <span class="rank">2</span>
+        <h3>평택뉴비전엘크루</h3>
+        <span class="spec">평택 합정동 소사3지구 · 1,396세대 · 2021 · 74.83㎡ · 거래량 112</span>
+        <span class="verd"><span class="pill warn">조건부 검토 (마진 얇음)</span></span>
+      </div>
+      <div class="prop-body">
+        <div class="kv">
+          <div><div class="k">최저매각가</div><div class="v">2.30억</div></div>
+          <div><div class="k">예상 낙찰가</div><div class="v">2.68억</div></div>
+          <div><div class="k">실거래 시세</div><div class="v">3.00억<br><span style="font-size:12px;font-weight:600;color:var(--ink-3)">표본 71건</span></div></div>
+          <div><div class="k">인수금</div><div class="v" style="color:var(--green)">0원</div></div>
+          <div><div class="k">예상 순수익</div><div class="v">+2,100만<br><span style="font-size:12px;font-weight:600">7.7%</span></div></div>
+        </div>
+        <h5>권리 — 이번 사건은 안전</h5>
+        <p>선정된 <b>사건 2025타경42081</b>은 임차인 전입(2022.04.20)이 최선순위 근저당(2022.03.15)보다 <b>늦어 대항력이 없어 소멸</b>합니다. 인수 0원. (같은 단지 다른 사건 42667은 전액 인수 위험이 있으니 사건번호 혼동 금지 — 섹션 4 참조.)</p>
+        <h5>환금성·유의</h5>
+        <p>실거래 71건·동일단지 낙찰 3건(78~85%)으로 표본은 두텁습니다. 단, 예상 순수익률 <b>7.7%</b>로 마진이 얇고, 비고에 <b>대지권 미등기</b>(감정가에 대지권 반영, 성립 여부 불명) 기재 → 등기부 확인 필수. 매각기일 <b>2026.07.28</b>.</p>
+      </div>
+    </div>
+
+    <!-- 3 -->
+    <div class="prop">
+      <div class="prop-head">
+        <span class="rank">3</span>
+        <h3>더샵지제역센트럴파크3BL</h3>
+        <span class="spec">평택 동삭동 · 1,280세대 · 2021 · 74.99㎡ · 거래량 80</span>
+        <span class="verd"><span class="pill ok">입찰 검토 1순위 (마진 최상)</span></span>
+      </div>
+      <div class="prop-body">
+        <div class="kv">
+          <div><div class="k">최저매각가</div><div class="v">2.84억</div></div>
+          <div><div class="k">예상 낙찰가</div><div class="v">3.45억</div></div>
+          <div><div class="k">실거래 시세</div><div class="v">4.33억<br><span style="font-size:12px;font-weight:600;color:var(--ink-3)">표본 115건</span></div></div>
+          <div><div class="k">인수금</div><div class="v" style="color:var(--green)">0원</div></div>
+          <div><div class="k">예상 순수익</div><div class="v" style="color:var(--green)">+7,400만<br><span style="font-size:12px;font-weight:600">20.9%</span></div></div>
+        </div>
+        <h5>권리</h5>
+        <p>임차인 권순화(3,000만 + 월 84만 반전세)의 전입(2021.08.03)이 근저당(2021.07.16)보다 <b>늦어 대항력 없음</b>, 배당요구도 완료돼 소멸. <b>인수 0원.</b></p>
+        <h5>입지·환금성</h5>
+        <p>동삭초 북서측, 22층·지역난방, 방3+알파룸. 실거래 <b>115건</b>·동일단지 낙찰 6건(80~89%)으로 5건 중 가격 근거가 가장 두텁고 <b>순수익률도 최고(20.9%)</b>입니다. 감정평가서상 교통은 "차량 진출입·인근 버스" 수준이라 역세권 도보 접근성은 현장 확인 권장. 매각기일 <b>2026.07.28</b> · 사건 2025타경42163.</p>
+      </div>
+    </div>
+
+    <!-- 4 -->
+    <div class="prop">
+      <div class="prop-head">
+        <span class="rank">4</span>
+        <h3>평택센트럴자이1단지</h3>
+        <span class="spec">평택 동삭동 · 998세대 · 2017 · 59.52㎡ · 거래량 67</span>
+        <span class="verd"><span class="pill warn">검토 가능 (마진 얇음)</span></span>
+      </div>
+      <div class="prop-body">
+        <div class="kv">
+          <div><div class="k">최저매각가</div><div class="v">2.63억</div></div>
+          <div><div class="k">예상 낙찰가</div><div class="v">3.12억</div></div>
+          <div><div class="k">실거래 시세</div><div class="v">3.28억<br><span style="font-size:12px;font-weight:600;color:var(--ink-3)">표본 33건</span></div></div>
+          <div><div class="k">인수금</div><div class="v" style="color:var(--green)">0원</div></div>
+          <div><div class="k">예상 순수익</div><div class="v">+630만<br><span style="font-size:12px;font-weight:600">~2%</span></div></div>
+        </div>
+        <h5>권리</h5>
+        <p>명세서·현황조사 모두 <b>임차인 없음</b>(소유자 세대만 등재). 최선순위 2018.03.05 근저당. <b>인수 0원·명도 용이.</b></p>
+        <h5>유의 — 마진이 관건</h5>
+        <p>동일단지·인접단지(자이 1·2·3·5단지) 낙찰 9건 평균 <b>83%</b>로 예상 낙찰가 3.12억이 시세 3.28억에 근접합니다. 권리는 깨끗하나 <b>예상 순수익률이 ~2%로 매우 얇아</b>, 낙찰가를 최저가(2.63억)에 가깝게 낮춰 받아야 수익이 납니다. 매각기일 <b>2026.07.28</b> · 사건 2024타경56529.</p>
+      </div>
+    </div>
+
+    <!-- 5 -->
+    <div class="prop">
+      <div class="prop-head">
+        <span class="rank">5</span>
+        <h3>평택청북2차부영</h3>
+        <span class="spec">평택 청북읍 옥길리 · 1,138세대 · 2011 · 59.96㎡ · 거래량 94</span>
+        <span class="verd"><span class="pill ok">검토 가능 (소형·저가)</span></span>
+      </div>
+      <div class="prop-body">
+        <div class="kv">
+          <div><div class="k">최저매각가</div><div class="v">1.06억</div></div>
+          <div><div class="k">예상 낙찰가</div><div class="v">1.12억</div></div>
+          <div><div class="k">실거래 시세</div><div class="v">1.33억</div></div>
+          <div><div class="k">인수금</div><div class="v" style="color:var(--green)">0원</div></div>
+          <div><div class="k">예상 순수익</div><div class="v" style="color:var(--green)">+1,500만<br><span style="font-size:12px;font-weight:600">12.8%</span></div></div>
+        </div>
+        <h5>권리</h5>
+        <p>명세서·현황조사 모두 <b>임차인 없음</b>(소유자 김정삼, 전입세대 없음). 최선순위 2019.08.05 근저당. <b>인수 0원.</b></p>
+        <h5>성격 — 저가 소형</h5>
+        <p>2011년·전용 60㎡·최저 1.06억으로 5건 중 <b>가장 저가·소형</b>입니다. 실거래 94건·동일단지 낙찰 4건(71~77%)으로 유동성은 있으나 매각가율이 낮은 편(74%). 절대 금액이 작아 순수익도 +1,500만 수준이지만 <b>수익률 12.8%로 자본 효율은 양호</b>합니다. 소액 투자 대상. 매각기일 <b>2026.07.21</b> · 사건 2025타경954.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. 결론 -->
+  <section>
+    <div class="sec-head"><span class="sec-num">6</span><h2>결론 및 다음 단계</h2></div>
+    <div class="card">
+      <p><b>더샵지제역센트럴파크3BL(7/28)</b>이 1순위입니다. 인수금 0원, 순수익률 20.9%로 마진이 가장 두껍고 실거래 115건으로 표본도 탄탄합니다. 소액으로는 <b>평택청북2차부영(7/21)</b>이 인수 0원·수익률 12.8%로 자본 효율이 좋습니다.</p>
+      <p><b>평택뉴비전엘크루</b>와 <b>평택센트럴자이1단지</b>는 인수 0원으로 권리는 안전하나 예상 순수익률이 각각 7.7%·2%로 <b>마진이 얇아</b>, 낙찰가를 낮게 써야만 수익이 납니다. 거래량 1위 <b>안성 롯데캐슬</b>은 임차권등기 2.7억 인수로 <b>유일한 회피 대상</b>입니다.</p>
+      <p class="muted">※ 환금성(실거래 거래량) 50% 반영으로, 이전 기준의 상위였던 <b>이안평택안중역</b>(거래 10건)과 <b>힐스테이트평택2차</b>(48건)는 6·7위로 밀려 상위 5에서 제외됐습니다. 특히 이안은 신축·저가에도 유동성이 낮다는 우려가 거래량으로 확증됐습니다.</p>
+    </div>
+    <div class="box yellow">
+      <h4>입찰 전 반드시 확인할 것</h4>
+      <p><b>1. 매각기일이 임박했습니다.</b> 상위 5건 중 2건(안성 롯데캐슬·청북2차부영)이 7월 21일, 나머지 3건이 7월 28일입니다. 등기부 확인·임장 시간을 감안하세요.</p>
+      <p><b>2. 인수금은 명세서 기준 추정입니다.</b> 정확한 인수금은 <b>등기사항전부증명서</b>로 전체 근저당·가압류·가처분을 확인해야 확정됩니다. 등기부 PDF가 있으면 정밀 권리분석(말소기준권리 판정 → 소멸/인수 분류)을 돌릴 수 있습니다.</p>
+      <p><b>3. 수익률 가정.</b> 취득세는 1주택·비규제(1.1%) 기준이며 <b>양도세·보유비용은 제외</b>돼 있습니다. 다주택·규제지역이면 중과세로 결과가 크게 달라집니다.</p>
+    </div>
+  </section>
+
+  <footer>
+    <p><b>데이터 출처</b> · 법원경매정보(courtauction.go.kr) 매각물건명세서·현황조사서·감정평가서요약·인근매각물건사례 / 국토교통부 K-apt 공동주택 기본정보(세대수·사용승인일) / 국토교통부 아파트 매매 실거래가(시세 중앙값, 2025.07~2026.06)</p>
+    <p><b>산출물</b> · 전체 19건: <code>_workspace/gy_0716_FINAL_verified.csv</code> · 상위 5건 원본: <code>_workspace/case_*.json</code></p>
+    <p style="margin-top:10px">본 보고서의 예상 낙찰가·수익률은 <b>추정치</b>이며 투자 권유가 아닙니다. 실제 입찰 전 등기사항증명서·전입세대열람·현장 확인이 필요합니다. · 기준일 2026-07-16</p>
+  </footer>
+</div>
+
+<button class="theme-btn" id="tb">◐ 테마</button>
+<script>
+  const r=document.documentElement, b=document.getElementById('tb');
+  b.addEventListener('click',()=>{
+    const cur=r.getAttribute('data-theme');
+    const sysDark=window.matchMedia('(prefers-color-scheme:dark)').matches;
+    const next = cur ? (cur==='dark'?'light':'dark') : (sysDark?'light':'dark');
+    r.setAttribute('data-theme',next);
+  });
+</script>

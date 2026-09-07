@@ -1,0 +1,208 @@
+<title>서울 빌라 경매 스크리닝</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --bg:#F7F7F4; --surface:#FFFFFF; --ink:#22303C; --muted:#5D6B77;
+  --line:#DCE0E3; --line-soft:#E9ECEE;
+  --seal:#9E2B25; --seal-soft:#F6E9E7;
+  --amber:#A05E12; --amber-soft:#F5EDDF;
+  --calm:#4A6072; --calm-soft:#E8EDF1;
+  --good:#2E6B4F; --good-soft:#E3EFE8;
+  --row-hover:#F2F3F0;
+}
+:root:not([data-theme="light"]){}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#151A20; --surface:#1D242C; --ink:#E5E9ED; --muted:#93A0AB;
+    --line:#333D47; --line-soft:#28313A;
+    --seal:#E06A5A; --seal-soft:#3A2622;
+    --amber:#D9A05B; --amber-soft:#3A3122;
+    --calm:#8FA6B8; --calm-soft:#232E37;
+    --good:#7FBE9E; --good-soft:#21332B;
+    --row-hover:#232B34;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#151A20; --surface:#1D242C; --ink:#E5E9ED; --muted:#93A0AB;
+  --line:#333D47; --line-soft:#28313A;
+  --seal:#E06A5A; --seal-soft:#3A2622;
+  --amber:#D9A05B; --amber-soft:#3A3122;
+  --calm:#8FA6B8; --calm-soft:#232E37;
+  --good:#7FBE9E; --good-soft:#21332B;
+  --row-hover:#232B34;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:"IBM Plex Sans KR",-apple-system,"Malgun Gothic",sans-serif;
+  font-size:15px; line-height:1.65;
+  -webkit-font-smoothing:antialiased;
+}
+.doc{max-width:960px; margin:0 auto; padding:56px 28px 80px}
+.serif{font-family:"Nanum Myeongjo","IBM Plex Sans KR",serif}
+.num{font-variant-numeric:tabular-nums}
+
+/* ── 표지 헤더 ── */
+header{border-top:3px solid var(--ink); border-bottom:1px solid var(--line); padding:28px 0 30px; margin-bottom:40px}
+.eyebrow{font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); font-weight:600; margin:0 0 14px}
+.eyebrow b{color:var(--seal); font-weight:700}
+h1{font-family:"Nanum Myeongjo",serif; font-weight:800; font-size:clamp(28px,5vw,42px); line-height:1.25; margin:0 0 22px; text-wrap:balance}
+.conds{display:flex; flex-wrap:wrap; gap:8px}
+.cond{border:1px solid var(--line); background:var(--surface); border-radius:3px; padding:5px 12px; font-size:13px; color:var(--muted)}
+.cond b{color:var(--ink); font-weight:600; margin-left:6px}
+
+/* ── KPI ── */
+.kpis{display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:1px; background:var(--line); border:1px solid var(--line); margin-bottom:52px}
+.kpi{background:var(--surface); padding:18px 20px 15px}
+.kpi .k-label{font-size:12px; letter-spacing:.08em; color:var(--muted); font-weight:600; margin-bottom:6px}
+.kpi .k-value{font-family:"Nanum Myeongjo",serif; font-weight:800; font-size:27px; line-height:1.1}
+.kpi .k-value small{font-family:"IBM Plex Sans KR",sans-serif; font-size:13px; font-weight:500; color:var(--muted); margin-left:3px}
+.kpi.seal .k-value{color:var(--seal)}
+
+/* ── 섹션 ── */
+section{margin-bottom:56px}
+h2{font-family:"Nanum Myeongjo",serif; font-weight:800; font-size:23px; margin:0 0 6px; text-wrap:balance}
+.sec-note{color:var(--muted); font-size:13.5px; margin:0 0 22px; max-width:64ch}
+
+/* ── Top10 랭킹 ── */
+.rank-list{display:flex; flex-direction:column; border-top:2px solid var(--ink)}
+.rank{display:grid; grid-template-columns:64px 1fr 190px; gap:0 18px; padding:18px 4px 17px; border-bottom:1px solid var(--line); align-items:start}
+.rank .no{font-family:"Nanum Myeongjo",serif; font-weight:800; font-size:30px; line-height:1; color:var(--muted); padding-top:3px}
+.rank .no.hot{color:var(--seal)}
+.rank .addr{font-weight:700; font-size:16px; line-height:1.45}
+.rank .meta{font-size:13px; color:var(--muted); margin-top:3px}
+.rank .why{font-size:13.5px; margin-top:8px; color:var(--ink); max-width:62ch}
+.rank .why::before{content:"선정 이유"; display:inline-block; font-size:11px; font-weight:700; letter-spacing:.08em; color:var(--muted); border:1px solid var(--line); border-radius:2px; padding:1px 6px; margin-right:8px; vertical-align:1px}
+.rank .price{text-align:right}
+.rank .price .low{font-family:"Nanum Myeongjo",serif; font-weight:800; font-size:21px; white-space:nowrap}
+.rank .price .apprais{font-size:12px; color:var(--muted); margin-top:2px; white-space:nowrap}
+.rank .price .badges{margin-top:8px; display:flex; gap:5px; justify-content:flex-end}
+@media (max-width:640px){
+  .rank{grid-template-columns:44px 1fr}
+  .rank .no{font-size:22px}
+  .rank .price{grid-column:2; text-align:left; margin-top:10px}
+  .rank .price .badges{justify-content:flex-start}
+}
+
+/* ── 배지 ── */
+.badge{display:inline-block; font-size:11.5px; font-weight:700; padding:2px 8px; border-radius:2px; white-space:nowrap; line-height:1.6}
+.b1{background:var(--calm-soft); color:var(--calm)}
+.b2{background:var(--amber-soft); color:var(--amber)}
+.b3{background:var(--seal-soft); color:var(--seal)}
+.b0{background:var(--line-soft); color:var(--muted)}
+.v-ok{background:var(--good-soft); color:var(--good)}
+.v-cond{background:var(--amber-soft); color:var(--amber)}
+.v-no{background:var(--seal-soft); color:var(--seal)}
+
+/* ── 심층분석 ── */
+.deep-list{display:flex; flex-direction:column; gap:12px}
+.deep{border:1px solid var(--line); background:var(--surface); padding:16px 20px 15px; border-left:3px solid var(--muted)}
+.deep.ok{border-left-color:var(--good)}
+.deep.cond{border-left-color:var(--amber)}
+.deep.no{border-left-color:var(--seal)}
+.deep .d-head{display:flex; flex-wrap:wrap; align-items:baseline; gap:8px 12px; margin-bottom:8px}
+.deep .d-rank{font-family:"Nanum Myeongjo",serif; font-weight:800; font-size:17px; color:var(--muted)}
+.deep .d-addr{font-weight:700; font-size:15px}
+.deep .d-body{font-size:13.5px; color:var(--ink); max-width:74ch; margin:0}
+.deep .d-facts{display:flex; flex-wrap:wrap; gap:6px 18px; margin-top:10px; font-size:12.5px; color:var(--muted)}
+.deep .d-facts b{color:var(--ink); font-weight:600}
+
+/* ── 주의 물건 ── */
+.cautions{display:flex; flex-direction:column; gap:10px}
+.caution{border:1px solid var(--line); border-left:3px solid var(--seal); background:var(--surface); padding:14px 18px}
+.caution b{font-weight:700}
+.caution p{margin:4px 0 0; font-size:13.5px; color:var(--muted)}
+
+/* ── 전체 표 ── */
+.table-wrap{overflow-x:auto; border:1px solid var(--line); background:var(--surface)}
+table{border-collapse:collapse; width:100%; min-width:880px; font-size:13px}
+thead th{position:sticky; top:0; background:var(--surface); text-align:left; font-size:11.5px; letter-spacing:.06em; color:var(--muted); font-weight:700; padding:10px 12px; border-bottom:2px solid var(--ink); white-space:nowrap}
+tbody td{padding:9px 12px; border-bottom:1px solid var(--line-soft); vertical-align:top}
+tbody tr:hover{background:var(--row-hover)}
+td.r{text-align:right; white-space:nowrap}
+thead th.r{text-align:right}
+td .case{color:var(--muted); font-size:11.5px; display:block; margin-top:1px}
+.pick{display:inline-block; font-family:"Nanum Myeongjo",serif; font-weight:800; font-size:12px; color:var(--seal); border:1px solid var(--seal); border-radius:2px; padding:0 5px; margin-right:6px; vertical-align:1px}
+.warn-mark{color:var(--seal); font-weight:700; margin-right:4px}
+.basement{color:var(--muted)}
+
+/* ── 푸터 ── */
+footer{border-top:1px solid var(--line); padding-top:20px; font-size:12.5px; color:var(--muted); max-width:72ch}
+footer p{margin:0 0 8px}
+</style>
+
+<div class="doc">
+<header>
+  <p class="eyebrow">법원경매 스크리닝 보고서 <b>·</b> courtauction.go.kr <b>·</b> 수집 2026. 08. 19.</p>
+  <h1>서울 빌라 경매 스크리닝</h1>
+  <div class="conds">
+    <span class="cond">지역<b>서울특별시 전체</b></span>
+    <span class="cond">용도<b>다세대주택(빌라)</b></span>
+    <span class="cond">유찰<b>1 ~ 3회</b></span>
+    <span class="cond">최저매각가<b>1억원 이하</b></span>
+    <span class="cond">매각기일<b>2026.08.19 ~ 09.18</b></span>
+  </div>
+</header>
+
+<div class="kpis">
+  <div class="kpi"><div class="k-label">조건 부합 물건</div><div class="k-value num">58<small>건</small></div></div>
+  <div class="kpi"><div class="k-label">최저가 중앙값</div><div class="k-value num">{{MEDIAN}}<small>만원</small></div></div>
+  <div class="kpi seal"><div class="k-label">유찰 3회 · 51% 물건</div><div class="k-value num">{{CNT3}}<small>건</small></div></div>
+  <div class="kpi"><div class="k-label">물건 최다 지역</div><div class="k-value">화곡동<small>{{HWAGOK}}건</small></div></div>
+</div>
+
+<section>
+  <h2>추천 Top 10</h2>
+  <p class="sec-note">가격 대비 면적, 저감율(할인폭), 입지를 기준으로 선정했습니다. 유찰횟수는 사이트 표기가 부정확하여 저감율로 역산한 값입니다 — 80%=1회, 64%=2회, 51%=3회. 선정 후 9개 사건의 매각물건명세서를 확인한 심층분석 판정을 각 물건에 표시했습니다 — 상세 근거는 아래 「심층분석」 참조.</p>
+  <div class="rank-list">
+{{TOP10}}
+  </div>
+</section>
+
+<section>
+  <h2>Top 10 심층분석 — 매각물건명세서 검증 결과</h2>
+  <p class="sec-note">Top 10에 해당하는 9개 사건의 매각물건명세서·현황조사서·감정평가요약·인근매각사례를 법원경매정보에서 직접 열어 확인했습니다(2026.08.19). 결론: <b>입찰 검토 가능 3건, 조건부 1건, 부적합 6건</b> — 스크리닝 단계에서 싸 보였던 물건 대부분은 지분매각이거나 대항력 임차인 보증금을 떠안는 물건이었습니다.</p>
+  <div class="deep-list">
+{{DEEP}}
+  </div>
+</section>
+
+<section>
+  <h2>주의가 필요한 물건</h2>
+  <p class="sec-note">목록에는 포함되지만, 싸 보이는 가격에 이유가 있을 가능성이 높은 물건들입니다.</p>
+  <div class="cautions">
+    <div class="caution"><b>강남구 논현로8길 32-16 1층102호</b> — 56.43㎡ · 최저 7,054만원
+      <p>강남에서 이 가격이면 지분매각 가능성이 높습니다. 감정가 자체가 8,818만원으로 비정상적으로 낮아 전체 소유권이 아닐 확률이 큽니다. 매각물건명세서에서 지분 여부 확인 필수.</p></div>
+    <div class="caution"><b>관악구 신림동 251-214 1층102호</b> — 60.67㎡ · 최저 3,584만원
+      <p>같은 이유로 지분매각 또는 대지권 미등기 의심. 60㎡가 3천만원대라는 것은 정상 물건에서는 나오기 어려운 가격입니다.</p></div>
+    <div class="caution"><b>강북구 수유동 733 하이시티 5층507호</b> — 12.01㎡ · 최저 8,500만원
+      <p>사이트에는 유찰 3회로 표기되지만 저감율이 100%(최저가=감정가)로, 사실상 신건(재진행)입니다. 할인 매력이 없습니다.</p></div>
+    <div class="caution"><b>지하층 물건 5건</b> — 화곡동 2건 · 개봉동 · 중화동 · 수유동 · 녹번동
+      <p>지하층은 낙찰 후 임대·매도 환금성이 크게 떨어집니다. 표에서 「지하」로 표시했습니다.</p></div>
+    <div class="caution"><b>중복사건 3건</b> — 광진구 다솜빌 2건 · 성북구 정릉동 1건
+      <p>여러 사건이 병합된 물건은 배당·권리관계가 복잡할 수 있습니다. 정릉동 물건은 Top 10 1위지만 반드시 권리분석을 선행하세요.</p></div>
+  </div>
+</section>
+
+<section>
+  <h2>전체 목록 58건</h2>
+  <p class="sec-note">법원 순 정렬. 「추천」 표시는 Top 10 물건, <span class="warn-mark">▲</span>는 주의 물건입니다. 금액 단위: 만원.</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>소재지</th><th class="r">전용면적</th><th class="r">감정가</th><th class="r">최저가</th><th class="r">저감율</th><th>유찰(역산)</th><th class="r">매각기일</th>
+      </tr></thead>
+      <tbody>
+{{ROWS}}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<footer>
+  <p>출처: 대한민국 법원경매정보(courtauction.go.kr) · 2026년 8월 19일 수집 · 매각기일 2026.08.19~09.18 공고분.</p>
+  <p>유찰횟수는 현재 최저매각가격의 저감율(최저가 ÷ 감정가)로 역산한 값이며, 사이트의 유찰횟수 필드와 다를 수 있습니다. 매각기일이 수집일 당일인 물건은 이미 진행되었을 수 있습니다.</p>
+  <p>본 보고서는 스크리닝 참고자료입니다. 입찰 전 매각물건명세서·현황조사서·등기부등본에서 대항력 있는 임차인, 유치권, 지분·대지권 여부를 반드시 확인하세요.</p>
+</footer>
+</div>

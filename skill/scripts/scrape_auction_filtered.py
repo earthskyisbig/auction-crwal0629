@@ -451,6 +451,18 @@ def main():
         writer.writerows(rows)
 
     print(f"✅ {len(rows)}행 → {output}")
+
+    # ── DuckDB 자동 적재 ──
+    try:
+        import sys, datetime
+        sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+        from ingest_to_db import ingest
+        court = (args.court or '').replace('지방법원', '').replace('전체', '전국')
+        _src = f"filtered_{court}_{args.sgg or args.scl}_{datetime.date.today():%Y_%m}"
+        ingest(output, _src)
+    except Exception as e:
+        print(f"⚠️  DB 자동적재 건너뜀: {e}")
+
     print("\n[미리보기]")
     for i, r in enumerate(rows[:10], 1):
         print(f"  [{i:02d}] 사건번호: {r['사건번호']}")

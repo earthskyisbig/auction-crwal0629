@@ -38,3 +38,10 @@ realprice_서울구별/__pycache__/
 .pytest_cache/
 realprice_서울구별/_prev/
 realprice_서울구별/windows_manifest.json
+# DuckDB (빌드 산출물 — build_db.py로 재생성)
+auction.duckdb
+
+# 세션 작업폴더·브라우저 산출물 (커밋 제외)
+_workspace/
+.playwright-mcp/
+bash.exe.stackdump

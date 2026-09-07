@@ -1,0 +1,711 @@
+<title>서울 빌라 경매 수익 시뮬레이터</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root{
+    --seal:#c0392b; --seal-deep:#8f2a1f; --ink:#1b2432; --paper:#f3efe6;
+    --line:#d8d0bf; --muted:#6b7280; --gain:#1f7a4d; --loss:#b23b2e;
+    --card:#ffffff; --bg:#efe9dd; --fg:#1b2432; --sub:#5b6472; --field:#fbf9f4;
+    --shadow:0 1px 2px rgba(27,36,50,.06),0 8px 30px rgba(27,36,50,.08);
+    --mono:"SF Mono",ui-monospace,"JetBrains Mono","Cascadia Code",Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Pretendard","Segoe UI",Roboto,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --seal:#e0644f; --seal-deep:#c0392b; --paper:#161b24; --line:#2b3342; --muted:#8a93a3;
+      --gain:#4ecf8f; --loss:#e9705f; --card:#1a212c; --bg:#10141b; --fg:#e8eaf0; --sub:#9aa3b2;
+      --field:#141a23; --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 34px rgba(0,0,0,.5);
+    }
+  }
+  :root[data-theme="light"]{
+    --seal:#c0392b;--seal-deep:#8f2a1f;--paper:#f3efe6;--line:#d8d0bf;--muted:#6b7280;
+    --gain:#1f7a4d;--loss:#b23b2e;--card:#fff;--bg:#efe9dd;--fg:#1b2432;--sub:#5b6472;--field:#fbf9f4;
+    --shadow:0 1px 2px rgba(27,36,50,.06),0 8px 30px rgba(27,36,50,.08);
+  }
+  :root[data-theme="dark"]{
+    --seal:#e0644f;--seal-deep:#c0392b;--paper:#161b24;--line:#2b3342;--muted:#8a93a3;
+    --gain:#4ecf8f;--loss:#e9705f;--card:#1a212c;--bg:#10141b;--fg:#e8eaf0;--sub:#9aa3b2;--field:#141a23;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 34px rgba(0,0,0,.5);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);
+    line-height:1.5;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+  .wrap{max-width:1120px;margin:0 auto;padding:28px 20px 80px}
+  header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px}
+  .brand{display:flex;gap:14px;align-items:center}
+  .seal{width:46px;height:46px;flex:none;border-radius:9px;border:2px solid var(--seal);
+    color:var(--seal);display:grid;place-items:center;font-weight:800;font-size:13px;
+    transform:rotate(-6deg);letter-spacing:1px;position:relative}
+  .seal::after{content:"";position:absolute;inset:4px;border:1px solid var(--seal);border-radius:5px;opacity:.5}
+  h1{font-size:20px;margin:0;letter-spacing:-.3px;font-weight:750;text-wrap:balance}
+  .sub{color:var(--sub);font-size:12.5px;margin-top:2px}
+  .themebtn{border:1px solid var(--line);background:var(--card);color:var(--sub);
+    border-radius:8px;padding:7px 11px;font-size:12px;cursor:pointer;font-family:inherit}
+  .grid{display:grid;grid-template-columns:1fr 400px;gap:22px;align-items:start}
+  @media (max-width:880px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
+  .pad{padding:18px 18px}
+  .eyebrow{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);
+    font-weight:700;margin:0 0 12px}
+  .row{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:11px 0}
+  label.f{font-size:13px;color:var(--sub);flex:none}
+  .inp{position:relative;flex:1;max-width:220px}
+  input[type=number]{width:100%;background:var(--field);border:1px solid var(--line);color:var(--fg);
+    border-radius:8px;padding:8px 34px 8px 11px;font-size:14px;font-family:var(--mono);text-align:right}
+  input:focus-visible,select:focus-visible{outline:2px solid var(--seal);outline-offset:1px}
+  .unit{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--muted)}
+  input[type=range]{width:100%;accent-color:var(--seal);margin:6px 0 2px}
+  .segs{display:flex;gap:6px;flex-wrap:wrap}
+  .seg{flex:1;min-width:78px;text-align:center;padding:8px 6px;border:1px solid var(--line);
+    border-radius:8px;background:var(--field);color:var(--sub);font-size:12.5px;cursor:pointer;user-select:none}
+  .seg.on{border-color:var(--seal);color:var(--seal);background:color-mix(in srgb,var(--seal) 8%,transparent);font-weight:650}
+  hr{border:0;border-top:1px dashed var(--line);margin:16px 0}
+  .costhead{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin:2px 0 6px}
+  .cost{display:grid;grid-template-columns:1fr 130px;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)}
+  .cost:last-child{border-bottom:0}
+  .cost .nm{font-size:13px}
+  .cost .nm b{font-weight:600}
+  .cost .nm span{display:block;font-size:11px;color:var(--muted)}
+  .cost input{padding:6px 30px 6px 8px;font-size:13px}
+  /* 물건 선택 탭 */
+  .props{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:18px}
+  @media(max-width:980px){.props{grid-template-columns:repeat(3,1fr)}}
+  @media(max-width:640px){.props{grid-template-columns:repeat(2,1fr)}}
+  .prop{border:1px solid var(--line);border-radius:11px;background:var(--card);box-shadow:var(--shadow);
+    padding:10px 11px;cursor:pointer;user-select:none;position:relative}
+  .prop .pr{font-family:var(--mono);font-size:10px;color:var(--muted)}
+  .prop .pn{font-size:12px;font-weight:700;letter-spacing:-.2px;line-height:1.35;margin-top:1px}
+  .prop .pm{font-size:10px;color:var(--muted);margin-top:3px;font-family:var(--mono)}
+  .prop .pv{margin-top:6px;display:inline-block;font-size:9.5px;font-weight:700;border-radius:5px;padding:1px 6px;border:1px solid}
+  .prop .pv.ok{color:var(--gain);border-color:var(--gain);background:color-mix(in srgb,var(--gain) 8%,transparent)}
+  .prop .pv.no{color:var(--seal);border-color:var(--seal);background:color-mix(in srgb,var(--seal) 8%,transparent)}
+  .prop .pv.cond{color:#a05e12;border-color:#a05e12;background:color-mix(in srgb,#a05e12 8%,transparent)}
+  .prop.on{border-color:var(--seal);outline:2px solid var(--seal);outline-offset:-1px}
+  .banner{border:1px solid var(--seal);background:color-mix(in srgb,var(--seal) 8%,transparent);
+    color:var(--fg);border-radius:10px;padding:10px 13px;font-size:12.5px;margin-bottom:14px;line-height:1.55}
+  .banner b{color:var(--seal)}
+  .banner.okb{border-color:var(--gain);background:color-mix(in srgb,var(--gain) 8%,transparent)}
+  .banner.okb b{color:var(--gain)}
+  .banner.condb{border-color:#a05e12;background:color-mix(in srgb,#a05e12 8%,transparent)}
+  .banner.condb b{color:#a05e12}
+  /* 인근 낙찰사례 참조 카드 */
+  .refhead{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:12px}
+  .reftitle{font-size:15px;font-weight:750;letter-spacing:-.2px}
+  .reftitle small{display:block;font-size:11.5px;color:var(--muted);font-weight:500;margin-top:2px}
+  .snap{font-size:10px;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:3px 7px;white-space:nowrap}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+  .chip{font-size:11.5px;background:var(--field);border:1px solid var(--line);border-radius:20px;padding:4px 10px;color:var(--sub)}
+  .refstats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);
+    border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:14px}
+  .rs{background:var(--card);padding:10px 11px}
+  .rs .k{font-size:10.5px;color:var(--muted)}
+  .rs .v{font-size:16px;font-weight:750;font-family:var(--mono);margin-top:2px;letter-spacing:-.5px}
+  @media(max-width:520px){.refstats{grid-template-columns:repeat(2,1fr)}}
+  .miniwrap{margin-bottom:6px}
+  .minihead{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:6px}
+  .bars{display:flex;align-items:flex-end;gap:10px;height:72px;padding-top:4px}
+  .bcol{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;height:100%;justify-content:flex-end}
+  .bcol .bk{width:100%;background:color-mix(in srgb,var(--seal) 78%,transparent);border-radius:3px 3px 0 0;min-height:2px}
+  .bcol.cur .bk{background:var(--gain)}
+  .bcol .bm{font-size:9px;color:var(--muted);white-space:nowrap}
+  .bcol .bc{font-size:9.5px;color:var(--sub);font-family:var(--mono)}
+  .rtable{width:100%;border-collapse:collapse;font-size:12px;margin-top:12px}
+  .rtable th{text-align:left;color:var(--muted);font-weight:600;font-size:10.5px;
+    padding:4px 6px;border-bottom:1px solid var(--line)}
+  .rtable td{padding:5px 6px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+  .rtable td:last-child,.rtable th:last-child{text-align:right;font-family:var(--mono)}
+  .fillbtn{margin-top:12px;width:100%;border:1px solid var(--seal);background:transparent;color:var(--seal);
+    border-radius:9px;padding:9px;font-size:12.5px;font-weight:650;cursor:pointer;font-family:inherit}
+  .fillbtn:hover{background:color-mix(in srgb,var(--seal) 8%,transparent)}
+  .tax{display:flex;flex-direction:column}
+  .tr{display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+    padding:9px 0;border-bottom:1px solid var(--line)}
+  .tr:last-child{border-bottom:0}
+  .tr .tl{font-size:13px;color:var(--sub)}
+  .tr .tl em{font-style:normal;display:block;font-size:11px;color:var(--muted)}
+  .tr .tv{font-family:var(--mono);font-size:14px;text-align:right;white-space:nowrap}
+  .tr.sum{margin-top:4px;padding-top:12px;border-top:2px solid var(--seal);border-bottom:0}
+  .tr.sum .tl{font-weight:700;color:var(--fg);font-size:14px}
+  .tr.sum .tv{font-weight:800;font-size:17px;color:var(--seal)}
+  /* result panel */
+  .res{position:sticky;top:16px}
+  .verdict{padding:20px 18px;border-radius:14px 14px 0 0;color:#fff;
+    background:linear-gradient(135deg,var(--seal),var(--seal-deep))}
+  .verdict.neg{background:linear-gradient(135deg,#556,#3a4150)}
+  .verdict .lab{font-size:11px;letter-spacing:.12em;text-transform:uppercase;opacity:.85;font-weight:700}
+  .big{font-size:38px;font-weight:800;font-family:var(--mono);letter-spacing:-1px;line-height:1.05;margin:6px 0 2px}
+  .vsub{font-size:12.5px;opacity:.92}
+  .kpis{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line)}
+  .kpi{background:var(--card);padding:13px 14px}
+  .kpi .k{font-size:11px;color:var(--muted)}
+  .kpi .v{font-size:19px;font-weight:750;font-family:var(--mono);margin-top:2px}
+  .pos{color:var(--gain)}.negc{color:var(--loss)}
+  .waterfall{padding:16px 18px 6px}
+  .wf{display:flex;align-items:center;gap:8px;margin:7px 0;font-size:12.5px}
+  .wf .wl{flex:none;width:96px;color:var(--sub)}
+  .wf .bar{flex:1;height:16px;background:var(--field);border-radius:4px;overflow:hidden;position:relative}
+  .wf .bar i{display:block;height:100%;border-radius:4px}
+  .wf .wv{flex:none;width:96px;text-align:right;font-family:var(--mono);font-size:12px}
+  .note{font-size:11px;color:var(--muted);padding:2px 18px 16px;line-height:1.5}
+  .warn{display:inline-block;background:color-mix(in srgb,var(--seal) 12%,transparent);
+    color:var(--seal);border:1px solid var(--seal);border-radius:6px;padding:1px 6px;font-size:10.5px;font-weight:700}
+  footer{margin-top:26px;color:var(--muted);font-size:11.5px;text-align:center;line-height:1.6}
+  details{margin-top:10px}summary{cursor:pointer;font-size:12px;color:var(--sub)}
+  .alltable{margin-top:22px}
+  .alltable .rtable{min-width:640px}
+  .alltable .twrap{overflow-x:auto}
+  .pickchip{display:inline-block;font-size:9.5px;font-weight:700;color:var(--seal);border:1px solid var(--seal);
+    border-radius:4px;padding:0 4px;margin-right:5px;font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="seal">落札</div>
+      <div>
+        <h1>서울 빌라 경매 수익 시뮬레이터</h1>
+        <div class="sub">서울 다세대 · 유찰 1~3회 · 최저가 1억 이하 — 58건 중 <b>Top 10 심층분석</b>(매각물건명세서 검증) + 세후 수익 시뮬레이션</div>
+      </div>
+    </div>
+    <button class="themebtn" id="tt">◐ 테마</button>
+  </header>
+
+  <!-- 물건 선택 -->
+  <div class="props" id="props"></div>
+
+  <div class="grid">
+    <!-- INPUT -->
+    <div>
+      <div id="propBanner"></div>
+
+      <div class="card pad" style="margin-bottom:16px">
+        <div class="refhead">
+          <div class="reftitle" id="refTitle">—<small id="refSub"></small></div>
+          <span class="snap">법원경매정보 · 2026-08-19 열람</span>
+        </div>
+        <div class="chips" id="refChips"></div>
+        <div class="refstats">
+          <div class="rs"><div class="k">인근 매각완료</div><div class="v" id="rsCnt">—</div></div>
+          <div class="rs"><div class="k">읍면동 평균 매각가율</div><div class="v" id="rsAvg">—</div></div>
+          <div class="rs"><div class="k">매각가율 범위</div><div class="v" id="rsRange" style="font-size:12px">—</div></div>
+          <div class="rs"><div class="k">현재 최저가 / 감정가</div><div class="v" id="rsNow">—</div></div>
+        </div>
+        <div class="miniwrap">
+          <div class="minihead"><span>기일 이력 (막대=각 회차 최저가 · 초록=이번 기일)</span><span id="refBarNote"></span></div>
+          <div class="bars" id="refBars"></div>
+        </div>
+        <table class="rtable"><thead><tr><th>매각기일</th><th>결과</th><th>최저가</th></tr></thead>
+          <tbody id="refRows"></tbody></table>
+        <button class="fillbtn" id="fillSell">↧ 인근 평균 매각가율 적용가를 예상 매도가로 채우기</button>
+        <div class="note" style="padding:8px 0 0" id="refNote"></div>
+      </div>
+
+      <div class="card pad">
+        <p class="eyebrow">① 물건 · 시나리오</p>
+        <div class="row"><label class="f">감정가</label>
+          <div class="inp"><input type="number" id="appraisal" value="16600" step="100"><span class="unit">만원</span></div></div>
+        <div class="row"><label class="f">낙찰가</label>
+          <div class="inp"><input type="number" id="bid" value="8499" step="100"><span class="unit">만원</span></div></div>
+        <div style="margin:2px 0 12px"><input type="range" id="bidRate" min="30" max="100" step="0.5" value="51.2">
+          <div class="costhead"><span>낙찰가율</span><span id="bidRateTxt">51.2% (감정가 대비)</span></div></div>
+        <div class="row"><label class="f">예상 매도가</label>
+          <div class="inp"><input type="number" id="sell" value="11703" step="100"><span class="unit">만원</span></div></div>
+        <div class="row"><label class="f">보유기간</label>
+          <div class="inp"><input type="number" id="months" value="6" step="1"><span class="unit">개월</span></div></div>
+        <div class="row"><label class="f">전용면적</label>
+          <div class="inp"><input type="number" id="area" value="40.2" step="1"><span class="unit">㎡</span></div></div>
+      </div>
+
+      <div class="card pad" style="margin-top:16px">
+        <p class="eyebrow">② 취득 구조 · 자금</p>
+        <div class="segs" id="ownerSeg" style="margin-bottom:14px">
+          <div class="seg on" data-v="person">개인(단기)</div>
+          <div class="seg" data-v="dealer">매매사업자</div>
+          <div class="seg" data-v="corp">법인</div>
+        </div>
+        <div class="row"><label class="f">경락잔금대출</label>
+          <div class="inp"><input type="number" id="ltv" value="60" step="5"><span class="unit">%</span></div></div>
+        <div class="row"><label class="f">대출 금리(연)</label>
+          <div class="inp"><input type="number" id="rate" value="5.5" step="0.1"><span class="unit">%</span></div></div>
+      </div>
+
+      <div class="card pad" style="margin-top:16px">
+        <p class="eyebrow">③ 8대 필수비용 <span class="warn">해당 없어도 0원 명시</span></p>
+        <div class="costhead"><span>기본값은 자동 추정 · 직접 수정 가능</span><span>만원</span></div>
+        <div id="costs"></div>
+        <details open><summary>+ 추가 항목 (인수금액 · 건물분 부가세)</summary>
+          <div class="cost" style="margin-top:8px"><div class="nm"><b>인수금액</b><span id="assumeHint">선순위 임차보증금·미말소 권리 등</span></div>
+            <div class="inp"><input type="number" id="c_assume" value="0" step="100"><span class="unit">만원</span></div></div>
+          <div class="cost"><div class="nm"><b>건물분 부가세</b><span>85㎡ 초과 + 매매사업자/법인만</span></div>
+            <div class="inp"><input type="number" id="c_vat" value="0" step="50"><span class="unit">만원</span></div></div>
+        </details>
+      </div>
+
+      <div class="card pad" style="margin-top:16px">
+        <p class="eyebrow">⑧ 양도세 산출내역 <span class="warn">보유기간·구조 연동</span></p>
+        <div class="tax">
+          <div class="tr"><span class="tl">양도차익 <em>매도가 − 낙찰가 − 필요경비</em></span><span class="tv" id="txGain">—</span></div>
+          <div class="tr"><span class="tl">− 기본공제 <em id="txDedNote">양도소득 기본공제(연 250만)</em></span><span class="tv" id="txDed">—</span></div>
+          <div class="tr"><span class="tl">= 과세표준</span><span class="tv" id="txBase">—</span></div>
+          <div class="tr"><span class="tl">적용 세율 <em id="txRateNote"></em></span><span class="tv" id="txRate">—</span></div>
+          <div class="tr"><span class="tl">산출세액 <em id="txNatNote">과표 × 세율</em></span><span class="tv" id="txNat">—</span></div>
+          <div class="tr"><span class="tl">지방소득세 <em>산출세액의 10%</em></span><span class="tv" id="txLocal">—</span></div>
+          <div class="tr sum"><span class="tl">양도세 합계</span><span class="tv" id="txTotal">—</span></div>
+        </div>
+        <div class="note" style="padding:10px 0 0" id="txExplain"></div>
+      </div>
+
+      <!-- 전체 58건 -->
+      <div class="card pad alltable">
+        <p class="eyebrow">전체 스크리닝 목록 58건 <span class="warn">유찰=저감율 역산</span></p>
+        <details><summary>펼쳐 보기 — 서울 다세대 · 유찰 1~3회 · 최저가 1억 이하 (매각기일 2026.08.19~09.18)</summary>
+          <div class="twrap">
+          <table class="rtable"><thead><tr><th>소재지 · 사건</th><th>면적</th><th>유찰(저감)</th><th>최저가</th></tr></thead>
+          <tbody>
+          <tr><td>강남구 논현로8길 32-16 1층102호<span style="display:block;font-size:10px;color:var(--muted)">서울중앙지방법원 2022타경101244 · 매각 2026.08.26</span></td>
+            <td>56.43㎡</td><td>1회 (80%)</td><td>7,055만</td></tr>
+          <tr><td>관악구 신림동 529-15 11층1102호<span style="display:block;font-size:10px;color:var(--muted)">서울중앙지방법원 2025타경103184 · 매각 2026.09.03</span></td>
+            <td>11.83㎡</td><td>2회 (64%)</td><td>9,408만</td></tr>
+          <tr><td>관악구 신림동 251-214 1층102호<span style="display:block;font-size:10px;color:var(--muted)">서울중앙지방법원 2025타경103419 · 매각 2026.08.26</span></td>
+            <td>60.67㎡</td><td>1회 (80%)</td><td>3,584만</td></tr>
+          <tr><td>관악구 남현동 1064-23 씨에스타운 비동 4층404호<span style="display:block;font-size:10px;color:var(--muted)">서울중앙지방법원 2025타경103832 · 매각 2026.08.19</span></td>
+            <td>13.56㎡</td><td>2회 (64%)</td><td>8,896만</td></tr>
+          <tr><td>광진구 구의로16길 79 4층 403호 (구의동,다솜빌)<span style="display:block;font-size:10px;color:var(--muted)">서울동부지방법원 2024타경63998 2025타경51829 (중복) · 매각 2026.09.07</span></td>
+            <td>20.79㎡</td><td>3회 (51%)</td><td>8,192만</td></tr>
+          <tr><td>광진구 구의로16길 79 2층 203호 (구의동,다솜빌)<span style="display:block;font-size:10px;color:var(--muted)">서울동부지방법원 2024타경63998 2025타경51829 (중복) · 매각 2026.09.07</span></td>
+            <td>20.79㎡</td><td>3회 (51%)</td><td>8,192만</td></tr>
+          <tr><td><span class="pickchip">5위</span>송파구 삼전동 64-7 3층301호<span style="display:block;font-size:10px;color:var(--muted)">서울동부지방법원 2025타경51215 · 매각 2026.08.31</span></td>
+            <td>22.95㎡</td><td>1회 (80%)</td><td>7,520만</td></tr>
+          <tr><td>송파구 삼전동 64-7 3층303호<span style="display:block;font-size:10px;color:var(--muted)">서울동부지방법원 2025타경51215 · 매각 2026.08.31</span></td>
+            <td>26.98㎡</td><td>1회 (80%)</td><td>8,160만</td></tr>
+          <tr><td><span class="pickchip">10위</span>광진구 구의동 201-11 다솜빌 2층204호<span style="display:block;font-size:10px;color:var(--muted)">서울동부지방법원 2025타경51302 · 매각 2026.08.31</span></td>
+            <td>19.41㎡</td><td>3회 (51%)</td><td>8,499만</td></tr>
+          <tr><td>광진구 화양동 110-37 화양타워 2층224호<span style="display:block;font-size:10px;color:var(--muted)">서울동부지방법원 2025타경51541 · 매각 2026.08.24</span></td>
+            <td>15.95㎡</td><td>1회 (80%)</td><td>7,200만</td></tr>
+          <tr><td>강서구 화곡동 371-86 연희파크 제6층 제602호<span style="display:block;font-size:10px;color:var(--muted)">서울남부지방법원 2025타경808 · 매각 2026.08.26</span></td>
+            <td>28.89㎡</td><td>2회 (64%)</td><td>9,120만</td></tr>
+          <tr><td>구로구 구로동 98-10 비즈트위트 그린 제12층 제1203호<span style="display:block;font-size:10px;color:var(--muted)">서울남부지방법원 2025타경10829 · 매각 2026.08.20</span></td>
+            <td>15.11㎡</td><td>3회 (51%)</td><td>5,683만</td></tr>
+          <tr><td>금천구 시흥동 789-36 제3층 제302호<span style="display:block;font-size:10px;color:var(--muted)">서울남부지방법원 2025타경10909 · 매각 2026.08.27</span></td>
+            <td>29.71㎡</td><td>3회 (51%)</td><td>9,882만</td></tr>
+          <tr><td>강서구 화곡동 864-1 제1층 제3호<span style="display:block;font-size:10px;color:var(--muted)">서울남부지방법원 2025타경10979 · 매각 2026.09.01</span></td>
+            <td>39.24㎡</td><td>1회 (80%)</td><td>8,960만</td></tr>
+          <tr><td><span class="pickchip">6위</span>강서구 화곡동 410-167 은하빌라 제2층 제201호<span style="display:block;font-size:10px;color:var(--muted)">서울남부지방법원 2025타경11185 · 매각 2026.08.25</span></td>
+            <td>40.22㎡</td><td>3회 (51%)</td><td>8,499만</td></tr>
+          <tr><td>강서구 화곡동 161-12 제지하층 제비02호<span style="display:block;font-size:10px;color:var(--muted)">서울남부지방법원 2025타경11443 · 매각 2026.08.19</span></td>
+            <td>39.93㎡</td><td>2회 (64%)</td><td>6,991만</td></tr>
+          <tr><td>강서구 화곡동 56-137 미산센트빌 제4층 제401호<span style="display:block;font-size:10px;color:var(--muted)">서울남부지방법원 2025타경11627 · 매각 2026.08.25</span></td>
+            <td>26.94㎡</td><td>3회 (51%)</td><td>7,215만</td></tr>
+          <tr><td>구로구 고척동 145-83 코스모스 제4층 제401호<span style="display:block;font-size:10px;color:var(--muted)">서울남부지방법원 2025타경11969 · 매각 2026.08.28</span></td>
+            <td>16.24㎡</td><td>3회 (51%)</td><td>6,733만</td></tr>
+          <tr><td>금천구 시흥동 3-100 한솔시티빌 제5층 제504호<span style="display:block;font-size:10px;color:var(--muted)">서울남부지방법원 2025타경12177 · 매각 2026.08.19</span></td>
+            <td>21.8㎡</td><td>3회 (51%)</td><td>9,626만</td></tr>
+          <tr><td>영등포구 영등포동2가 28-152 라움빌 제4층 제403호<span style="display:block;font-size:10px;color:var(--muted)">서울남부지방법원 2025타경12393 · 매각 2026.08.26</span></td>
+            <td>14.26㎡</td><td>3회 (51%)</td><td>7,629만</td></tr>
+          <tr><td>영등포구 영등포동1가 144 헤렌어반 제6층 제601호<span style="display:block;font-size:10px;color:var(--muted)">서울남부지방법원 2025타경12501 · 매각 2026.08.26</span></td>
+            <td>13.216㎡</td><td>3회 (51%)</td><td>5,786만</td></tr>
+          <tr><td>영등포구 영등포동2가 28-117 이지리움에스 제6층 제607호<span style="display:block;font-size:10px;color:var(--muted)">서울남부지방법원 2025타경12544 · 매각 2026.08.20</span></td>
+            <td>12.4㎡</td><td>2회 (64%)</td><td>9,344만</td></tr>
+          <tr><td>영등포구 영등포동1가 144 헤렌어반 제4층 제405호<span style="display:block;font-size:10px;color:var(--muted)">서울남부지방법원 2025타경12945 · 매각 2026.08.28</span></td>
+            <td>13.331㎡</td><td>3회 (51%)</td><td>5,837만</td></tr>
+          <tr><td>강서구 화곡동 164-25 제2층 제202호<span style="display:block;font-size:10px;color:var(--muted)">서울남부지방법원 2025타경12992 · 매각 2026.08.19</span></td>
+            <td>38.9㎡</td><td>2회 (64%)</td><td>9,088만</td></tr>
+          <tr><td>강서구 화곡동 46-206 제1층 제101호<span style="display:block;font-size:10px;color:var(--muted)">서울남부지방법원 2025타경13040 · 매각 2026.08.27</span></td>
+            <td>23.32㎡</td><td>1회 (80%)</td><td>8,483만</td></tr>
+          <tr><td>구로구 오류동 81-40 남광파크빌 제7층 제702호<span style="display:block;font-size:10px;color:var(--muted)">서울남부지방법원 2025타경13317 · 매각 2026.08.26</span></td>
+            <td>29.94㎡</td><td>2회 (64%)</td><td>8,576만</td></tr>
+          <tr><td>강서구 화곡동 409-153 케이디빅케이디빌 제5층 제501호<span style="display:block;font-size:10px;color:var(--muted)">서울남부지방법원 2025타경13329 · 매각 2026.09.01</span></td>
+            <td>29.11㎡</td><td>3회 (51%)</td><td>7,552만</td></tr>
+          <tr><td>강서구 화곡동 475-10 제지하층 제1호<span style="display:block;font-size:10px;color:var(--muted)">서울남부지방법원 2025타경13362 · 매각 2026.08.20</span></td>
+            <td>42.45㎡</td><td>2회 (64%)</td><td>5,504만</td></tr>
+          <tr><td>영등포구 당산동 121-108 훼미리하우스138 제5층 제504호<span style="display:block;font-size:10px;color:var(--muted)">서울남부지방법원 2025타경13428 · 매각 2026.08.28</span></td>
+            <td>14.28㎡</td><td>2회 (64%)</td><td>8,128만</td></tr>
+          <tr><td>금천구 가산동 141-2 가산양우내안애애플 제10층 제1007호<span style="display:block;font-size:10px;color:var(--muted)">서울남부지방법원 2025타경13438 · 매각 2026.08.26</span></td>
+            <td>12.04㎡</td><td>2회 (64%)</td><td>6,976만</td></tr>
+          <tr><td>구로구 개봉동 46-9 제지층 제02호<span style="display:block;font-size:10px;color:var(--muted)">서울남부지방법원 2025타경13771 · 매각 2026.09.02</span></td>
+            <td>41.91㎡</td><td>1회 (80%)</td><td>9,440만</td></tr>
+          <tr><td><span class="pickchip">7위</span>강서구 화곡동 56-188 제1층 제102호<span style="display:block;font-size:10px;color:var(--muted)">서울남부지방법원 2025타경14067 · 매각 2026.09.01</span></td>
+            <td>45.4㎡</td><td>2회 (64%)</td><td>8,768만</td></tr>
+          <tr><td>구로구 오류동 34-13 현대썬앤빌구로 제9층 제915호<span style="display:block;font-size:10px;color:var(--muted)">서울남부지방법원 2026타경12 · 매각 2026.08.26</span></td>
+            <td>14.064㎡</td><td>1회 (80%)</td><td>6,080만</td></tr>
+          <tr><td>구로구 오류동 34-13 현대썬앤빌구로 제14층 제1409호<span style="display:block;font-size:10px;color:var(--muted)">서울남부지방법원 2026타경13 · 매각 2026.09.01</span></td>
+            <td>14.064㎡</td><td>2회 (64%)</td><td>4,928만</td></tr>
+          <tr><td>영등포구 영등포동3가 19-2 포레스트힐시티 제3층 제313호<span style="display:block;font-size:10px;color:var(--muted)">서울남부지방법원 2026타경3131 · 매각 2026.09.01</span></td>
+            <td>13.53㎡</td><td>2회 (64%)</td><td>6,848만</td></tr>
+          <tr><td>금천구 가산동 140-36 비즈트위트 바이올렛 5차 제8층 제834호<span style="display:block;font-size:10px;color:var(--muted)">서울남부지방법원 2026타경3200 · 매각 2026.09.01</span></td>
+            <td>12.19㎡</td><td>2회 (64%)</td><td>7,744만</td></tr>
+          <tr><td>구로구 구로동 107-4 비즈트위트블루 제6층 제614호<span style="display:block;font-size:10px;color:var(--muted)">서울남부지방법원 2026타경3765 · 매각 2026.08.26</span></td>
+            <td>16.04㎡</td><td>1회 (80%)</td><td>9,200만</td></tr>
+          <tr><td>영등포구 영등포동1가 144 헤렌어반 제7층 제714호<span style="display:block;font-size:10px;color:var(--muted)">서울남부지방법원 2026타경3831 · 매각 2026.08.20</span></td>
+            <td>13.331㎡</td><td>1회 (80%)</td><td>9,760만</td></tr>
+          <tr><td>구로구 구로동 44-8 비즈트위트오렌지 제6층 제607호<span style="display:block;font-size:10px;color:var(--muted)">서울남부지방법원 2026타경4196 · 매각 2026.09.01</span></td>
+            <td>15.54㎡</td><td>1회 (80%)</td><td>9,520만</td></tr>
+          <tr><td><span class="pickchip">9위</span>도봉구 도봉로110아길 57-14 4층401호<span style="display:block;font-size:10px;color:var(--muted)">서울북부지방법원 2023타경4462 · 매각 2026.08.19</span></td>
+            <td>93.57㎡</td><td>1회 (80%)</td><td>8,800만</td></tr>
+          <tr><td><span class="pickchip">4위</span>강북구 인수봉로29길 11 1층2호<span style="display:block;font-size:10px;color:var(--muted)">서울북부지방법원 2024타경6441 · 매각 2026.08.19</span></td>
+            <td>30.18㎡</td><td>3회 (51%)</td><td>5,171만</td></tr>
+          <tr><td>중랑구 망우로72가길 22 지하층가호<span style="display:block;font-size:10px;color:var(--muted)">서울북부지방법원 2024타경119910 · 매각 2026.08.19</span></td>
+            <td>42.24㎡</td><td>1회 (80%)</td><td>9,840만</td></tr>
+          <tr><td><span class="pickchip">2위</span>동대문구 회기동 103-150 제3층 제303호<span style="display:block;font-size:10px;color:var(--muted)">서울북부지방법원 2025타경11838 · 매각 2026.08.19</span></td>
+            <td>35.41㎡</td><td>3회 (51%)</td><td>4,649만</td></tr>
+          <tr><td><span class="pickchip">3위</span>동대문구 회기동 103-150 제3층 제304호<span style="display:block;font-size:10px;color:var(--muted)">서울북부지방법원 2025타경11838 · 매각 2026.08.19</span></td>
+            <td>33.6㎡</td><td>3회 (51%)</td><td>4,403만</td></tr>
+          <tr><td>도봉구 도봉동 569-8 라온파크빌 제비동 제2층 제201호<span style="display:block;font-size:10px;color:var(--muted)">서울북부지방법원 2025타경12173 · 매각 2026.08.19</span></td>
+            <td>25.58㎡</td><td>2회 (64%)</td><td>9,280만</td></tr>
+          <tr><td><span class="pickchip">1위</span>성북구 정릉동 318 나동 2층203호<span style="display:block;font-size:10px;color:var(--muted)">서울북부지방법원 2025타경12583 2025타경13172 2025타경11794 (중복) · 매각 2026.08.19</span></td>
+            <td>60.18㎡</td><td>2회 (64%)</td><td>8,384만</td></tr>
+          <tr><td>도봉구 쌍문동 480-8 비젼팰리스 4층403호<span style="display:block;font-size:10px;color:var(--muted)">서울북부지방법원 2025타경12605 · 매각 2026.08.19</span></td>
+            <td>19.87㎡</td><td>2회 (64%)</td><td>8,384만</td></tr>
+          <tr><td>중랑구 중화동 291-68 지하층1호<span style="display:block;font-size:10px;color:var(--muted)">서울북부지방법원 2025타경12740 · 매각 2026.08.19</span></td>
+            <td>41.13㎡</td><td>1회 (80%)</td><td>7,864만</td></tr>
+          <tr><td>도봉구 쌍문동 75-51 우연리치빌 5층 501호<span style="display:block;font-size:10px;color:var(--muted)">서울북부지방법원 2025타경12749 · 매각 2026.08.19</span></td>
+            <td>29.98㎡</td><td>3회 (51%)</td><td>9,370만</td></tr>
+          <tr><td>강북구 수유동 468-34 제지하층 제비01호<span style="display:block;font-size:10px;color:var(--muted)">서울북부지방법원 2025타경12899 · 매각 2026.09.01</span></td>
+            <td>51.2㎡</td><td>1회 (80%)</td><td>8,640만</td></tr>
+          <tr><td>강북구 수유동 733 하이시티 제5층 제507호<span style="display:block;font-size:10px;color:var(--muted)">서울북부지방법원 2025타경13514 · 매각 2026.08.25</span></td>
+            <td>12.01㎡</td><td>신건</td><td>8,500만</td></tr>
+          <tr><td>서대문구 가좌로 62-7 2층 201호 (홍은동,피브이395)<span style="display:block;font-size:10px;color:var(--muted)">서울서부지방법원 2023타경57370 · 매각 2026.08.25</span></td>
+            <td>25.46㎡</td><td>3회 (51%)</td><td>9,370만</td></tr>
+          <tr><td>서대문구 가좌로 62-7 3층 301호 (홍은동,피브이395)<span style="display:block;font-size:10px;color:var(--muted)">서울서부지방법원 2023타경57370 · 매각 2026.08.25</span></td>
+            <td>26.67㎡</td><td>3회 (51%)</td><td>9,830만</td></tr>
+          <tr><td>마포구 상암동 15-9 유진빌리지 3층301호<span style="display:block;font-size:10px;color:var(--muted)">서울서부지방법원 2025타경51325 · 매각 2026.09.01</span></td>
+            <td>15.67㎡</td><td>3회 (51%)</td><td>6,861만</td></tr>
+          <tr><td>은평구 갈현동 275-36 엠에스카운티 4층401호<span style="display:block;font-size:10px;color:var(--muted)">서울서부지방법원 2025타경51404 · 매각 2026.08.25</span></td>
+            <td>29.47㎡</td><td>2회 (64%)</td><td>8,416만</td></tr>
+          <tr><td>은평구 응암동 110-21 제이더블유타워2 7층703호<span style="display:block;font-size:10px;color:var(--muted)">서울서부지방법원 2025타경52446 · 매각 2026.08.25</span></td>
+            <td>16.11㎡</td><td>2회 (64%)</td><td>8,832만</td></tr>
+          <tr><td><span class="pickchip">8위</span>서대문구 홍은동 265-288 2층204호<span style="display:block;font-size:10px;color:var(--muted)">서울서부지방법원 2026타경50163 · 매각 2026.09.01</span></td>
+            <td>27.14㎡</td><td>2회 (64%)</td><td>6,656만</td></tr>
+          <tr><td>은평구 녹번동 156-24 지하층2호<span style="display:block;font-size:10px;color:var(--muted)">서울서부지방법원 2026타경50283 · 매각 2026.09.01</span></td>
+            <td>47.48㎡</td><td>2회 (64%)</td><td>6,720만</td></tr>
+          </tbody></table>
+          </div>
+        </details>
+      </div>
+    </div>
+
+    <!-- RESULT -->
+    <div class="res">
+      <div class="card" style="overflow:hidden">
+        <div class="verdict" id="verdict">
+          <div class="lab" id="vlab">세후 순수익</div>
+          <div class="big" id="vnet">—</div>
+          <div class="vsub" id="vmsg"></div>
+        </div>
+        <div class="kpis">
+          <div class="kpi"><div class="k">세후 ROI (자기자본 대비)</div><div class="v" id="kRoi">—</div></div>
+          <div class="kpi"><div class="k">연환산 수익률</div><div class="v" id="kAnn">—</div></div>
+          <div class="kpi"><div class="k">실투자금(자기자본)</div><div class="v" id="kEquity">—</div></div>
+          <div class="kpi"><div class="k">총비용 합계</div><div class="v" id="kCost">—</div></div>
+        </div>
+        <div class="waterfall">
+          <div class="wf"><span class="wl">매도가</span><div class="bar"><i id="bSell" style="background:var(--gain)"></i></div><span class="wv" id="wSell"></span></div>
+          <div class="wf"><span class="wl">− 낙찰가</span><div class="bar"><i id="bBid" style="background:var(--ink);opacity:.55"></i></div><span class="wv" id="wBid"></span></div>
+          <div class="wf"><span class="wl">− 총비용</span><div class="bar"><i id="bCost" style="background:var(--seal)"></i></div><span class="wv" id="wCost"></span></div>
+          <div class="wf"><span class="wl">− 양도세</span><div class="bar"><i id="bTax" style="background:var(--seal-deep)"></i></div><span class="wv" id="wTax"></span></div>
+          <div class="wf" style="font-weight:750"><span class="wl">= 순수익</span><div class="bar"><i id="bNet"></i></div><span class="wv" id="wNet"></span></div>
+        </div>
+        <div class="note" id="taxnote"></div>
+      </div>
+      <footer style="text-align:left;margin-top:14px">
+        <span class="warn">⚠️ 미검증 · 교육용 개략치</span> 세율·요율은 <b>대표 가정값</b>입니다. 권리분석(지분·임차인·인수금)은
+        2026.08.19 매각물건명세서 열람 기준. 빌라는 아파트와 달리 동일 평형 실거래 표본이 부족해
+        <b>예상 매도가 기본값 = 감정가 × 읍면동 평균 '경매 매각가율'</b>(보수적 처분 프록시)을 씁니다 — 중개 매도 시세는
+        이보다 높을 수 있으니 직접 조정하세요. 입찰 전 등기사항증명서·전입세대열람·현장확인 필수.
+      </footer>
+    </div>
+  </div>
+</div>
+
+<script>
+const won = n => Math.round(n).toLocaleString('ko-KR');
+const asEok = n => (n>=10000||n<=-10000) ? (n/10000).toFixed(2)+'억' : won(n)+'만';
+
+// ===== Top 10 물건 (2026-08-19 매각물건명세서 검증) — 금액 단위: 만원 =====
+// hist: [기일(MM.DD), 최저가, 결과('유찰'|'진행')]
+const PROPS = [
+  {rank:1, name:'정릉동 318 나동 203호', meta:'북부 2025타경12583 · 08.19', verdict:'no', vtext:'지분매각',
+   appraisal:13100, low:8384, area:60.18, assumeMode:'none', assume:0,
+   dong:'성북구 정릉동', cnt:44, avg:68.2, rmin:17.0, rmax:94.6,
+   chips:['전용 60.18㎡','유찰 2회 (64%)','강제경매','중복 3건 병합','임차인 없음(명세서)'],
+   hist:[['06.09',13100,'유찰'],['07.14',10480,'유찰'],['08.19',8384,'진행']],
+   note:'명세서 비고: 지분매각 · 공유자 우선매수 1회 허용. 현황조사상 송옥희 세대 등재.',
+   banner:{cls:'', html:'<b>✗ 입찰 부적합 — 지분매각</b>. 온전한 소유권이 아닌 공유지분 매각이며 공유자 우선매수신고 1회 허용. 60㎡ 실거주 면적이라는 매력은 지분이라는 사실 앞에 무의미합니다. 아래 수치는 참고용입니다.'}},
+  {rank:2, name:'회기동 103-150 303호', meta:'북부 2025타경11838 · 08.19', verdict:'no', vtext:'지분 2/5',
+   appraisal:9080, low:4649, area:35.41, assumeMode:'none', assume:0,
+   dong:'동대문구 회기동', cnt:19, avg:74.6, rmin:74.6, rmax:74.6,
+   chips:['전용 35.41㎡','유찰 3회 (51%)','강제경매','지분 5분의 2','경희대 인근'],
+   hist:[['05.07',9080,'유찰'],['06.09',7264,'유찰'],['07.14',5811,'유찰'],['08.19',4649,'진행']],
+   note:'감정평가서 명시: 정종윤 지분 5분의 2에 대한 평가. 감정가 자체가 지분 가치.',
+   banner:{cls:'', html:'<b>✗ 입찰 부적합 — 지분매각(5분의 2)</b>. 감정가 9,080만원은 건물 전체가 아니라 지분 가치입니다. 황순영 세대 전입으로 점유관계 확인도 필요. 공유자 우선매수 1회 허용.'}},
+  {rank:3, name:'회기동 103-150 304호', meta:'북부 2025타경11838 · 08.19', verdict:'no', vtext:'지분 2/5',
+   appraisal:8600, low:4403, area:33.6, assumeMode:'none', assume:0,
+   dong:'동대문구 회기동', cnt:19, avg:74.6, rmin:74.6, rmax:74.6,
+   chips:['전용 33.6㎡','유찰 3회 (51%)','강제경매','지분 5분의 2'],
+   hist:[['05.07',8600,'유찰'],['06.09',6880,'유찰'],['07.14',5504,'유찰'],['08.19',4403,'진행']],
+   note:'2위와 같은 사건의 옆 호수 — 동일하게 지분 5분의 2 매각.',
+   banner:{cls:'', html:'<b>✗ 입찰 부적합 — 지분매각(5분의 2)</b>. 303호와 같은 사건의 옆 호수로 동일한 지분물건입니다. "동시 입찰 전략"은 지분물건이라 성립하지 않습니다.'}},
+  {rank:4, name:'강북 인수봉로29길 11 1층2호', meta:'북부 2024타경6441 · 08.19', verdict:'cond', vtext:'대항력 8,500만',
+   appraisal:10100, low:5171, area:30.18, assumeMode:'dividend', assume:3629, deposit:8500,
+   dong:'강북구 수유동', cnt:45, avg:68.2, rmin:41.0, rmax:97.8,
+   chips:['전용 30.18㎡','유찰 3회 (51%)','1989년식','대항력 임차인','배당요구 有'],
+   hist:[['05.07',10100,'유찰'],['06.09',8080,'유찰'],['07.14',6464,'유찰'],['08.19',5171,'진행']],
+   note:'임차인 보증금 8,500만 · 전입 2020.1.2(최선순위 압류 2022.4.19보다 앞) · 확정 2021.8.25 · 배당요구 2025.3.27.',
+   banner:{cls:'condb', html:'<b>△ 조건부</b> — 대항력 임차인 보증금 <b>8,500만원</b>. 확정일자·배당요구가 있어 배당으로 상당분 회수될 수 있으나, 낙찰가가 낮으면 배당재원 부족분(잔액)을 매수인이 인수합니다. 인수금액은 낙찰가 연동 자동계산(임차인 1순위 배당 가정) — 배당표 시뮬레이션 없이 입찰 금지.'}},
+  {rank:5, name:'송파 삼전동 64-7 301호', meta:'동부 2025타경51215 · 08.31', verdict:'no', vtext:'지분매각',
+   appraisal:9400, low:7520, area:22.95, assumeMode:'none', assume:0,
+   dong:'송파구 삼전동', cnt:117, avg:134.3, rmin:101.3, rmax:180.9,
+   chips:['전용 22.95㎡ 원룸','유찰 1회 (80%)','형식적경매(청산)','지분매각'],
+   hist:[['07.20',9400,'유찰'],['08.31',7520,'진행']],
+   note:'삼전동 인근 매각가율 평균 134% — 송파는 감정가를 크게 웃돌아 낙찰됩니다.',
+   banner:{cls:'', html:'<b>✗ 입찰 부적합 — 지분매각</b>(청산을 위한 형식적경매). 공유자 우선매수 1회 허용 — 낙찰받아도 공유자에게 넘어갈 수 있습니다. 참고로 삼전동 빌라는 평균 매각가율 134%로 경쟁이 극심한 지역입니다.'}},
+  {rank:6, name:'화곡동 은하빌라 201호', meta:'남부 2025타경11185 · 08.25', verdict:'ok', vtext:'입찰 검토',
+   appraisal:16600, low:8499, area:40.22, assumeMode:'none', assume:0,
+   dong:'강서구 화곡동', cnt:1000, avg:70.5, rmin:2.3, rmax:107.9,
+   chips:['전용 40.22㎡ 방2급','유찰 3회 (51%)','2008년식','임차권등기 말소 조건','까치산역 인근'],
+   hist:[['04.22',16600,'유찰'],['06.04',13280,'유찰'],['07.22',10624,'유찰'],['08.25',8499,'진행']],
+   note:'특별매각조건: 채권자가 미배당 잔액 보증금 반환청구권 포기 + 임차권등기 말소 → 인수 0원. 폐문부재 — 명도 확인 필요.',
+   banner:{cls:'okb', html:'<b>✓ 입찰 검토 — Top 10 중 최우량</b>. 대항력 임차인(보증금 1.2억)이 있으나 <b>특별매각조건으로 채권자가 미배당 잔액 반환청구권을 포기하고 임차권등기를 말소</b>하는 조건이라 매수인 인수 부담 0원. 2008년식 방2급 40㎡가 감정가의 51%입니다.'}},
+  {rank:7, name:'화곡동 56-188 1층 102호', meta:'남부 2025타경14067 · 09.01', verdict:'ok', vtext:'입찰 검토',
+   appraisal:13700, low:8768, area:45.4, assumeMode:'none', assume:0,
+   dong:'강서구 화곡동', cnt:1000, avg:70.5, rmin:2.3, rmax:107.9,
+   chips:['전용 45.4㎡ 방3','유찰 2회 (64%)','1993년식','반환청구권 포기 조건','화곡역 생활권'],
+   hist:[['06.16',13700,'유찰'],['07.30',10960,'유찰'],['09.01',8768,'진행']],
+   note:'임차인 3건 표기는 동일 임대차(1.19억)의 승계 관계. 서울보증보험 반환청구권 포기 + 임차권등기 말소 조건 → 인수 0원.',
+   banner:{cls:'okb', html:'<b>✓ 입찰 검토</b> — 방 3개·거실 구조 45.4㎡ 1층으로 Top 10 중 실사용 가치 최고. 대항력 임차인 표기가 3건이지만 실제로는 동일 임대차의 승계이고, <b>특별매각조건(서울보증보험 반환청구권 포기 + 임차권등기 말소)</b>으로 인수 부담 0원. 1993년식이라 수리비는 여유 있게 잡으세요.'}},
+  {rank:8, name:'홍은동 265-288 2층204호', meta:'서부 2026타경50163 · 09.01', verdict:'ok', vtext:'입찰 검토',
+   appraisal:10400, low:6656, area:27.14, assumeMode:'none', assume:0,
+   dong:'서대문구 홍은동', cnt:17, avg:84.0, rmin:60.3, rmax:159.7,
+   chips:['전용 27.14㎡','유찰 2회 (64%)','1997년식','전입세대 없음','포기 확약서 제출'],
+   hist:[['06.23',10400,'유찰'],['07.28',8320,'유찰'],['09.01',6656,'진행']],
+   note:'신청채권자 서울보증보험(LH 보증금 8,200만 양수)이 잔존 반환청구권 포기 확약서 제출(2026.4.24). 입찰 전 확약서 원문 확인.',
+   banner:{cls:'okb', html:'<b>✓ 입찰 검토</b> — 신청채권자가 임차보증금(8,200만) 반환채권을 양수한 서울보증보험이고, <b>배당 부족분 잔존 청구권을 포기한다는 확약서를 제출</b>(2026.4.24). 전입세대가 없어 명도 부담도 낮습니다. 입찰 전 사건기록에서 확약서 원문을 직접 확인하세요.'}},
+  {rank:9, name:'도봉로110아길 57-14 401호', meta:'북부 2023타경4462 · 08.19', verdict:'no', vtext:'지분매각',
+   appraisal:11000, low:8800, area:93.57, assumeMode:'none', assume:0,
+   dong:'도봉구 창동', cnt:76, avg:73.2, rmin:37.6, rmax:90.9,
+   chips:['전용 93.57㎡','유찰 1회 (80%)','1994년식','지분매각','청구 636만 소액'],
+   hist:[['07.14',11000,'유찰'],['08.19',8800,'진행']],
+   note:'명세서 비고: 지분매각 · 공유자 우선매수 1회. 전입세대주(최동국) 있음.',
+   banner:{cls:'', html:'<b>✗ 입찰 부적합 — 지분매각</b>. 표본 최대 93.57㎡라는 매력은 지분이라는 사실 앞에 무의미합니다. 청구금액 636만원의 소액 강제경매로, 공유자 우선매수 1회 허용 조건이 붙어 있습니다.'}},
+  {rank:10, name:'구의동 다솜빌 2층204호', meta:'동부 2025타경51302 · 08.31', verdict:'no', vtext:'깡통 임차 1.5억',
+   appraisal:16600, low:8499, area:19.41, assumeMode:'dividend', assume:6801, deposit:15000,
+   dong:'광진구 구의동', cnt:56, avg:118.8, rmin:94.9, rmax:161.7,
+   chips:['전용 19.41㎡ 원룸','유찰 3회 (51%)','대항력 1.5억','대지권등록부 미등재','구의역 인근'],
+   hist:[['04.13',16600,'유찰'],['06.01',13280,'유찰'],['07.20',10624,'유찰'],['08.31',8499,'진행']],
+   note:'임차인 보증금 1.5억(전입·확정 2022.5.20, 배당요구 2025.4.11) — 감정가 1.66억에 육박. 토지대장 대지권등록부 미등재.',
+   banner:{cls:'', html:'<b>✗ 입찰 부적합 — 깡통 구조</b>. 대항력 임차인 보증금 <b>1.5억</b>이 감정가(1.66억)에 육박합니다. 배당요구는 했지만 낙찰가에서 못 받는 잔액은 전부 매수인 인수 — 인수금액이 낙찰가에 연동 자동계산됩니다. 대지권등록부 미등재 문제도 겹칩니다.'}},
+];
+
+// 8대 비용
+const COSTS = [
+  {id:'tax',   name:'① 취득세',      hint:'낙찰가 × 취득세율', auto:s=>Math.round(s.bid*s.acqRate)},
+  {id:'law',   name:'② 법무사비',    hint:'소유권이전·말소 등기대행', auto:s=>Math.round(s.bid*0.006+30)},
+  {id:'arrear',name:'③ 체납관리비',  hint:'공용부분 미납분 인수', auto:()=>100},
+  {id:'evict', name:'④ 명도비',      hint:'이사비·강제집행 예비', auto:()=>250},
+  {id:'reno',  name:'⑤ 수리·인테리어',hint:'하자보수 + 인테리어', auto:s=>Math.round(s.area*20)},
+  {id:'int',   name:'⑥ 이자비용',    hint:'대출액×금리×보유기간', auto:s=>Math.round(s.loan*(s.rate/100)*(s.months/12))},
+  {id:'broker',name:'⑦ 중개보수',    hint:'매도 시 중개수수료 0.4%', auto:s=>Math.round(s.sell*0.004)},
+];
+
+const state = {owner:'person', prop:PROPS[5]};
+let manual = {};
+let assumeManual = false;
+
+function acqRate(){ return 0.011; }
+const BRACKETS=[
+  {upto:1400,r:0.06,ded:0},{upto:5000,r:0.15,ded:126},{upto:8800,r:0.24,ded:576},
+  {upto:15000,r:0.35,ded:1544},{upto:30000,r:0.38,ded:1994},{upto:50000,r:0.40,ded:2594},
+  {upto:100000,r:0.42,ded:3594},{upto:Infinity,r:0.45,ded:6594},
+];
+function progressive(base){
+  for(const b of BRACKETS){ if(base<=b.upto)
+    return {rate:b.r, ded:b.ded, tax:Math.max(0,Math.round(base*b.r - b.ded))}; }
+}
+function taxSpec(months){
+  if(state.owner==='corp')   return {kind:'flat', nat:0.29, deduct:0,   note:'(법인 · 추가과세 포함 가정)', label:'법인세율(9~24%) + 토지등 양도소득 추가과세를 단순 합산한 가정치'};
+  if(state.owner==='dealer') return {kind:'prog',           deduct:0,   note:'(종합소득세 누진세율표)',     label:'매매사업자는 사업소득 → 종합소득세 누진세율표 적용(다른 소득과 합산 시 세율↑ 가능)'};
+  if(months<12) return {kind:'flat', nat:0.70, deduct:250, note:'(1년 미만 단기중과)', label:'개인 · 1년 미만 단기양도 70% 중과 · 양도소득 기본공제 250만 반영'};
+  if(months<24) return {kind:'flat', nat:0.60, deduct:250, note:'(2년 미만 단기중과)', label:'개인 · 2년 미만 단기양도 60% 중과 · 양도소득 기본공제 250만 반영'};
+  return {kind:'prog', deduct:250, note:'(기본세율 누진세율표)', label:'개인 · 2년 이상 → 기본세율 누진세율표 · 양도소득 기본공제 250만 반영'};
+}
+
+const costsBox = document.getElementById('costs');
+COSTS.forEach(c=>{
+  const el=document.createElement('div');el.className='cost';
+  el.innerHTML=`<div class="nm"><b>${c.name}</b><span>${c.hint}</span></div>
+    <div class="inp"><input type="number" id="c_${c.id}" step="10"><span class="unit">만원</span></div>`;
+  costsBox.appendChild(el);
+  el.querySelector('input').addEventListener('input',e=>{manual[c.id]=e.target.value===''?null:+e.target.value;calc();});
+});
+
+function num(id){return +document.getElementById(id).value||0;}
+
+function syncAssume(bid){
+  const p=state.prop;
+  if(assumeManual) return;
+  let v=0;
+  if(p.assumeMode==='dividend') v=Math.max(0, p.deposit - Math.max(0, bid-300));
+  document.getElementById('c_assume').value=v;
+}
+
+function calc(){
+  const appraisal=num('appraisal'), bid=num('bid'), sell=num('sell'),
+        months=num('months'), area=num('area'), ltv=num('ltv'), rate=num('rate');
+  const br = appraisal? bid/appraisal*100 : 0;
+  document.getElementById('bidRate').value = Math.min(100,Math.max(30,br));
+  document.getElementById('bidRateTxt').textContent = br.toFixed(1)+'% (감정가 대비)';
+
+  syncAssume(bid);
+  const loan = Math.round(bid*ltv/100);
+  const s = {bid,sell,area,months,rate,loan,acqRate:acqRate()};
+
+  let total=0;
+  COSTS.forEach(c=>{
+    const autoV=c.auto(s);
+    const inp=document.getElementById('c_'+c.id);
+    const v = (manual[c.id]===undefined||manual[c.id]===null)? autoV : manual[c.id];
+    if(manual[c.id]===undefined||manual[c.id]===null){inp.value='';inp.placeholder=won(autoV);}
+    total+=v;
+  });
+  const assume=num('c_assume'), vat=num('c_vat');
+  total += assume + vat;
+
+  const acqCosts = total;
+  const gainBase = sell - bid - acqCosts;
+  const spec = taxSpec(months);
+  const usedDed = gainBase>0 ? Math.min(spec.deduct, gainBase) : 0;
+  const taxable = Math.max(0, gainBase - spec.deduct);
+  let natTax=0, ratePct='—', rateNote=spec.note;
+  if(taxable>0){
+    if(spec.kind==='flat'){ natTax=Math.round(taxable*spec.nat); ratePct=(spec.nat*100).toFixed(0)+'%'; }
+    else { const pr=progressive(taxable); natTax=pr.tax; ratePct=(pr.rate*100).toFixed(0)+'%';
+           rateNote=`${spec.note} 누진공제 ${won(pr.ded)}만`; }
+  }
+  const localTax= Math.round(natTax*0.1);
+  const capTax  = natTax + localTax;
+  const net = gainBase - capTax;
+
+  document.getElementById('txGain').textContent = won(Math.max(0,gainBase))+'만';
+  const dedEl=document.getElementById('txDed'), dedNote=document.getElementById('txDedNote');
+  if(spec.deduct>0){ dedNote.textContent='양도소득 기본공제(연 250만)'; dedEl.textContent='−'+won(usedDed)+'만'; }
+  else { dedNote.textContent='매매사업자·법인은 기본공제 없음'; dedEl.textContent='0만'; }
+  document.getElementById('txBase').textContent  = won(taxable)+'만';
+  document.getElementById('txRate').textContent  = ratePct;
+  document.getElementById('txRateNote').textContent = rateNote;
+  document.getElementById('txNat').textContent   = won(natTax)+'만';
+  document.getElementById('txNatNote').textContent = spec.kind==='prog' ? '과표 × 세율 − 누진공제' : '과표 × 세율';
+  document.getElementById('txLocal').textContent = won(localTax)+'만';
+  document.getElementById('txTotal').textContent = won(capTax)+'만';
+  const effRate = gainBase>0 ? (capTax/gainBase*100) : 0;
+  document.getElementById('txExplain').innerHTML =
+    `<span class="warn">⚠️미검증</span> ${spec.label}. 양도차익 대비 실효부담률 ≈ ${effRate.toFixed(1)}% (국세+지방세).`;
+
+  const equity = bid - loan + acqCosts;
+  const roi = equity>0 ? net/equity*100 : 0;
+  const ann = months>0 ? roi*(12/months) : 0;
+
+  const pos = net>=0;
+  document.getElementById('verdict').classList.toggle('neg',!pos);
+  document.getElementById('vlab').textContent = pos?'세후 순수익':'세후 손실';
+  document.getElementById('vnet').textContent = (pos?'+':'−')+asEok(Math.abs(net));
+  document.getElementById('vmsg').textContent =
+    pos ? `매도 시 ${asEok(net)} 확보 · 세후 ROI ${roi.toFixed(1)}%`
+        : `이 낙찰가로는 ${asEok(-net)} 손실 — 낙찰가/매도가 재검토`;
+
+  set('kRoi',(roi>=0?'+':'')+roi.toFixed(1)+'%',roi>=0);
+  set('kAnn',(ann>=0?'+':'')+ann.toFixed(1)+'%',ann>=0);
+  document.getElementById('kEquity').textContent=asEok(equity);
+  document.getElementById('kCost').textContent=asEok(acqCosts+capTax);
+
+  const scale=v=>Math.max(1,Math.min(100, sell>0? Math.abs(v)/sell*100:0));
+  bar('bSell',100); val('wSell',won(sell));
+  bar('bBid',scale(bid)); val('wBid','−'+won(bid));
+  bar('bCost',scale(acqCosts)); val('wCost','−'+won(acqCosts));
+  bar('bTax',scale(capTax)); val('wTax','−'+won(capTax));
+  const bn=document.getElementById('bNet'); bn.style.background=pos?'var(--gain)':'var(--loss)';
+  bar('bNet',scale(net)); val('wNet',(pos?'+':'−')+won(Math.abs(net)));
+
+  document.getElementById('taxnote').innerHTML=
+    `양도세 가정: <b>${spec.label}</b> · 취득세율 ${(acqRate()*100).toFixed(1)}% 적용. `+
+    `실투자금 = 낙찰가 − 대출 ${asEok(loan)} + 비용. 인수금액 ${assume>0? asEok(assume)+' 포함':'없음'}.`;
+}
+function set(id,t,pos){const e=document.getElementById(id);e.textContent=t;e.className='v '+(pos?'pos':'negc');}
+function bar(id,pct){document.getElementById(id).style.width=pct+'%';}
+function val(id,t){document.getElementById(id).textContent=t;}
+
+// ===== 물건 탭 =====
+const propsBox=document.getElementById('props');
+PROPS.forEach((p,i)=>{
+  const el=document.createElement('div');el.className='prop';
+  el.innerHTML=`<div class="pr">${p.rank}위</div><div class="pn">${p.name}</div><div class="pm">${p.meta}</div>
+    <span class="pv ${p.verdict}">${p.verdict==='ok'?'✓ ':p.verdict==='cond'?'△ ':'✗ '}${p.vtext}</span>`;
+  el.addEventListener('click',()=>selectProp(i));
+  propsBox.appendChild(el);
+});
+function proxySell(p){ return Math.round(p.appraisal * p.avg / 100); }
+function selectProp(i){
+  state.prop=PROPS[i];
+  document.querySelectorAll('.prop').forEach((x,j)=>x.classList.toggle('on',j===i));
+  const p=state.prop;
+  manual={}; assumeManual=false;
+  document.getElementById('appraisal').value=p.appraisal;
+  document.getElementById('bid').value=p.low;
+  document.getElementById('sell').value=proxySell(p);
+  document.getElementById('area').value=p.area;
+  document.getElementById('c_assume').value=p.assume;
+  document.getElementById('c_vat').value=0;
+  document.getElementById('assumeHint').textContent =
+    p.assumeMode==='dividend' ? `대항력 보증금 ${asEok(p.deposit)} − 배당액 (낙찰가 연동 자동계산)` : '선순위 임차보증금·미말소 권리 등';
+  document.getElementById('propBanner').innerHTML =
+    `<div class="banner ${p.banner.cls}">${p.banner.html}</div>`;
+  renderRef();
+  calc();
+}
+
+// ===== 인근 낙찰사례 + 기일 이력 카드 =====
+function renderRef(){
+  const p=state.prop;
+  document.getElementById('refTitle').childNodes[0].textContent='📍 '+p.name;
+  document.getElementById('refSub').textContent=`${p.dong} · 인근 다세대 매각사례 및 이 물건의 기일 이력`;
+  document.getElementById('refChips').innerHTML=p.chips.map(s=>`<span class="chip">${s}</span>`).join('');
+  document.getElementById('rsCnt').textContent=p.cnt>=1000?'1,000건+':p.cnt+'건';
+  document.getElementById('rsAvg').textContent=p.avg.toFixed(1)+'%';
+  document.getElementById('rsRange').textContent=p.rmin.toFixed(0)+'% ~ '+p.rmax.toFixed(0)+'%';
+  document.getElementById('rsNow').textContent=Math.round(p.low/p.appraisal*100)+'%';
+  document.getElementById('refBarNote').textContent=`감정가 ${asEok(p.appraisal)}`;
+  const maxv=p.appraisal;
+  document.getElementById('refBars').innerHTML=p.hist.map((h,idx)=>{
+    const cur=idx===p.hist.length-1;
+    const pct=Math.round(h[1]/maxv*100);
+    return `<div class="bcol${cur?' cur':''}">
+      <span class="bc">${(h[1]/10000).toFixed(2)}</span>
+      <span class="bk" style="height:${pct}%" title="${h[0]} ${h[2]}"></span>
+      <span class="bm">${h[0]}</span></div>`;}).join('');
+  document.getElementById('refRows').innerHTML=p.hist.map((h,idx)=>{
+    const cur=idx===p.hist.length-1;
+    return `<tr><td>2026.${h[0]}</td><td>${cur?'<b>이번 기일</b>':h[2]}</td><td>${asEok(h[1])}</td></tr>`;}).join('');
+  document.getElementById('fillSell').textContent=
+    `↧ 평균 매각가율 적용가(${asEok(proxySell(p))})를 예상 매도가로 채우기`;
+  document.getElementById('refNote').innerHTML=
+    `<span class="warn">참조용</span> ${p.note}`;
+}
+document.getElementById('fillSell').addEventListener('click',()=>{
+  document.getElementById('sell').value=proxySell(state.prop); calc();
+});
+
+['appraisal','bid','sell','months','area','ltv','rate','c_vat'].forEach(id=>
+  document.getElementById(id).addEventListener('input',calc));
+document.getElementById('c_assume').addEventListener('input',()=>{assumeManual=true;calc();});
+document.getElementById('bidRate').addEventListener('input',e=>{
+  const ap=num('appraisal'); document.getElementById('bid').value=Math.round(ap*e.target.value/100); calc();});
+document.querySelectorAll('#ownerSeg .seg').forEach(seg=>seg.addEventListener('click',()=>{
+  document.querySelectorAll('#ownerSeg .seg').forEach(x=>x.classList.remove('on'));
+  seg.classList.add('on'); state.owner=seg.dataset.v; calc();}));
+
+const root=document.documentElement;
+document.getElementById('tt').addEventListener('click',()=>{
+  const cur=root.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');
+  root.setAttribute('data-theme',cur==='dark'?'light':'dark');
+});
+
+selectProp(5);  // 기본: 6위 은하빌라 (최우량)
+</script>

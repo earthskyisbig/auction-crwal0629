@@ -1,0 +1,564 @@
+<title>평택·안성 경매 수익 시뮬레이터</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root{
+    --seal:#c0392b;          /* 낙찰 인주(印朱) 레드 — 유일한 강조색 */
+    --seal-deep:#8f2a1f;
+    --ink:#1b2432;           /* 서류 잉크 */
+    --paper:#f3efe6;         /* 판결문 종이 */
+    --line:#d8d0bf;
+    --muted:#6b7280;
+    --gain:#1f7a4d;          /* 흑자 */
+    --loss:#b23b2e;          /* 적자 */
+    --card:#ffffff;
+    --bg:#efe9dd;
+    --fg:#1b2432;
+    --sub:#5b6472;
+    --field:#fbf9f4;
+    --shadow:0 1px 2px rgba(27,36,50,.06),0 8px 30px rgba(27,36,50,.08);
+    --mono:"SF Mono",ui-monospace,"JetBrains Mono","Cascadia Code",Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Pretendard","Segoe UI",Roboto,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --seal:#e0644f; --seal-deep:#c0392b;
+      --paper:#161b24; --line:#2b3342; --muted:#8a93a3;
+      --gain:#4ecf8f; --loss:#e9705f;
+      --card:#1a212c; --bg:#10141b; --fg:#e8eaf0; --sub:#9aa3b2;
+      --field:#141a23; --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 34px rgba(0,0,0,.5);
+    }
+  }
+  :root[data-theme="light"]{
+    --seal:#c0392b;--seal-deep:#8f2a1f;--paper:#f3efe6;--line:#d8d0bf;--muted:#6b7280;
+    --gain:#1f7a4d;--loss:#b23b2e;--card:#fff;--bg:#efe9dd;--fg:#1b2432;--sub:#5b6472;--field:#fbf9f4;
+    --shadow:0 1px 2px rgba(27,36,50,.06),0 8px 30px rgba(27,36,50,.08);
+  }
+  :root[data-theme="dark"]{
+    --seal:#e0644f;--seal-deep:#c0392b;--paper:#161b24;--line:#2b3342;--muted:#8a93a3;
+    --gain:#4ecf8f;--loss:#e9705f;--card:#1a212c;--bg:#10141b;--fg:#e8eaf0;--sub:#9aa3b2;--field:#141a23;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 34px rgba(0,0,0,.5);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);
+    line-height:1.5;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+  .wrap{max-width:1120px;margin:0 auto;padding:28px 20px 80px}
+  header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px}
+  .brand{display:flex;gap:14px;align-items:center}
+  .seal{width:46px;height:46px;flex:none;border-radius:9px;border:2px solid var(--seal);
+    color:var(--seal);display:grid;place-items:center;font-weight:800;font-size:13px;
+    transform:rotate(-6deg);letter-spacing:1px;position:relative}
+  .seal::after{content:"";position:absolute;inset:4px;border:1px solid var(--seal);border-radius:5px;opacity:.5}
+  h1{font-size:20px;margin:0;letter-spacing:-.3px;font-weight:750;text-wrap:balance}
+  .sub{color:var(--sub);font-size:12.5px;margin-top:2px}
+  .themebtn{border:1px solid var(--line);background:var(--card);color:var(--sub);
+    border-radius:8px;padding:7px 11px;font-size:12px;cursor:pointer;font-family:inherit}
+  .grid{display:grid;grid-template-columns:1fr 400px;gap:22px;align-items:start}
+  @media (max-width:880px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
+  .pad{padding:18px 18px}
+  .eyebrow{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);
+    font-weight:700;margin:0 0 12px}
+  .row{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:11px 0}
+  label.f{font-size:13px;color:var(--sub);flex:none}
+  .inp{position:relative;flex:1;max-width:220px}
+  input[type=number]{width:100%;background:var(--field);border:1px solid var(--line);color:var(--fg);
+    border-radius:8px;padding:8px 34px 8px 11px;font-size:14px;font-family:var(--mono);text-align:right}
+  input:focus-visible,select:focus-visible{outline:2px solid var(--seal);outline-offset:1px}
+  .unit{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--muted)}
+  input[type=range]{width:100%;accent-color:var(--seal);margin:6px 0 2px}
+  .segs{display:flex;gap:6px;flex-wrap:wrap}
+  .seg{flex:1;min-width:78px;text-align:center;padding:8px 6px;border:1px solid var(--line);
+    border-radius:8px;background:var(--field);color:var(--sub);font-size:12.5px;cursor:pointer;user-select:none}
+  .seg.on{border-color:var(--seal);color:var(--seal);background:color-mix(in srgb,var(--seal) 8%,transparent);font-weight:650}
+  hr{border:0;border-top:1px dashed var(--line);margin:16px 0}
+  .costhead{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin:2px 0 6px}
+  .cost{display:grid;grid-template-columns:1fr 130px;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)}
+  .cost:last-child{border-bottom:0}
+  .cost .nm{font-size:13px}
+  .cost .nm b{font-weight:600}
+  .cost .nm span{display:block;font-size:11px;color:var(--muted)}
+  .cost input{padding:6px 30px 6px 8px;font-size:13px}
+  .zero{color:var(--muted)}
+  /* 물건 선택 탭 */
+  .props{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:18px}
+  @media(max-width:880px){.props{grid-template-columns:repeat(2,1fr)}}
+  .prop{border:1px solid var(--line);border-radius:11px;background:var(--card);box-shadow:var(--shadow);
+    padding:11px 13px;cursor:pointer;user-select:none;position:relative}
+  .prop .pn{font-size:12.5px;font-weight:700;letter-spacing:-.2px;line-height:1.35}
+  .prop .pm{font-size:10.5px;color:var(--muted);margin-top:3px;font-family:var(--mono)}
+  .prop .pv{margin-top:7px;display:inline-block;font-size:10px;font-weight:700;border-radius:5px;padding:1px 6px;border:1px solid}
+  .prop .pv.ok{color:var(--gain);border-color:var(--gain);background:color-mix(in srgb,var(--gain) 8%,transparent)}
+  .prop .pv.no{color:var(--seal);border-color:var(--seal);background:color-mix(in srgb,var(--seal) 8%,transparent)}
+  .prop.on{border-color:var(--seal);outline:2px solid var(--seal);outline-offset:-1px}
+  /* 물건 리스크 배너 */
+  .banner{border:1px solid var(--seal);background:color-mix(in srgb,var(--seal) 8%,transparent);
+    color:var(--fg);border-radius:10px;padding:10px 13px;font-size:12.5px;margin-bottom:14px;line-height:1.55}
+  .banner b{color:var(--seal)}
+  .banner.okb{border-color:var(--gain);background:color-mix(in srgb,var(--gain) 8%,transparent)}
+  .banner.okb b{color:var(--gain)}
+  /* 단지 실거래 참조 카드 */
+  .refhead{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:12px}
+  .reftitle{font-size:15px;font-weight:750;letter-spacing:-.2px}
+  .reftitle small{display:block;font-size:11.5px;color:var(--muted);font-weight:500;margin-top:2px}
+  .snap{font-size:10px;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:3px 7px;white-space:nowrap}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+  .chip{font-size:11.5px;background:var(--field);border:1px solid var(--line);border-radius:20px;padding:4px 10px;color:var(--sub)}
+  .chip b{color:var(--fg);font-weight:650}
+  .refstats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);
+    border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:14px}
+  .rs{background:var(--card);padding:10px 11px}
+  .rs .k{font-size:10.5px;color:var(--muted)}
+  .rs .v{font-size:16px;font-weight:750;font-family:var(--mono);margin-top:2px;letter-spacing:-.5px}
+  @media(max-width:520px){.refstats{grid-template-columns:repeat(2,1fr)}}
+  .miniwrap{margin-bottom:6px}
+  .minihead{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:6px}
+  .bars{display:flex;align-items:flex-end;gap:4px;height:64px;padding-top:4px}
+  .bcol{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;height:100%;justify-content:flex-end}
+  .bcol .bk{width:100%;background:color-mix(in srgb,var(--seal) 78%,transparent);border-radius:3px 3px 0 0;min-height:2px}
+  .bcol.empty .bk{background:var(--line)}
+  .bcol .bm{font-size:8.5px;color:var(--muted);white-space:nowrap}
+  .bcol .bc{font-size:9px;color:var(--sub);font-family:var(--mono)}
+  .rtable{width:100%;border-collapse:collapse;font-size:12px;margin-top:12px}
+  .rtable th{text-align:left;color:var(--muted);font-weight:600;font-size:10.5px;
+    padding:4px 6px;border-bottom:1px solid var(--line)}
+  .rtable td{padding:5px 6px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+  .rtable td:last-child,.rtable th:last-child{text-align:right;font-family:var(--mono)}
+  .fillbtn{margin-top:12px;width:100%;border:1px solid var(--seal);background:transparent;color:var(--seal);
+    border-radius:9px;padding:9px;font-size:12.5px;font-weight:650;cursor:pointer;font-family:inherit}
+  .fillbtn:hover{background:color-mix(in srgb,var(--seal) 8%,transparent)}
+  .tax{display:flex;flex-direction:column}
+  .tr{display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+    padding:9px 0;border-bottom:1px solid var(--line)}
+  .tr:last-child{border-bottom:0}
+  .tr .tl{font-size:13px;color:var(--sub)}
+  .tr .tl em{font-style:normal;display:block;font-size:11px;color:var(--muted)}
+  .tr .tv{font-family:var(--mono);font-size:14px;text-align:right;white-space:nowrap}
+  .tr.sum{margin-top:4px;padding-top:12px;border-top:2px solid var(--seal);border-bottom:0}
+  .tr.sum .tl{font-weight:700;color:var(--fg);font-size:14px}
+  .tr.sum .tv{font-weight:800;font-size:17px;color:var(--seal)}
+  /* result panel */
+  .res{position:sticky;top:16px}
+  .verdict{padding:20px 18px;border-radius:14px 14px 0 0;color:#fff;
+    background:linear-gradient(135deg,var(--seal),var(--seal-deep))}
+  .verdict.neg{background:linear-gradient(135deg,#556,#3a4150)}
+  .verdict .lab{font-size:11px;letter-spacing:.12em;text-transform:uppercase;opacity:.85;font-weight:700}
+  .big{font-size:38px;font-weight:800;font-family:var(--mono);letter-spacing:-1px;line-height:1.05;margin:6px 0 2px}
+  .vsub{font-size:12.5px;opacity:.92}
+  .kpis{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line)}
+  .kpi{background:var(--card);padding:13px 14px}
+  .kpi .k{font-size:11px;color:var(--muted)}
+  .kpi .v{font-size:19px;font-weight:750;font-family:var(--mono);margin-top:2px}
+  .pos{color:var(--gain)}.negc{color:var(--loss)}
+  .waterfall{padding:16px 18px 6px}
+  .wf{display:flex;align-items:center;gap:8px;margin:7px 0;font-size:12.5px}
+  .wf .wl{flex:none;width:96px;color:var(--sub)}
+  .wf .bar{flex:1;height:16px;background:var(--field);border-radius:4px;overflow:hidden;position:relative}
+  .wf .bar i{display:block;height:100%;border-radius:4px}
+  .wf .wv{flex:none;width:96px;text-align:right;font-family:var(--mono);font-size:12px}
+  .note{font-size:11px;color:var(--muted);padding:2px 18px 16px;line-height:1.5}
+  .warn{display:inline-block;background:color-mix(in srgb,var(--seal) 12%,transparent);
+    color:var(--seal);border:1px solid var(--seal);border-radius:6px;padding:1px 6px;font-size:10.5px;font-weight:700}
+  footer{margin-top:26px;color:var(--muted);font-size:11.5px;text-align:center;line-height:1.6}
+  details{margin-top:10px}summary{cursor:pointer;font-size:12px;color:var(--sub)}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="seal">落札</div>
+      <div>
+        <h1>평택·안성 경매 수익 시뮬레이터</h1>
+        <div class="sub">경기 아파트 · 유찰 1~3회 · 최저가 2억 이하 · 1,000세대+ · 10년 이내 — 조건 부합 <b>4건</b>의 권리분석과 세후 수익 시뮬레이션</div>
+      </div>
+    </div>
+    <button class="themebtn" id="tt">◐ 테마</button>
+  </header>
+
+  <!-- 물건 선택 -->
+  <div class="props" id="props"></div>
+
+  <div class="grid">
+    <!-- INPUT -->
+    <div>
+      <div id="propBanner"></div>
+
+      <div class="card pad" style="margin-bottom:16px">
+        <div class="refhead">
+          <div class="reftitle" id="refTitle">—<small id="refSub"></small></div>
+          <span class="snap">국토부 · 2026-08-19 조회</span>
+        </div>
+        <div class="chips" id="refChips"></div>
+        <div class="refstats">
+          <div class="rs"><div class="k">최근 1년 거래</div><div class="v" id="rsCnt">—</div></div>
+          <div class="rs"><div class="k">중위 실거래</div><div class="v" id="rsMed">—</div></div>
+          <div class="rs"><div class="k">최저 ~ 최고</div><div class="v" id="rsRange" style="font-size:12px">—</div></div>
+          <div class="rs"><div class="k">최근월 평균</div><div class="v pos" id="rsLast">—</div></div>
+        </div>
+        <div class="miniwrap">
+          <div class="minihead"><span>월별 거래 (막대=건수 · 값=평균가 억)</span><span>최근 12개월</span></div>
+          <div class="bars" id="refBars"></div>
+        </div>
+        <table class="rtable"><thead><tr><th>최근 거래월</th><th>면적/층</th><th>거래가</th></tr></thead>
+          <tbody id="refRows"></tbody></table>
+        <button class="fillbtn" id="fillSell">↧ 중위 실거래가를 예상 매도가로 채우기</button>
+        <div class="note" style="padding:8px 0 0" id="refNote"></div>
+      </div>
+
+      <div class="card pad">
+        <p class="eyebrow">① 물건 · 시나리오</p>
+        <div class="row"><label class="f">감정가</label>
+          <div class="inp"><input type="number" id="appraisal" value="25000" step="500"><span class="unit">만원</span></div></div>
+        <div class="row"><label class="f">낙찰가</label>
+          <div class="inp"><input type="number" id="bid" value="21600" step="100"><span class="unit">만원</span></div></div>
+        <div style="margin:2px 0 12px"><input type="range" id="bidRate" min="40" max="100" step="0.5" value="86.5">
+          <div class="costhead"><span>낙찰가율</span><span id="bidRateTxt">86.5% (감정가 대비)</span></div></div>
+        <div class="row"><label class="f">예상 매도가</label>
+          <div class="inp"><input type="number" id="sell" value="24750" step="100"><span class="unit">만원</span></div></div>
+        <div class="row"><label class="f">보유기간</label>
+          <div class="inp"><input type="number" id="months" value="6" step="1"><span class="unit">개월</span></div></div>
+        <div class="row"><label class="f">전용면적</label>
+          <div class="inp"><input type="number" id="area" value="74.5" step="1"><span class="unit">㎡</span></div></div>
+      </div>
+
+      <div class="card pad" style="margin-top:16px">
+        <p class="eyebrow">② 취득 구조 · 자금</p>
+        <div class="segs" id="ownerSeg" style="margin-bottom:14px">
+          <div class="seg on" data-v="person">개인(단기)</div>
+          <div class="seg" data-v="dealer">매매사업자</div>
+          <div class="seg" data-v="corp">법인</div>
+        </div>
+        <div class="row"><label class="f">경락잔금대출</label>
+          <div class="inp"><input type="number" id="ltv" value="70" step="5"><span class="unit">%</span></div></div>
+        <div class="row"><label class="f">대출 금리(연)</label>
+          <div class="inp"><input type="number" id="rate" value="5.5" step="0.1"><span class="unit">%</span></div></div>
+      </div>
+
+      <div class="card pad" style="margin-top:16px">
+        <p class="eyebrow">③ 8대 필수비용 <span class="warn">해당 없어도 0원 명시</span></p>
+        <div class="costhead"><span>기본값은 자동 추정 · 직접 수정 가능</span><span>만원</span></div>
+        <div id="costs"></div>
+        <details open><summary>+ 추가 항목 (인수금액 · 건물분 부가세)</summary>
+          <div class="cost" style="margin-top:8px"><div class="nm"><b>인수금액</b><span id="assumeHint">선순위 임차보증금·미말소 권리 등</span></div>
+            <div class="inp"><input type="number" id="c_assume" value="0" step="100"><span class="unit">만원</span></div></div>
+          <div class="cost"><div class="nm"><b>건물분 부가세</b><span>85㎡ 초과 + 매매사업자/법인만</span></div>
+            <div class="inp"><input type="number" id="c_vat" value="0" step="50"><span class="unit">만원</span></div></div>
+        </details>
+      </div>
+
+      <div class="card pad" style="margin-top:16px">
+        <p class="eyebrow">⑧ 양도세 산출내역 <span class="warn">보유기간·구조 연동</span></p>
+        <div class="tax">
+          <div class="tr"><span class="tl">양도차익 <em>매도가 − 낙찰가 − 필요경비</em></span><span class="tv" id="txGain">—</span></div>
+          <div class="tr"><span class="tl">− 기본공제 <em id="txDedNote">양도소득 기본공제(연 250만)</em></span><span class="tv" id="txDed">—</span></div>
+          <div class="tr"><span class="tl">= 과세표준</span><span class="tv" id="txBase">—</span></div>
+          <div class="tr"><span class="tl">적용 세율 <em id="txRateNote"></em></span><span class="tv" id="txRate">—</span></div>
+          <div class="tr"><span class="tl">산출세액 <em id="txNatNote">과표 × 세율</em></span><span class="tv" id="txNat">—</span></div>
+          <div class="tr"><span class="tl">지방소득세 <em>산출세액의 10%</em></span><span class="tv" id="txLocal">—</span></div>
+          <div class="tr sum"><span class="tl">양도세 합계</span><span class="tv" id="txTotal">—</span></div>
+        </div>
+        <div class="note" style="padding:10px 0 0" id="txExplain"></div>
+      </div>
+    </div>
+
+    <!-- RESULT -->
+    <div class="res">
+      <div class="card" style="overflow:hidden">
+        <div class="verdict" id="verdict">
+          <div class="lab" id="vlab">세후 순수익</div>
+          <div class="big" id="vnet">—</div>
+          <div class="vsub" id="vmsg"></div>
+        </div>
+        <div class="kpis">
+          <div class="kpi"><div class="k">세후 ROI (자기자본 대비)</div><div class="v" id="kRoi">—</div></div>
+          <div class="kpi"><div class="k">연환산 수익률</div><div class="v" id="kAnn">—</div></div>
+          <div class="kpi"><div class="k">실투자금(자기자본)</div><div class="v" id="kEquity">—</div></div>
+          <div class="kpi"><div class="k">총비용 합계</div><div class="v" id="kCost">—</div></div>
+        </div>
+        <div class="waterfall">
+          <div class="wf"><span class="wl">매도가</span><div class="bar"><i id="bSell" style="background:var(--gain)"></i></div><span class="wv" id="wSell"></span></div>
+          <div class="wf"><span class="wl">− 낙찰가</span><div class="bar"><i id="bBid" style="background:var(--ink);opacity:.55"></i></div><span class="wv" id="wBid"></span></div>
+          <div class="wf"><span class="wl">− 총비용</span><div class="bar"><i id="bCost" style="background:var(--seal)"></i></div><span class="wv" id="wCost"></span></div>
+          <div class="wf"><span class="wl">− 양도세</span><div class="bar"><i id="bTax" style="background:var(--seal-deep)"></i></div><span class="wv" id="wTax"></span></div>
+          <div class="wf" style="font-weight:750"><span class="wl">= 순수익</span><div class="bar"><i id="bNet"></i></div><span class="wv" id="wNet"></span></div>
+        </div>
+        <div class="note" id="taxnote"></div>
+      </div>
+      <footer style="text-align:left;margin-top:14px">
+        <span class="warn">⚠️ 미검증 · 교육용 개략치</span> 세율·요율은 <b>대표 가정값</b>으로 단순화한 시뮬레이션입니다.
+        권리분석(임차인·지분·인수금)은 2026.08.19 매각물건명세서 열람 기준이며, 실거래 시세는 국토부
+        최근 12개월 동일 단지·평형 데이터입니다. 실제 취득세·양도세·인수 범위는 주택수·조정지역·배당표에
+        따라 달라지므로 입찰 전 등기사항증명서·전입세대열람·세무 전문가 확인이 필요합니다.
+      </footer>
+    </div>
+  </div>
+</div>
+
+<script>
+const won = n => Math.round(n).toLocaleString('ko-KR');
+const asEok = n => (n>=10000||n<=-10000) ? (n/10000).toFixed(2)+'억' : won(n)+'만';
+
+// ===== 물건 4건 (2026-08-19 매각물건명세서·실거래 확인) =====
+const PROPS = [
+  {id:'p1', ref:'lotte', name:'롯데캐슬 120동 1403호', meta:'평택지원 2024타경47280 · 매각 08.31',
+   verdict:'ok', vtext:'입찰 검토',
+   appraisal:25000, bid:21600, sell:24750, area:74.5, assume:0, assumeMode:'none',
+   refSub:'안성 대덕면 · 전용 74.50㎡ 방3·욕실2 · 2,320세대 · 2016 준공 · 실거래 참조(74~77㎡ 계열)',
+   chips:['2,320세대','2016.02 준공','20층 중 14층','유찰 1회 (70%)','최저 1.75억','임의경매'],
+   banner:{cls:'okb', html:'<b>✓ 권리 깨끗</b> — 명세서상 임차인 없음, 점유자는 채무자 겸 공동소유자. 최선순위 2020.7.16 근저당권(말소기준)은 낙찰 시 소멸. 동일 단지 74.5㎡ 경매 낙찰 2.24억(85.0%)·2.18억(90.7%), 단지 평균 매각가율 <b>86.5%</b> — 기본 낙찰가는 이 평균 적용가입니다.'}},
+  {id:'p2', ref:'lotte', name:'롯데캐슬 118동 503호', meta:'평택지원 2025타경43104 · 매각 09.01',
+   verdict:'no', vtext:'임차권 2.7억 인수',
+   appraisal:24300, bid:11907, sell:24750, area:77.03, assume:15400, assumeMode:'dividend', deposit:27000,
+   refSub:'안성 대덕면 · 전용 77.03㎡ · 2,320세대 · 2016 준공 · 실거래 참조(74~77㎡ 계열)',
+   chips:['2,320세대','2016.02 준공','유찰 2회 (49%)','최저 1.19억','강제경매','임차권등기 2.7억'],
+   banner:{cls:'', html:'<b>✗ 입찰 부적합</b> — 명세서 비고: "매수인에게 대항할 수 있는 임차권등기(보증금 <b>270,000,000원</b>)가 있으므로 배당에서 전액 변제되지 아니하면 <b>잔액을 매수인이 인수</b>". 보증금 2.7억 &gt; 시세 2.475억 — 낙찰가를 움직여 봐도 손실인 구조입니다. 인수금액은 낙찰가에 따라 자동 계산됩니다(임차인 1순위 배당 가정).'}},
+  {id:'p3', ref:'elcru', name:'뉴비전엘크루 110동 302호', meta:'평택지원 2025타경42667 · 매각 08.31',
+   verdict:'no', vtext:'대항력 2.8억 인수',
+   appraisal:31400, bid:15386, sell:30000, area:74.83, assume:28000, assumeMode:'full',
+   refSub:'평택 합정동 · 전용 74.83㎡ · 1,396세대 · 2021 준공 · 실거래 참조',
+   chips:['1,396세대','2021 준공','유찰 2회 (49%)','최저 1.54억','강제경매','대지권 미등기(분양대금 완납)'],
+   banner:{cls:'', html:'<b>✗ 입찰 부적합</b> — 전입 2022.4.28이 최선순위 근저당(2022.8.9)보다 앞선 대항력 임차인(보증금 <b>2.8억</b>)이 <b>배당요구 없이</b> 있습니다. 배당요구가 없으면 보증금 전액을 매수인이 인수 — 최저가에 받아도 총부담이 시세(3.0억)를 넘습니다.'}},
+  {id:'p4', ref:'hille', name:'힐스테이트평택2차 207동 201호', meta:'평택지원 2025타경42018 · 매각 09.01',
+   verdict:'no', vtext:'지분매각',
+   appraisal:26500, bid:18550, sell:0, area:101.41, assume:0, assumeMode:'none',
+   refSub:'평택 세교동 · 전용 101.41㎡ 방3·가족실 · 1,443세대 · 2018 준공 · 동일 평형 실거래 없음',
+   chips:['1,443세대','2018 준공','유찰 1회 (70%)','최저 1.855억','지분매각','공유자 우선매수 1회'],
+   banner:{cls:'', html:'<b>✗ 입찰 부적합 · 시뮬레이션 비대상</b> — 명세서 비고 1번이 <b>"지분매각"</b>입니다. 101㎡가 2.65억으로 평가된 이유는 공유지분이기 때문(동일 단지 73.55㎡ 전체 소유권 낙찰가 3.3억대). 공유자 우선매수신고 1회 허용 — 낙찰받아도 공유자에게 넘어갈 수 있습니다. 아래 시뮬레이터 수치는 참고용일 뿐 지분물건에는 적용되지 않습니다.'}},
+];
+
+// ===== 단지 실거래 참조 (국토부 2026-08-19 조회, 최근 12개월) =====
+const REFS = {
+  lotte:{title:'📍 안성 롯데캐슬 · 74~77㎡', cnt:38, med:24750, min:21800, max:26000,
+    months:[['25.08',4,24375],['25.09',1,23400],['25.10',6,24642],['25.11',4,23238],['25.12',1,26000],['26.01',8,24512],['26.02',0,0],['26.03',2,23450],['26.04',4,24875],['26.05',4,25200],['26.06',1,25000],['26.07',3,24850]],
+    recent:[['2026.07','74.50㎡ 12층',25000],['2026.07','74.44㎡ 19층',25300],['2026.07','77.03㎡ 18층',24250],['2026.06','74.50㎡ 15층',25000],['2026.05','74.44㎡ 11층',25300]],
+    note:'국토부 실거래 스냅샷 · 전용 74.44 / 74.50 / 77.03㎡ 합산. 호가·향은 공공데이터에 없어 미포함.'},
+  elcru:{title:'📍 평택 뉴비전엘크루 · 74.83㎡', cnt:69, med:30000, min:27500, max:34000,
+    months:[['25.08',6,31133],['25.09',5,30500],['25.10',10,30580],['25.11',4,30150],['25.12',5,29400],['26.01',7,29443],['26.02',8,29100],['26.03',9,30000],['26.04',3,29967],['26.05',2,29100],['26.06',7,29793],['26.07',3,31100]],
+    recent:[['2026.07','74.83㎡ 23층',30500],['2026.07','74.83㎡ 12층',31800],['2026.07','74.83㎡ 14층',31000],['2026.06','74.83㎡ 3층',30000],['2026.06','74.83㎡ 11층',31000]],
+    note:'국토부 실거래 스냅샷 · 전용 74.834㎡. 최근 12개월 69건으로 표본이 두텁습니다.'},
+  hille:{title:'📍 힐스테이트평택2차 · 101.41㎡', cnt:0, med:0, min:0, max:0,
+    months:[['25.08',0,0],['25.09',0,0],['25.10',0,0],['25.11',0,0],['25.12',0,0],['26.01',0,0],['26.02',0,0],['26.03',0,0],['26.04',0,0],['26.05',0,0],['26.06',0,0],['26.07',0,0]],
+    recent:[],
+    note:'전용 101.41㎡(±3㎡)는 최근 12개월 매매 실거래가 없습니다. 참고: 동일 단지 73.55㎡ 경매 낙찰 3.33억(79%)·3.35억(82.8%) — 전체 소유권 기준.'},
+};
+
+// 8대 비용 정의 (기본값 = 낙찰가/면적 기반 자동추정 함수)
+const COSTS = [
+  {id:'tax',   name:'① 취득세',      hint:'낙찰가 × 취득세율', auto:s=>Math.round(s.bid*s.acqRate)},
+  {id:'law',   name:'② 법무사비',    hint:'소유권이전·말소 등기대행', auto:s=>Math.round(s.bid*0.006+30)},
+  {id:'arrear',name:'③ 체납관리비',  hint:'공용부분 미납분 인수', auto:()=>150},
+  {id:'evict', name:'④ 명도비',      hint:'이사비·강제집행 예비', auto:()=>250},
+  {id:'reno',  name:'⑤ 수리·인테리어',hint:'하자보수 + 인테리어', auto:s=>Math.round(s.area*18)},
+  {id:'int',   name:'⑥ 이자비용',    hint:'대출액×금리×보유기간', auto:s=>Math.round(s.loan*(s.rate/100)*(s.months/12))},
+  {id:'broker',name:'⑦ 중개보수',    hint:'매도 시 중개수수료 0.4%', auto:s=>Math.round(s.sell*0.004)},
+];
+// ⑧ 양도세는 별도 계산
+
+const state = {owner:'person', prop:PROPS[0]};
+let manual = {};           // 사용자가 직접 수정한 비용값
+let assumeManual = false;  // 인수금액 직접 수정 여부
+
+function acqRate(){ return 0.011; }
+const BRACKETS=[
+  {upto:1400,r:0.06,ded:0},{upto:5000,r:0.15,ded:126},{upto:8800,r:0.24,ded:576},
+  {upto:15000,r:0.35,ded:1544},{upto:30000,r:0.38,ded:1994},{upto:50000,r:0.40,ded:2594},
+  {upto:100000,r:0.42,ded:3594},{upto:Infinity,r:0.45,ded:6594},
+];
+function progressive(base){
+  for(const b of BRACKETS){ if(base<=b.upto)
+    return {rate:b.r, ded:b.ded, tax:Math.max(0,Math.round(base*b.r - b.ded))}; }
+}
+function taxSpec(months){
+  if(state.owner==='corp')   return {kind:'flat', nat:0.29, deduct:0,   note:'(법인 · 추가과세 포함 가정)', label:'법인세율(9~24%) + 토지등 양도소득 추가과세를 단순 합산한 가정치'};
+  if(state.owner==='dealer') return {kind:'prog',           deduct:0,   note:'(종합소득세 누진세율표)',     label:'매매사업자는 사업소득 → 종합소득세 누진세율표 적용(다른 소득과 합산 시 세율↑ 가능)'};
+  if(months<12) return {kind:'flat', nat:0.70, deduct:250, note:'(1년 미만 단기중과)', label:'개인 · 1년 미만 단기양도 70% 중과 · 양도소득 기본공제 250만 반영'};
+  if(months<24) return {kind:'flat', nat:0.60, deduct:250, note:'(2년 미만 단기중과)', label:'개인 · 2년 미만 단기양도 60% 중과 · 양도소득 기본공제 250만 반영'};
+  return {kind:'prog', deduct:250, note:'(기본세율 누진세율표)', label:'개인 · 2년 이상 → 기본세율 누진세율표 · 양도소득 기본공제 250만 반영'};
+}
+
+// 비용 UI 렌더
+const costsBox = document.getElementById('costs');
+COSTS.forEach(c=>{
+  const el=document.createElement('div');el.className='cost';
+  el.innerHTML=`<div class="nm"><b>${c.name}</b><span>${c.hint}</span></div>
+    <div class="inp"><input type="number" id="c_${c.id}" step="10"><span class="unit">만원</span></div>`;
+  costsBox.appendChild(el);
+  el.querySelector('input').addEventListener('input',e=>{manual[c.id]=e.target.value===''?null:+e.target.value;calc();});
+});
+
+function num(id){return +document.getElementById(id).value||0;}
+
+// 물건별 인수금액 자동 갱신 (직접 수정 전까지)
+function syncAssume(bid){
+  const p=state.prop;
+  if(assumeManual) return;
+  let v=0;
+  if(p.assumeMode==='dividend') v=Math.max(0, p.deposit - Math.max(0, bid-300));
+  else if(p.assumeMode==='full') v=p.assume;
+  else v=0;
+  document.getElementById('c_assume').value=v;
+}
+
+function calc(){
+  const appraisal=num('appraisal'), bid=num('bid'), sell=num('sell'),
+        months=num('months'), area=num('area'), ltv=num('ltv'), rate=num('rate');
+  const br = appraisal? bid/appraisal*100 : 0;
+  document.getElementById('bidRate').value = Math.min(100,Math.max(40,br));
+  document.getElementById('bidRateTxt').textContent = br.toFixed(1)+'% (감정가 대비)';
+
+  syncAssume(bid);
+  const loan = Math.round(bid*ltv/100);
+  const s = {bid,sell,area,months,rate,loan,acqRate:acqRate()};
+
+  let total=0; const costVals={};
+  COSTS.forEach(c=>{
+    const autoV=c.auto(s);
+    const inp=document.getElementById('c_'+c.id);
+    const v = (manual[c.id]===undefined||manual[c.id]===null)? autoV : manual[c.id];
+    if(manual[c.id]===undefined||manual[c.id]===null){inp.value='';inp.placeholder=won(autoV);}
+    costVals[c.id]=v; total+=v;
+  });
+  const assume=num('c_assume'), vat=num('c_vat');
+  total += assume + vat;
+
+  const acqCosts = total;
+  const gainBase = sell - bid - acqCosts;
+  const spec = taxSpec(months);
+  const usedDed = gainBase>0 ? Math.min(spec.deduct, gainBase) : 0;
+  const taxable = Math.max(0, gainBase - spec.deduct);
+  let natTax=0, ratePct='—', rateNote=spec.note;
+  if(taxable>0){
+    if(spec.kind==='flat'){ natTax=Math.round(taxable*spec.nat); ratePct=(spec.nat*100).toFixed(0)+'%'; }
+    else { const pr=progressive(taxable); natTax=pr.tax; ratePct=(pr.rate*100).toFixed(0)+'%';
+           rateNote=`${spec.note} 누진공제 ${won(pr.ded)}만`; }
+  }
+  const localTax= Math.round(natTax*0.1);
+  const capTax  = natTax + localTax;
+  const net = gainBase - capTax;
+
+  document.getElementById('txGain').textContent = won(Math.max(0,gainBase))+'만';
+  const dedEl=document.getElementById('txDed'), dedNote=document.getElementById('txDedNote');
+  if(spec.deduct>0){ dedNote.textContent='양도소득 기본공제(연 250만)'; dedEl.textContent='−'+won(usedDed)+'만'; }
+  else { dedNote.textContent='매매사업자·법인은 기본공제 없음'; dedEl.textContent='0만'; }
+  document.getElementById('txBase').textContent  = won(taxable)+'만';
+  document.getElementById('txRate').textContent  = ratePct;
+  document.getElementById('txRateNote').textContent = rateNote;
+  document.getElementById('txNat').textContent   = won(natTax)+'만';
+  document.getElementById('txNatNote').textContent = spec.kind==='prog' ? '과표 × 세율 − 누진공제' : '과표 × 세율';
+  document.getElementById('txLocal').textContent = won(localTax)+'만';
+  document.getElementById('txTotal').textContent = won(capTax)+'만';
+  const effRate = gainBase>0 ? (capTax/gainBase*100) : 0;
+  document.getElementById('txExplain').innerHTML =
+    `<span class="warn">⚠️미검증</span> ${spec.label}. 양도차익 대비 실효부담률 ≈ ${effRate.toFixed(1)}% (국세+지방세).`;
+
+  const equity = bid - loan + acqCosts;
+  const roi = equity>0 ? net/equity*100 : 0;
+  const ann = months>0 ? roi*(12/months) : 0;
+
+  const pos = net>=0;
+  document.getElementById('verdict').classList.toggle('neg',!pos);
+  document.getElementById('vlab').textContent = pos?'세후 순수익':'세후 손실';
+  document.getElementById('vnet').textContent = (pos?'+':'−')+asEok(Math.abs(net));
+  document.getElementById('vmsg').textContent =
+    pos ? `매도 시 ${asEok(net)} 확보 · 세후 ROI ${roi.toFixed(1)}%`
+        : `이 낙찰가로는 ${asEok(-net)} 손실 — 낙찰가/매도가 재검토`;
+
+  set('kRoi',(roi>=0?'+':'')+roi.toFixed(1)+'%',roi>=0);
+  set('kAnn',(ann>=0?'+':'')+ann.toFixed(1)+'%',ann>=0);
+  document.getElementById('kEquity').textContent=asEok(equity);
+  document.getElementById('kCost').textContent=asEok(acqCosts+capTax);
+
+  const scale=v=>Math.max(1,Math.min(100, sell>0? Math.abs(v)/sell*100:0));
+  bar('bSell',100); val('wSell',won(sell));
+  bar('bBid',scale(bid)); val('wBid','−'+won(bid));
+  bar('bCost',scale(acqCosts)); val('wCost','−'+won(acqCosts));
+  bar('bTax',scale(capTax)); val('wTax','−'+won(capTax));
+  const bn=document.getElementById('bNet'); bn.style.background=pos?'var(--gain)':'var(--loss)';
+  bar('bNet',scale(net)); val('wNet',(pos?'+':'−')+won(Math.abs(net)));
+
+  document.getElementById('taxnote').innerHTML=
+    `양도세 가정: <b>${spec.label}</b> · 취득세율 ${(acqRate()*100).toFixed(1)}% 적용. `+
+    `실투자금 = 낙찰가 − 대출 ${asEok(loan)} + 비용. 인수금액 ${assume>0? asEok(assume)+' 포함':'없음'}.`;
+}
+function set(id,t,pos){const e=document.getElementById(id);e.textContent=t;e.className='v '+(pos?'pos':'negc');}
+function bar(id,pct){document.getElementById(id).style.width=pct+'%';}
+function val(id,t){document.getElementById(id).textContent=t;}
+
+// ===== 물건 선택 렌더/전환 =====
+const propsBox=document.getElementById('props');
+PROPS.forEach((p,i)=>{
+  const el=document.createElement('div');el.className='prop'+(i===0?' on':'');
+  el.innerHTML=`<div class="pn">${p.name}</div><div class="pm">${p.meta}</div>
+    <span class="pv ${p.verdict}">${p.verdict==='ok'?'✓ ':'✗ '}${p.vtext}</span>`;
+  el.addEventListener('click',()=>selectProp(i));
+  propsBox.appendChild(el);
+});
+function selectProp(i){
+  state.prop=PROPS[i];
+  document.querySelectorAll('.prop').forEach((x,j)=>x.classList.toggle('on',j===i));
+  const p=state.prop;
+  manual={}; assumeManual=false;
+  document.getElementById('appraisal').value=p.appraisal;
+  document.getElementById('bid').value=p.bid;
+  document.getElementById('sell').value=p.sell;
+  document.getElementById('area').value=p.area;
+  document.getElementById('c_assume').value=p.assume;
+  document.getElementById('c_vat').value=0;
+  document.getElementById('assumeHint').textContent =
+    p.assumeMode==='dividend' ? '임차권등기 2.7억 − 배당액 (낙찰가 연동 자동계산)' :
+    p.assumeMode==='full' ? '대항력 임차인 보증금 전액 (배당요구 없음)' : '선순위 임차보증금·미말소 권리 등';
+  document.getElementById('propBanner').innerHTML =
+    `<div class="banner ${p.banner.cls}">${p.banner.html}</div>`;
+  renderRef(p.ref);
+  calc();
+}
+
+// ===== 실거래 참조 카드 렌더 =====
+function renderRef(key){
+  const R=REFS[key], p=state.prop;
+  document.getElementById('refTitle').childNodes[0].textContent=R.title;
+  document.getElementById('refSub').textContent=p.refSub;
+  document.getElementById('refChips').innerHTML=p.chips.map(s=>`<span class="chip">${s}</span>`).join('');
+  document.getElementById('rsCnt').textContent = R.cnt? R.cnt+'건':'0건';
+  document.getElementById('rsMed').textContent = R.med? asEok(R.med):'—';
+  document.getElementById('rsRange').textContent = R.cnt? asEok(R.min)+' ~ '+asEok(R.max):'—';
+  const lastAvg=[...R.months].reverse().find(m=>m[1]>0);
+  document.getElementById('rsLast').textContent = lastAvg? asEok(lastAvg[2]):'—';
+  const maxc=Math.max(1,...R.months.map(m=>m[1]));
+  document.getElementById('refBars').innerHTML=R.months.map(m=>{
+    const h=m[1]?Math.round(m[1]/maxc*100):0;
+    return `<div class="bcol${m[1]?'':' empty'}">
+      <span class="bc">${m[2]?(m[2]/10000).toFixed(2):'·'}</span>
+      <span class="bk" style="height:${h}%" title="${m[0]} ${m[1]}건"></span>
+      <span class="bm">${m[0]}</span></div>`;}).join('');
+  document.getElementById('refRows').innerHTML = R.recent.length
+    ? R.recent.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${asEok(r[2])}</td></tr>`).join('')
+    : '<tr><td colspan="3" style="color:var(--muted)">최근 12개월 동일 평형 실거래 없음</td></tr>';
+  const fb=document.getElementById('fillSell');
+  fb.disabled=!R.med;
+  fb.textContent = R.med? `↧ 중위 실거래가(${asEok(R.med)})를 예상 매도가로 채우기` : '중위 실거래가 없음 — 매도가 직접 입력';
+  document.getElementById('refNote').innerHTML=`<span class="warn">참조용</span> ${R.note}`;
+}
+document.getElementById('fillSell').addEventListener('click',()=>{
+  const R=REFS[state.prop.ref]; if(!R.med) return;
+  document.getElementById('sell').value=R.med; calc();
+});
+
+// 이벤트 바인딩
+['appraisal','bid','sell','months','area','ltv','rate','c_vat'].forEach(id=>
+  document.getElementById(id).addEventListener('input',calc));
+document.getElementById('c_assume').addEventListener('input',()=>{assumeManual=true;calc();});
+document.getElementById('bidRate').addEventListener('input',e=>{
+  const ap=num('appraisal'); document.getElementById('bid').value=Math.round(ap*e.target.value/100); calc();});
+document.querySelectorAll('#ownerSeg .seg').forEach(seg=>seg.addEventListener('click',()=>{
+  document.querySelectorAll('#ownerSeg .seg').forEach(x=>x.classList.remove('on'));
+  seg.classList.add('on'); state.owner=seg.dataset.v; calc();}));
+
+// 테마 토글
+const root=document.documentElement;
+document.getElementById('tt').addEventListener('click',()=>{
+  const cur=root.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');
+  root.setAttribute('data-theme',cur==='dark'?'light':'dark');
+});
+
+selectProp(0);
+</script>
