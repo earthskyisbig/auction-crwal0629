@@ -1,0 +1,646 @@
+<meta charset="utf-8">
+<title>서울 빌라 유찰 경매</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --seal:#c0392b; --ink:#1b2432; --bg:#efe9dd; --card:#fff; --fg:#1b2432;
+  --sub:#5b6472; --muted:#79828f; --line:#d8d0bf; --line-soft:#e6e0d2; --field:#fbf9f4;
+  --gain:#1f7a4d; --gain-soft:#e4efe9; --loss:#b23b2e; --loss-soft:#f7e8e5;
+  --amber:#9a6410; --amber-soft:#f5ecdc;
+  --shadow:0 1px 2px rgba(27,36,50,.06),0 8px 30px rgba(27,36,50,.07);
+  --mono:"SF Mono",ui-monospace,"JetBrains Mono",Consolas,monospace;
+  --sans:"IBM Plex Sans KR",-apple-system,"Malgun Gothic",sans-serif;
+  --serif:"Nanum Myeongjo",serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --seal:#e0644f; --ink:#e8eaf0; --bg:#10141b; --card:#1a212c; --fg:#e8eaf0;
+  --sub:#9aa3b2; --muted:#7f8896; --line:#2b3342; --line-soft:#232b38; --field:#141a23;
+  --gain:#4ecf8f; --gain-soft:#1a2f26; --loss:#e9705f; --loss-soft:#33211e;
+  --amber:#d9a05b; --amber-soft:#332920;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 34px rgba(0,0,0,.5);
+}}
+:root[data-theme="dark"]{
+  --seal:#e0644f; --ink:#e8eaf0; --bg:#10141b; --card:#1a212c; --fg:#e8eaf0;
+  --sub:#9aa3b2; --muted:#7f8896; --line:#2b3342; --line-soft:#232b38; --field:#141a23;
+  --gain:#4ecf8f; --gain-soft:#1a2f26; --loss:#e9705f; --loss-soft:#33211e;
+  --amber:#d9a05b; --amber-soft:#332920;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 34px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);
+  font-size:15px;line-height:1.65;-webkit-font-smoothing:antialiased}
+.num{font-variant-numeric:tabular-nums}
+.wrap{max-width:1060px;margin:0 auto;padding:32px 22px 90px}
+.mut{color:var(--muted)} .pos{color:var(--gain)} .neg{color:var(--loss)}
+header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;
+  border-bottom:1px solid var(--line);padding-bottom:24px;margin-bottom:22px}
+.brand{display:flex;gap:15px;align-items:center}
+.stamp{width:50px;height:50px;flex:none;border-radius:9px;border:2px solid var(--seal);color:var(--seal);
+  display:grid;place-items:center;font-family:var(--serif);font-weight:800;font-size:13px;
+  transform:rotate(-6deg);position:relative;letter-spacing:1px}
+.stamp::after{content:"";position:absolute;inset:4px;border:1px solid var(--seal);border-radius:5px;opacity:.5}
+h1{font-family:var(--serif);font-weight:800;font-size:clamp(24px,4.4vw,34px);margin:0;letter-spacing:-.4px;text-wrap:balance}
+.eyebrow{font-size:11.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);font-weight:700;margin:0 0 7px}
+.themebtn{border:1px solid var(--line);background:var(--card);color:var(--sub);border-radius:8px;
+  padding:7px 11px;font-size:12px;cursor:pointer;font-family:inherit;flex:none}
+.conds{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:26px}
+.cond{border:1px solid var(--line);background:var(--card);border-radius:20px;padding:4px 12px;font-size:12.5px;color:var(--sub)}
+.cond b{color:var(--fg);font-weight:650;margin-left:5px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:1px;background:var(--line);
+  border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:36px}
+.kpi{background:var(--card);padding:16px 17px 14px}
+.kpi .k{font-size:11.5px;color:var(--muted);font-weight:600}
+.kpi .v{font-family:var(--serif);font-weight:800;font-size:24px;line-height:1.15;margin-top:5px}
+.kpi .v small{font-family:var(--sans);font-size:12.5px;font-weight:500;color:var(--muted);margin-left:3px}
+.kpi.good .v{color:var(--gain)} .kpi.seal .v{color:var(--seal)}
+section{margin-bottom:44px}
+h2{font-family:var(--serif);font-weight:800;font-size:21px;margin:0 0 5px;text-wrap:balance}
+.lede{color:var(--sub);font-size:13.5px;margin:0 0 20px;max-width:72ch}
+h3{font-size:14px;margin:22px 0 10px;font-weight:700}
+.card{background:var(--card);border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow);padding:20px 22px}
+.verdict{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--seal);
+  border-radius:0 12px 12px 0;padding:18px 22px;box-shadow:var(--shadow)}
+.verdict p{margin:0 0 11px;max-width:80ch} .verdict p:last-child{margin-bottom:0}
+table{border-collapse:collapse;width:100%;font-size:13px}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+.tw table{min-width:620px}
+thead th{text-align:left;font-size:11px;letter-spacing:.05em;color:var(--muted);font-weight:700;
+  padding:10px 12px;border-bottom:2px solid var(--ink);white-space:nowrap;background:var(--card)}
+tbody td{padding:9px 12px;border-bottom:1px solid var(--line-soft);vertical-align:top}
+tbody tr:last-child td{border-bottom:0}
+td.r,th.r{text-align:right;white-space:nowrap}
+td .case{display:block;font-size:10.5px;color:var(--muted);margin-top:2px}
+.rg{display:flex;align-items:center;gap:10px;margin:7px 0;font-size:12.5px}
+.rg .rl{flex:none;width:96px;color:var(--sub)}
+.rg .rbar{flex:1;height:15px;background:var(--field);border-radius:3px;overflow:hidden}
+.rg .rbar i{display:block;height:100%;background:var(--seal);opacity:.8;border-radius:3px}
+.rg .rv{flex:none;width:30px;text-align:right;font-family:var(--mono)}
+.props{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+@media(max-width:880px){.props{grid-template-columns:repeat(2,1fr)}}
+.prop{border:1px solid var(--line);border-radius:11px;background:var(--card);padding:10px 12px;cursor:pointer;
+  user-select:none;box-shadow:var(--shadow)}
+.prop.on{border-color:var(--seal);outline:2px solid var(--seal);outline-offset:-1px}
+.prop .pn{font-size:12.5px;font-weight:700;letter-spacing:-.2px}
+.prop .pm{font-size:10.5px;color:var(--muted);margin-top:2px;font-family:var(--mono)}
+.prop .pv{display:inline-block;margin-top:7px;font-size:10px;font-weight:700;border-radius:5px;padding:1px 6px;border:1px solid}
+.pv.ok,.rb.ok{color:var(--gain);border-color:var(--gain);background:var(--gain-soft)}
+.pv.no,.rb.no{color:var(--seal);border-color:var(--seal);background:var(--loss-soft)}
+.rb{display:inline-block;font-size:11px;font-weight:700;border-radius:5px;padding:2px 8px;border:1px solid}
+.pcard{display:none;background:var(--card);border:1px solid var(--line);border-radius:13px;
+  padding:20px 22px;box-shadow:var(--shadow)}
+.pcard.on{display:block}
+.ph{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;margin-bottom:6px}
+.pt{font-family:var(--serif);font-weight:800;font-size:18px}
+.phead{color:var(--seal);font-size:13.5px;font-weight:650;margin:0 0 12px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+.chip{font-size:11.5px;background:var(--field);border:1px solid var(--line);border-radius:20px;padding:3px 10px;color:var(--sub)}
+.stat4{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);
+  border-radius:10px;overflow:hidden;margin-bottom:16px}
+@media(max-width:620px){.stat4{grid-template-columns:repeat(2,1fr)}}
+.stat4 .s{background:var(--card);padding:11px 13px}
+.stat4 .sk{font-size:10.5px;color:var(--muted);font-weight:600}
+.stat4 .sv{font-family:var(--serif);font-weight:800;font-size:17px;margin-top:3px}
+.stat4 .sv.seal{color:var(--seal)}
+.stat4 .sd{font-size:10.5px;color:var(--muted);margin-top:2px}
+.pbody{font-size:13.5px;max-width:80ch;margin-bottom:14px}
+.prisk{font-size:12.5px;color:var(--sub);background:var(--field);border:1px solid var(--line-soft);
+  border-left:3px solid var(--amber);border-radius:0 8px 8px 0;padding:11px 14px;margin-bottom:16px}
+.prisk b{color:var(--amber);margin-right:6px}
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+@media(max-width:720px){.pgrid{grid-template-columns:1fr}}
+.sub{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:8px}
+.fl2{margin:9px 0 0;padding-left:17px;font-size:12.5px;color:var(--sub)}
+.fl2 li{margin:4px 0}
+table.mini{font-size:12px}
+table.mini th{border-bottom:1px solid var(--line);padding:5px 7px;font-size:10.5px}
+table.mini td{padding:5px 7px;border-bottom:1px solid var(--line-soft)}
+.src{font-family:var(--mono);font-size:11px;color:var(--muted)}
+details{margin-top:12px}
+summary{cursor:pointer;font-size:12.5px;color:var(--sub)}
+footer{border-top:1px solid var(--line);padding-top:22px;font-size:12px;color:var(--muted);max-width:84ch}
+footer p{margin:0 0 9px} footer b{color:var(--sub)}
+</style>
+<div class="wrap">
+<header>
+  <div class="brand">
+    <div class="stamp">落札</div>
+    <div>
+      <p class="eyebrow">경매 검토보고서 · 권리 · 시세 · 수익 · 2026. 09. 09.</p>
+      <h1>서울 빌라 유찰 경매</h1>
+    </div>
+  </div>
+  <button class="themebtn" id="tt">◐ 테마</button>
+</header>
+
+<div class="conds">
+  <span class="cond">지역<b>서울특별시</b></span>
+  <span class="cond">용도<b>다세대주택(빌라)</b></span>
+  <span class="cond">유찰<b>3회 이상</b></span>
+  <span class="cond">최저매각가<b>2억원 이하</b></span>
+  <span class="cond">매각기일<b>2026.09.09 ~ 10.24</b></span>
+</div>
+
+<div class="kpis"><div class="kpi "><div class="k">수집 물건</div><div class="v num">129<small>건</small></div></div>
+<div class="kpi "><div class="k">최저가 중앙값</div><div class="v num">1억291만<small></small></div></div>
+<div class="kpi seal"><div class="k">유찰 10회 이상</div><div class="v num">19<small>건</small></div></div>
+<div class="kpi "><div class="k">심층 분석</div><div class="v num">8<small>건</small></div></div>
+<div class="kpi good"><div class="k">입찰 검토 가능</div><div class="v num">5<small>건</small></div></div></div>
+
+<section>
+  <h2>결론 — 유찰이 많다고 싼 게 아니다</h2>
+  <div class="verdict">
+    <p>조건에 맞는 물건은 <b>129건</b>이고, 이 가운데 <b>19건은 유찰이 10회를 넘습니다</b>. 감정가 2억 3,900만원짜리 빌라가
+    스무 번 유찰돼 최저가 <b>275만원</b>까지 떨어진 사건도 있습니다. 그런데도 아무도 사지 않습니다.</p>
+    <p>8건을 골라 매각물건명세서를 직접 열어 본 결과 이유가 명확했습니다. <b>권장 낙찰상한이 음수인 물건이 3건</b>이고,
+    그 3건이 정확히 <b>대항력 임차보증금을 인수해야 하는 3건</b>과 일치합니다. 275만원짜리 물건은 보증금 2억 3,200만원을
+    떠안아야 해서 <b>낙찰가를 0원으로 놓아도 총부담이 시세를 넘습니다</b>. 법원 최저가는 물건 가치의 하한이 아니라
+    <b>인수부담을 뺀 잔여가치</b>를 향해 내려갑니다.</p>
+    <p>반대로 나머지 5건은 인수금액이 0원이고 <b>손익분기까지 4,500만~1억 3,200만원의 여유</b>가 있습니다.
+    인수가 0이 되는 경로는 두 가지였습니다 — 애초에 임차인이 없거나(3건), 채권자·보증기관이
+    <b>대항력을 포기하고 임차권등기를 말소하겠다는 확약서</b>를 낸 경우(2건)입니다. 화곡동 한 건은 보증금이 3억 9,000만원인데도
+    확약서 한 장으로 인수부담이 사라졌습니다.</p>
+    <p>따라서 이 시장에서 걸러야 할 것은 유찰 횟수가 아니라 <b>인수금액</b>입니다. 유찰 20회 물건과 유찰 4회 물건이
+    같은 이유로 위험하고, 유찰 3회 물건과 유찰 4회 물건이 같은 이유로 안전합니다.</p>
+  </div>
+</section>
+
+<section>
+  <h2>권장 낙찰상한 — 이 가격을 넘으면 손실</h2>
+  <p class="lede">보수 시세에서 취득부대비용·인수금액을 빼고 역산한 <b>손익분기 낙찰가</b>입니다.
+  산식은 auction-analysis-kit의 <span class="src">profit-analysis</span> 방법론을 그대로 썼습니다
+  (취득세 1.1%, 법무사 60만, 체납관리비 100만, 명도비 전용평당 10만, 중개보수 0.4%, 수리비 빌라 기준 전용평당 15만).
+  보수 시세는 <b>비교군 하위 25%와 감정가 중 낮은 쪽</b>을 택했습니다.</p>
+  <div class="tw"><table>
+    <thead><tr><th>물건</th><th class="r">최저매각가</th><th class="r">권장 낙찰상한</th>
+      <th class="r">가격 쿠션</th><th class="r">안전마진 15% 상한</th><th>판정</th></tr></thead>
+    <tbody><tr><td>금천 시흥동 3-20 1층 101호</td><td class="r num">9,830만</td><td class="r num">2억 3,041만</td><td class="r num pos"><b>+1억 3,210만</b></td><td class="r num">1억 9,480만</td><td><span class="rb ok">입찰 검토</span></td></tr>
+<tr><td>관악 봉천동 1615-21 4층 401호</td><td class="r num">1억 4,049만</td><td class="r num">2억 6,193만</td><td class="r num pos"><b>+1억 2,144만</b></td><td class="r num">2억 2,157만</td><td><span class="rb ok">입찰 검토</span></td></tr>
+<tr><td>양천 신월동 229-31 지하층 비01호</td><td class="r num">7,332만</td><td class="r num">1억 3,854만</td><td class="r num pos"><b>+6,522만</b></td><td class="r num">1억 1,673만</td><td><span class="rb ok">입찰 검토</span></td></tr>
+<tr><td>강서 화곡동 102-26 밀레니엄 3층 302호</td><td class="r num">1억 3,722만</td><td class="r num">1억 8,534만</td><td class="r num pos"><b>+4,812만</b></td><td class="r num">1억 5,655만</td><td><span class="rb ok">입찰 검토</span></td></tr>
+<tr><td>강서 화곡동 372-48 지층 비01호</td><td class="r num">9,318만</td><td class="r num">1억 3,804만</td><td class="r num pos"><b>+4,486만</b></td><td class="r num">1억 1,623만</td><td><span class="rb ok">입찰 검토</span></td></tr>
+<tr><td>구로 오류동 양지마을 104동 3층 302호</td><td class="r num">276만</td><td class="r num">−6,088만</td><td class="r num neg"><b>−6,364만</b></td><td class="r num">−8,688만</td><td><span class="rb no">입찰 불가</span></td></tr>
+<tr><td>구로 오류동 81-171 해츠빌 2층 202호</td><td class="r num">1억 4,295만</td><td class="r num">−9,348만</td><td class="r num neg"><b>−2억 3,643만</b></td><td class="r num">−1억 2,716만</td><td><span class="rb no">입찰 불가</span></td></tr>
+<tr><td>강서 화곡동 504-9 누리에스에이치티 2층 201호</td><td class="r num">8,347만</td><td class="r num">−2억 2,356만</td><td class="r num neg"><b>−3억 703만</b></td><td class="r num">−2억 4,845만</td><td><span class="rb no">입찰 불가</span></td></tr></tbody>
+  </table></div>
+  <p class="lede" style="margin:16px 0 0">쿠션이 음수인 세 건은 <b>어떤 낙찰가에서도 손실</b>입니다.
+  낙찰가를 0원으로 놓아도 인수보증금만으로 시세를 넘기 때문입니다.</p>
+</section>
+
+<section>
+  <h2>129건은 어떻게 분포하나</h2>
+  <div class="pgrid">
+    <div class="card"><div class="sub">유찰 횟수 (저감율 역산)</div><div class="rg"><span class="rl">1~2회</span><span class="rbar"><i style="width:53%"></i></span><span class="rv num">20</span></div>
+<div class="rg"><span class="rl">3회</span><span class="rbar"><i style="width:100%"></i></span><span class="rv num">38</span></div>
+<div class="rg"><span class="rl">4회</span><span class="rbar"><i style="width:66%"></i></span><span class="rv num">25</span></div>
+<div class="rg"><span class="rl">5회</span><span class="rbar"><i style="width:8%"></i></span><span class="rv num">3</span></div>
+<div class="rg"><span class="rl">6~9회</span><span class="rbar"><i style="width:61%"></i></span><span class="rv num">23</span></div>
+<div class="rg"><span class="rl">10회 이상</span><span class="rbar"><i style="width:50%"></i></span><span class="rv num">19</span></div>
+      <p class="lede" style="margin:14px 0 0">서울은 회차마다 20%씩 저감되므로 저감율로 유찰횟수를 되짚을 수 있습니다
+      (80%=1회, 64%=2회, 51%=3회 … 0.8²⁰=1.1%). 사이트가 표시하는 유찰횟수는 신경매·재감정 이력이 섞여 부정확합니다.</p></div>
+    <div class="card"><div class="sub">자치구 분포 (상위 10)</div><div class="rg"><span class="rl">강서구</span><span class="rbar"><i style="width:100%"></i></span><span class="rv num">41</span></div>
+<div class="rg"><span class="rl">관악구</span><span class="rbar"><i style="width:37%"></i></span><span class="rv num">15</span></div>
+<div class="rg"><span class="rl">구로구</span><span class="rbar"><i style="width:29%"></i></span><span class="rv num">12</span></div>
+<div class="rg"><span class="rl">강동구</span><span class="rbar"><i style="width:22%"></i></span><span class="rv num">9</span></div>
+<div class="rg"><span class="rl">금천구</span><span class="rbar"><i style="width:22%"></i></span><span class="rv num">9</span></div>
+<div class="rg"><span class="rl">은평구</span><span class="rbar"><i style="width:22%"></i></span><span class="rv num">9</span></div>
+<div class="rg"><span class="rl">양천구</span><span class="rbar"><i style="width:17%"></i></span><span class="rv num">7</span></div>
+<div class="rg"><span class="rl">서대문구</span><span class="rbar"><i style="width:10%"></i></span><span class="rv num">4</span></div>
+<div class="rg"><span class="rl">동작구</span><span class="rbar"><i style="width:7%"></i></span><span class="rv num">3</span></div>
+<div class="rg"><span class="rl">영등포구</span><span class="rbar"><i style="width:7%"></i></span><span class="rv num">3</span></div>
+      <p class="lede" style="margin:14px 0 0"><b>강서구가 41건으로 전체의 32%</b>입니다. 관악·구로·금천·양천을 더하면 84건(65%)으로,
+      전세보증금 반환보증 사고가 집중된 지역과 거의 겹칩니다.</p></div>
+  </div>
+</section>
+
+<section>
+  <h2>물건별 검토</h2>
+  <p class="lede">탭을 눌러 물건을 전환합니다. 앞의 5건은 인수금액이 0원인 검토 가능 물건, 뒤의 3건은 인수부담으로
+  낙찰상한이 음수인 물건입니다. 유찰횟수는 저감율로 역산했습니다.</p>
+  <div class="props"><div class="prop on" data-i="0"><div class="pn">금천 시흥동 3-20</div><div class="pm">2025타경11168</div><span class="pv ok">입찰 검토</span></div>
+<div class="prop" data-i="1"><div class="pn">관악 봉천동 1615-21</div><div class="pm">2025타경103194</div><span class="pv ok">입찰 검토</span></div>
+<div class="prop" data-i="2"><div class="pn">양천 신월동 229-31</div><div class="pm">2025타경8670</div><span class="pv ok">입찰 검토</span></div>
+<div class="prop" data-i="3"><div class="pn">강서 화곡동 102-26</div><div class="pm">2025타경12457</div><span class="pv ok">입찰 검토</span></div>
+<div class="prop" data-i="4"><div class="pn">강서 화곡동 372-48</div><div class="pm">2025타경13004</div><span class="pv ok">입찰 검토</span></div>
+<div class="prop" data-i="5"><div class="pn">구로 오류동 81-171</div><div class="pm">2025타경10752</div><span class="pv no">입찰 불가</span></div>
+<div class="prop" data-i="6"><div class="pn">강서 화곡동 504-9</div><div class="pm">2025타경10965</div><span class="pv no">입찰 불가</span></div>
+<div class="prop" data-i="7"><div class="pn">구로 오류동 양지마을</div><div class="pm">2023타경108446</div><span class="pv no">입찰 불가</span></div></div>
+  <div class="pcard on" data-i="0">
+  <div class="ph"><span class="pt">금천 시흥동 3-20 1층 101호</span><span class="rb ok">입찰 검토</span></div>
+  <p class="phead">가격 쿠션 최대(+1억 3,200만) · 임차인 없는 소유자 점유</p>
+  <div class="chips"><span class="chip">전용 58.9㎡</span><span class="chip">유찰 4회 (41%)</span><span class="chip">매각 2026.09.10 10:00</span><span class="chip">부동산임의경매</span></div>
+  <div class="stat4">
+    <div class="s"><div class="sk">최저매각가</div><div class="sv num">9,830만</div><div class="sd">감정 2억 4,000만</div></div>
+    <div class="s"><div class="sk">보수 시세</div><div class="sv num">2억 4,000만</div><div class="sd">감정가 기준</div></div>
+    <div class="s"><div class="sk">권장 낙찰상한</div><div class="sv num seal">2억 3,041만</div><div class="sd">보수시세 손익분기</div></div>
+    <div class="s"><div class="sk">가격 쿠션</div><div class="sv num pos">+1억 3,210만</div><div class="sd">상한 − 최저가</div></div>
+  </div>
+  <div class="pbody">이번 8건 중 가장 단순한 구조입니다. 최선순위가 2024.03.19 근저당권이고 <b>매각물건명세서·현황조사서 모두 임차인이 없으며</b>, 전입세대확인서에도 채무자 겸 소유자 노순옥 가족만 등재돼 있습니다. 인수할 권리도, 명도할 임차인도 없습니다. 2003년 준공 4층 건물의 1층 58.9㎡로 서울신흥초 인근이고 버스정류장까지 도보 7분입니다. 청구금액이 1.54억으로 감정가(2.40억)보다 작아 잉여가 나는 구조이기도 합니다.</div>
+  <div class="prisk"><b>확인할 것</b> 권리가 깨끗한데도 <b>실제로 네 번 유찰</b>됐습니다(2.40억→1.92→1.54→1.23→0.98억). 서류에 드러나지 않는 하자(누수·구조·주차·일조)나 금천구 시흥동 빌라 수요 자체의 부진이 원인일 수 있으니 반드시 현장을 보고 판단하세요. 보수 시세는 비교군(2.65억)이 아니라 <b>더 낮은 감정가 2.40억</b>을 채택했습니다.</div>
+  <div class="pgrid">
+    <div><div class="sub">권리 판정</div><span class="rb ok">인수 0원 — 명세서·현황조사 모두 임차인 없음</span>
+      <ul class="fl2"><li>최선순위 · 2024.03.19. 근저당</li><li>임차인 0명 · 보증금 합 0만</li><li>청구금액 · 154,007,763원</li><li>점유 · 이 사건 부동산 현지방문 조사 당시 폐문부재로 아무도 만나지 못하여 점유관계 미상임. 별도의 확인이 필요함. 안내문을 출입문에 끼워 놓았음.덧붙인 전입세대확인서 및 주민등록등본에는</li></ul></div>
+    <div><div class="sub">기일 이력</div>
+      <table class="mini"><thead><tr><th>기일</th><th>결과</th><th class="r">최저가</th></tr></thead>
+      <tbody><tr><td>2026.04.08</td><td>유찰</td><td class="r num">2억 4,000만</td></tr><tr><td>2026.05.20</td><td>유찰</td><td class="r num">1억 9,200만</td></tr><tr><td>2026.07.09</td><td>유찰</td><td class="r num">1억 5,360만</td></tr><tr><td>2026.08.12</td><td>유찰</td><td class="r num">1억 2,288만</td></tr><tr><td>2026.09.10</td><td>&lt;b&gt;이번 기일&lt;/b&gt;</td><td class="r num">9,830만</td></tr></tbody></table></div>
+  </div>
+  <div class="sub" style="margin-top:20px">낙찰가 시나리오 · 중립시세 3억 매도 가정</div>
+  <div class="tw"><table><thead><tr><th>구분</th><th class="r">낙찰가</th><th class="r">취득부대</th><th class="r">총원가</th><th class="r">세전차익</th><th class="r">ROI</th></tr></thead><tbody><tr><td>최저</td><td class="r num">9,830만</td><td class="r num">718만</td><td class="r num">1억 549만</td><td class="r num pos">1억 9,331만</td><td class="r num pos">+183.3%</td></tr><tr><td>+5%</td><td class="r num">1억 322만</td><td class="r num">724만</td><td class="r num">1억 1,045만</td><td class="r num pos">1억 8,835만</td><td class="r num pos">+170.5%</td></tr><tr><td>+10%</td><td class="r num">1억 813만</td><td class="r num">729만</td><td class="r num">1억 1,542만</td><td class="r num pos">1억 8,338만</td><td class="r num pos">+158.9%</td></tr></tbody></table></div>
+</div>
+<div class="pcard" data-i="1">
+  <div class="ph"><span class="pt">관악 봉천동 1615-21 4층 401호</span><span class="rb ok">입찰 검토</span></div>
+  <p class="phead">쿠션 +1억 2,100만 · 청구금액 1,618만원의 소액 강제경매</p>
+  <div class="chips"><span class="chip">전용 60.5㎡</span><span class="chip">유찰 4회 (41%)</span><span class="chip">매각 2026.09.22 10:00</span><span class="chip">부동산강제경매</span></div>
+  <div class="stat4">
+    <div class="s"><div class="sk">최저매각가</div><div class="sv num">1억 4,049만</div><div class="sd">감정 3억 4,300만</div></div>
+    <div class="s"><div class="sk">보수 시세</div><div class="sv num">2억 7,200만</div><div class="sd">비교군 하위25% 기준</div></div>
+    <div class="s"><div class="sk">권장 낙찰상한</div><div class="sv num seal">2억 6,193만</div><div class="sd">보수시세 손익분기</div></div>
+    <div class="s"><div class="sk">가격 쿠션</div><div class="sv num pos">+1억 2,144만</div><div class="sd">상한 − 최저가</div></div>
+  </div>
+  <div class="pbody">최선순위가 2025.06.20 강제경매개시결정이고 <b>명세서상 임차인이 없습니다</b>. 청구금액이 1,618만원에 불과한 소액 강제경매라 채권 구조도 단순합니다. 관악구 봉천동 60.5㎡ 4층으로, 같은 지번에서 최근 2건이 <b>3억 4,400만원</b>에 거래됐고 봉천동 비교군(539건) 중앙값도 3억 2,500만원입니다. 최저가 1.40억은 그 43% 수준입니다.</div>
+  <div class="prisk"><b>확인할 것</b> 감정가 3.43억은 비교군 중앙값과 거의 같아(106%) 과대평가로 보이진 않습니다. 다만 유찰이 네 번 누적된 이유가 서류에 없으므로, 같은 지번 3.44억 거래가 <b>동일 평형·동일 층대인지</b> 반드시 확인하세요. 폐문부재로 점유 상태도 미확인입니다.</div>
+  <div class="pgrid">
+    <div><div class="sub">권리 판정</div><span class="rb ok">인수 0원 — 명세서상 임차인 없음</span>
+      <ul class="fl2"><li>최선순위 · 2025.06.20. 강제경매개시결정</li><li>임차인 0명 · 보증금 합 0만</li><li>청구금액 · 16,184,273원</li><li>점유 · 방문하였으나 폐문부재이고, 방문한 취지 및 연락처를 남겼으나 아무런 연락이 없으므로 주민등록 전입된 세대만 임차인으로 보고함.</li></ul></div>
+    <div><div class="sub">기일 이력</div>
+      <table class="mini"><thead><tr><th>기일</th><th>결과</th><th class="r">최저가</th></tr></thead>
+      <tbody><tr><td>2025.12.03</td><td>유찰</td><td class="r num">2억 7,440만</td></tr><tr><td>2026.01.14</td><td>&lt;b&gt;이번 기일&lt;/b&gt;</td><td class="r num">2억 1,952만</td></tr><tr><td>2026.05.06</td><td>유찰</td><td class="r num">3억 4,300만</td></tr><tr><td>2026.06.10</td><td>유찰</td><td class="r num">2억 7,440만</td></tr><tr><td>2026.07.15</td><td>유찰</td><td class="r num">2억 1,952만</td></tr><tr><td>2026.08.19</td><td>유찰</td><td class="r num">1억 7,562만</td></tr><tr><td>2026.09.22</td><td>&lt;b&gt;이번 기일&lt;/b&gt;</td><td class="r num">1억 4,049만</td></tr></tbody></table></div>
+  </div>
+  <div class="sub" style="margin-top:20px">낙찰가 시나리오 · 중립시세 3억 2,500만 매도 가정</div>
+  <div class="tw"><table><thead><tr><th>구분</th><th class="r">낙찰가</th><th class="r">취득부대</th><th class="r">총원가</th><th class="r">세전차익</th><th class="r">ROI</th></tr></thead><tbody><tr><td>최저</td><td class="r num">1억 4,049만</td><td class="r num">765만</td><td class="r num">1억 4,814만</td><td class="r num pos">1억 7,556만</td><td class="r num pos">+118.5%</td></tr><tr><td>+5%</td><td class="r num">1억 4,752만</td><td class="r num">772만</td><td class="r num">1억 5,524만</td><td class="r num pos">1억 6,846만</td><td class="r num pos">+108.5%</td></tr><tr><td>+10%</td><td class="r num">1억 5,454만</td><td class="r num">780만</td><td class="r num">1억 6,234만</td><td class="r num pos">1억 6,136만</td><td class="r num pos">+99.4%</td></tr></tbody></table></div>
+</div>
+<div class="pcard" data-i="2">
+  <div class="ph"><span class="pt">양천 신월동 229-31 지하층 비01호</span><span class="rb ok">입찰 검토</span></div>
+  <p class="phead">임차인이 후순위라 인수 없음 · 절대가격 최저 7,300만원</p>
+  <div class="chips"><span class="chip">전용 62.5㎡</span><span class="chip">유찰 4회 (41%)</span><span class="chip">매각 2026.09.11 10:00</span><span class="chip">지하·지층</span><span class="chip">부동산임의경매</span></div>
+  <div class="stat4">
+    <div class="s"><div class="sk">최저매각가</div><div class="sv num">7,332만</div><div class="sd">감정 1억 7,900만</div></div>
+    <div class="s"><div class="sk">보수 시세</div><div class="sv num">1억 4,700만</div><div class="sd">비교군 하위25% 기준</div></div>
+    <div class="s"><div class="sk">권장 낙찰상한</div><div class="sv num seal">1억 3,854만</div><div class="sd">보수시세 손익분기</div></div>
+    <div class="s"><div class="sk">가격 쿠션</div><div class="sv num pos">+6,522만</div><div class="sd">상한 − 최저가</div></div>
+  </div>
+  <div class="pbody">임차보증금 9,000만원의 임차인이 있지만 <b>전입일 2022.08.05가 최선순위 근저당(2020.08.24)보다 늦어</b> 대항력이 없습니다. 민사집행법 §91③에 따라 매각으로 소멸하고, 배당요구(2025.02.24)도 마쳤습니다. 매수인이 떠안을 금액은 없습니다. 청구금액이 3,744만원뿐인 소액 임의경매이고, 62.5㎡로 이번 후보 중 두 번째로 넓으면서 최저가는 7,300만원으로 가장 낮습니다.</div>
+  <div class="prisk"><b>확인할 것</b> <b>지하층 물건</b>입니다. 비교군은 지상층을 포함하므로 시세를 30% 낮춰 보정했지만, 실제 반지하 시세는 채광·침수 이력에 따라 편차가 큽니다. 신월동은 상습침수 이력이 있는 지역이 있어 <b>침수 이력과 방수 상태를 반드시 현장 확인</b>하세요. 소멸하는 임차인이라도 명도는 별도 절차입니다.</div>
+  <div class="pgrid">
+    <div><div class="sub">권리 판정</div><span class="rb ok">인수 0원 — 임차인 전입일이 최선순위보다 늦음(후순위)</span>
+      <ul class="fl2"><li>최선순위 · 2020.08.24. 근저당권</li><li>임차인 1명 · 보증금 합 9,000만</li><li>청구금액 · 37,435,090원</li><li>점유 · 현장출장 방문 시 아무도 만나지 못하여(폐문부재) 안내문을 현관문 틈에 남겼으나 연락이 없음. 별도의 확인이 필요함. 덧붙인 전입세대확인서 및 주민등록등본과 같이 소유자 아닌 세대</li></ul></div>
+    <div><div class="sub">기일 이력</div>
+      <table class="mini"><thead><tr><th>기일</th><th>결과</th><th class="r">최저가</th></tr></thead>
+      <tbody><tr><td>2026.04.09</td><td>유찰</td><td class="r num">1억 7,900만</td></tr><tr><td>2026.05.21</td><td>유찰</td><td class="r num">1억 4,320만</td></tr><tr><td>2026.07.14</td><td>유찰</td><td class="r num">1억 1,456만</td></tr><tr><td>2026.08.13</td><td>유찰</td><td class="r num">9,165만</td></tr><tr><td>2026.09.11</td><td>&lt;b&gt;이번 기일&lt;/b&gt;</td><td class="r num">7,332만</td></tr></tbody></table></div>
+  </div>
+  <div class="sub" style="margin-top:20px">낙찰가 시나리오 · 중립시세 1억 7,500만 매도 가정</div>
+  <div class="tw"><table><thead><tr><th>구분</th><th class="r">낙찰가</th><th class="r">취득부대</th><th class="r">총원가</th><th class="r">세전차익</th><th class="r">ROI</th></tr></thead><tbody><tr><td>최저</td><td class="r num">7,332만</td><td class="r num">716만</td><td class="r num">8,047만</td><td class="r num pos">9,383만</td><td class="r num pos">+116.6%</td></tr><tr><td>+5%</td><td class="r num">7,698만</td><td class="r num">720만</td><td class="r num">8,418만</td><td class="r num pos">9,012만</td><td class="r num pos">+107.1%</td></tr><tr><td>+10%</td><td class="r num">8,065만</td><td class="r num">724만</td><td class="r num">8,789만</td><td class="r num pos">8,641만</td><td class="r num pos">+98.3%</td></tr></tbody></table></div>
+</div>
+<div class="pcard" data-i="3">
+  <div class="ph"><span class="pt">강서 화곡동 102-26 밀레니엄 3층 302호</span><span class="rb ok">입찰 검토</span></div>
+  <p class="phead">보증금 3억 9,000만이 확약서 한 장으로 인수 0원</p>
+  <div class="chips"><span class="chip">전용 57.7㎡</span><span class="chip">유찰 3회 (51%)</span><span class="chip">매각 2026.09.22 10:00</span><span class="chip">부동산강제경매</span></div>
+  <div class="stat4">
+    <div class="s"><div class="sk">최저매각가</div><div class="sv num">1억 3,722만</div><div class="sd">감정 2억 6,800만</div></div>
+    <div class="s"><div class="sk">보수 시세</div><div class="sv num">1억 9,400만</div><div class="sd">비교군 하위25% 기준</div></div>
+    <div class="s"><div class="sk">권장 낙찰상한</div><div class="sv num seal">1억 8,534만</div><div class="sd">보수시세 손익분기</div></div>
+    <div class="s"><div class="sk">가격 쿠션</div><div class="sv num pos">+4,812만</div><div class="sd">상한 − 최저가</div></div>
+  </div>
+  <div class="pbody">임차인 보증금 합계가 <b>3억 9,000만원</b>으로 감정가(2.68억)를 크게 넘고 전입도 최선순위 가압류(2022.12.28)보다 앞섭니다. 원칙대로면 매수인이 전부 떠안아야 하지만, 명세서 비고에 <b>배당 잔액에 대한 반환청구권을 포기하고 임차권등기를 말소한다는 조건</b>이 붙어 인수부담이 0원이 됐습니다. 같은 지번에서 2.70억 거래가 확인되고 화곡동 비교군(1,172건) 중앙값은 2.30억입니다.</div>
+  <div class="prisk"><b>확인할 것</b> 이 물건의 가치는 <b>전적으로 확약서에 달려 있습니다</b>. 사건기록에서 확약서 원문·제출 주체·제출일을 직접 확인하고, 현재 채권자와 일치하는지 대조하세요. 쿠션이 4,800만원으로 위 두 건보다 얇아 경쟁이 붙으면 빠르게 소진됩니다.</div>
+  <div class="pgrid">
+    <div><div class="sub">권리 판정</div><span class="rb ok">인수 0원 — 채권자 대항력 포기 확약서</span>
+      <ul class="fl2"><li>최선순위 · 2022.12.28. 가압류</li><li>임차인 2명 · 보증금 합 3억 9,000만</li><li>청구금액 · 390,000,000원</li><li>점유 · 현황조사차 현장을 방문하였으나 폐문부재로 아무도 만나지 못하여 점유관계는 미상이며, 안내문을 출입문에 끼워놓았음. 덧붙인 전입세대확인서, 외국인체류확인서, 상가건물임대차현황서에는 </li></ul></div>
+    <div><div class="sub">기일 이력</div>
+      <table class="mini"><thead><tr><th>기일</th><th>결과</th><th class="r">최저가</th></tr></thead>
+      <tbody><tr><td>2026.05.28</td><td>유찰</td><td class="r num">2억 6,800만</td></tr><tr><td>2026.07.20</td><td>유찰</td><td class="r num">2억 1,440만</td></tr><tr><td>2026.08.19</td><td>유찰</td><td class="r num">1억 7,152만</td></tr><tr><td>2026.09.22</td><td>&lt;b&gt;이번 기일&lt;/b&gt;</td><td class="r num">1억 3,722만</td></tr></tbody></table></div>
+  </div>
+  <div class="sub" style="margin-top:20px">낙찰가 시나리오 · 중립시세 2억 3,000만 매도 가정</div>
+  <div class="tw"><table><thead><tr><th>구분</th><th class="r">낙찰가</th><th class="r">취득부대</th><th class="r">총원가</th><th class="r">세전차익</th><th class="r">ROI</th></tr></thead><tbody><tr><td>최저</td><td class="r num">1억 3,722만</td><td class="r num">736만</td><td class="r num">1억 4,458만</td><td class="r num pos">8,450만</td><td class="r num pos">+58.5%</td></tr><tr><td>+5%</td><td class="r num">1억 4,408만</td><td class="r num">743만</td><td class="r num">1억 5,151만</td><td class="r num pos">7,757만</td><td class="r num pos">+51.2%</td></tr><tr><td>+10%</td><td class="r num">1억 5,094만</td><td class="r num">751만</td><td class="r num">1억 5,845만</td><td class="r num pos">7,063만</td><td class="r num pos">+44.6%</td></tr></tbody></table></div>
+</div>
+<div class="pcard" data-i="4">
+  <div class="ph"><span class="pt">강서 화곡동 372-48 지층 비01호</span><span class="rb ok">입찰 검토</span></div>
+  <p class="phead">68.9㎡ 최대 면적 · HUG 확약으로 인수 0원 · 다만 지층</p>
+  <div class="chips"><span class="chip">전용 68.9㎡</span><span class="chip">유찰 3회 (51%)</span><span class="chip">매각 2026.09.22 10:00</span><span class="chip">지하·지층</span><span class="chip">부동산강제경매</span></div>
+  <div class="stat4">
+    <div class="s"><div class="sk">최저매각가</div><div class="sv num">9,318만</div><div class="sd">감정 1억 8,200만</div></div>
+    <div class="s"><div class="sk">보수 시세</div><div class="sv num">1억 4,700만</div><div class="sd">비교군 하위25% 기준</div></div>
+    <div class="s"><div class="sk">권장 낙찰상한</div><div class="sv num seal">1억 3,804만</div><div class="sd">보수시세 손익분기</div></div>
+    <div class="s"><div class="sk">가격 쿠션</div><div class="sv num pos">+4,486만</div><div class="sd">상한 − 최저가</div></div>
+  </div>
+  <div class="pbody">임차인 남건혜(보증금 1.5억)와 이를 승계한 주택도시보증공사가 <b>배당받지 못하는 잔액에 대한 임차보증금반환청구권을 포기하고 주택임차권등기를 말소하는 것을 조건으로</b> 매각됩니다. 인수부담이 없습니다. 전용 68.9㎡로 이번 8건 중 가장 넓고, 최저가는 9,300만원입니다. 같은 지번에서 2건이 2.29억(지상 추정)에 거래됐습니다.</div>
+  <div class="prisk"><b>확인할 것</b> <b>지층(반지하)</b>입니다. 비교군을 30% 낮춰 보정했는데, 이 보정률이 실제와 다르면 쿠션(4,500만원)이 통째로 사라질 수 있습니다. 같은 지번 2.29억 거래가 지상층이라면 지층 가치는 그보다 훨씬 낮습니다. <b>거래 사례의 층을 반드시 특정</b>하고, 채광·습기·침수를 현장에서 보세요.</div>
+  <div class="pgrid">
+    <div><div class="sub">권리 판정</div><span class="rb ok">인수 0원 — 임차인·HUG 승계인 반환청구권 포기 조건부 매각</span>
+      <ul class="fl2"><li>최선순위 · 2021.03.10. 압류</li><li>임차인 2명 · 보증금 합 1억 5,000만</li><li>청구금액 · 150,000,000원</li><li>점유 · 현황조사차 현장을 방문하였으나 폐문부재로 아무도 만나지 못하여 점유관계는 미상이며, 안내문을 출입문에 붙여놓았음. 덧붙인 전입세대확인서 및 외국인체류확인서에는 각 등재자가 없음</li></ul></div>
+    <div><div class="sub">기일 이력</div>
+      <table class="mini"><thead><tr><th>기일</th><th>결과</th><th class="r">최저가</th></tr></thead>
+      <tbody><tr><td>2026.05.28</td><td>유찰</td><td class="r num">1억 8,200만</td></tr><tr><td>2026.07.20</td><td>유찰</td><td class="r num">1억 4,560만</td></tr><tr><td>2026.08.19</td><td>유찰</td><td class="r num">1억 1,648만</td></tr><tr><td>2026.09.22</td><td>&lt;b&gt;이번 기일&lt;/b&gt;</td><td class="r num">9,318만</td></tr></tbody></table></div>
+  </div>
+  <div class="sub" style="margin-top:20px">낙찰가 시나리오 · 중립시세 1억 7,325만 매도 가정</div>
+  <div class="tw"><table><thead><tr><th>구분</th><th class="r">낙찰가</th><th class="r">취득부대</th><th class="r">총원가</th><th class="r">세전차익</th><th class="r">ROI</th></tr></thead><tbody><tr><td>최저</td><td class="r num">9,318만</td><td class="r num">788만</td><td class="r num">1억 106만</td><td class="r num pos">7,150만</td><td class="r num pos">+70.7%</td></tr><tr><td>+5%</td><td class="r num">9,784만</td><td class="r num">793만</td><td class="r num">1억 577만</td><td class="r num pos">6,679만</td><td class="r num pos">+63.1%</td></tr><tr><td>+10%</td><td class="r num">1억 250만</td><td class="r num">798만</td><td class="r num">1억 1,048만</td><td class="r num pos">6,208만</td><td class="r num pos">+56.2%</td></tr></tbody></table></div>
+</div>
+<div class="pcard" data-i="5">
+  <div class="ph"><span class="pt">구로 오류동 81-171 해츠빌 2층 202호</span><span class="rb no">입찰 불가</span></div>
+  <p class="phead">대항력 임차보증금 3억 1,500만 인수 · 권장 낙찰상한 −9,300만원</p>
+  <div class="chips"><span class="chip">전용 53.7㎡</span><span class="chip">유찰 4회 (41%)</span><span class="chip">매각 2026.09.15 10:00</span><span class="chip">부동산강제경매</span></div>
+  <div class="stat4">
+    <div class="s"><div class="sk">최저매각가</div><div class="sv num">1억 4,295만</div><div class="sd">감정 3억 4,900만</div></div>
+    <div class="s"><div class="sk">보수 시세</div><div class="sv num">2억 2,700만</div><div class="sd">비교군 하위25% 기준</div></div>
+    <div class="s"><div class="sk">권장 낙찰상한</div><div class="sv num seal">−9,348만</div><div class="sd">보수시세 손익분기</div></div>
+    <div class="s"><div class="sk">가격 쿠션</div><div class="sv num neg">−2억 3,643만</div><div class="sd">상한 − 최저가</div></div>
+  </div>
+  <div class="pbody">임차인 김재학의 보증금 <b>3억 1,500만원</b>이 최선순위 압류(2023.01.18)보다 앞선 2020.04.29 전입으로 대항력을 갖췄고, 확약서가 없습니다. 전세권등기 3억원도 별도로 설정돼 있습니다. 최저가 1.43억에 낙찰받아도 총부담은 <b>4억 6,500만원</b>이 되는데 오류동 비교군 중앙값은 2.90억입니다. 손익분기 낙찰가를 역산하면 <b>−9,300만원</b> — 즉 돈을 받고 가져와도 손실입니다.</div>
+  <div class="prisk"><b>확인할 것</b> 유찰 4회의 이유가 정확히 이것입니다. 최저가만 보고 접근하면 안 되는 전형적인 사례입니다.</div>
+  <div class="pgrid">
+    <div><div class="sub">권리 판정</div><span class="rb no">인수 3억 1,500만 발생</span>
+      <ul class="fl2"><li>최선순위 · 2023.01.18. 압류</li><li>임차인 1명 · 보증금 합 3억 1,500만</li><li>청구금액 · 345,746,105원</li><li>점유 · 현장출장 방문 시 아무도 만나지 못하여(폐문부재) 안내문을 현관문 틈에 남겼으나 연락이 없음. 별도의 확인이 필요함. 덧붙인 전입세대확인서 및 주민등록등본과 같이 소유자 아닌 세대</li></ul></div>
+    <div><div class="sub">기일 이력</div>
+      <table class="mini"><thead><tr><th>기일</th><th>결과</th><th class="r">최저가</th></tr></thead>
+      <tbody><tr><td>2026.04.14</td><td>유찰</td><td class="r num">3억 4,900만</td></tr><tr><td>2026.05.26</td><td>유찰</td><td class="r num">2억 7,920만</td></tr><tr><td>2026.07.15</td><td>유찰</td><td class="r num">2억 2,336만</td></tr><tr><td>2026.08.14</td><td>유찰</td><td class="r num">1억 7,869만</td></tr><tr><td>2026.09.15</td><td>&lt;b&gt;이번 기일&lt;/b&gt;</td><td class="r num">1억 4,295만</td></tr></tbody></table></div>
+  </div>
+  <div class="sub" style="margin-top:20px">낙찰가 시나리오 · 중립시세 2억 9,000만 매도 가정</div>
+  <div class="tw"><table><thead><tr><th>구분</th><th class="r">낙찰가</th><th class="r">취득부대</th><th class="r">총원가</th><th class="r">세전차익</th><th class="r">ROI</th></tr></thead><tbody><tr><td>최저</td><td class="r num">1억 4,295만</td><td class="r num">717만</td><td class="r num">4억 6,512만</td><td class="r num neg">−1억 7,628만</td><td class="r num neg">-37.9%</td></tr><tr><td>+5%</td><td class="r num">1억 5,010만</td><td class="r num">725만</td><td class="r num">4억 7,235만</td><td class="r num neg">−1억 8,351만</td><td class="r num neg">-38.9%</td></tr><tr><td>+10%</td><td class="r num">1억 5,724만</td><td class="r num">733만</td><td class="r num">4억 7,957만</td><td class="r num neg">−1억 9,073만</td><td class="r num neg">-39.8%</td></tr></tbody></table></div>
+</div>
+<div class="pcard" data-i="6">
+  <div class="ph"><span class="pt">강서 화곡동 504-9 누리에스에이치티 2층 201호</span><span class="rb no">입찰 불가</span></div>
+  <p class="phead">감정가가 동네 시세의 191% · 보증금 3억 8,800만 인수</p>
+  <div class="chips"><span class="chip">전용 46.6㎡</span><span class="chip">유찰 7회 (21%)</span><span class="chip">매각 2026.09.22 10:00</span><span class="chip">부동산강제경매</span></div>
+  <div class="stat4">
+    <div class="s"><div class="sk">최저매각가</div><div class="sv num">8,347만</div><div class="sd">감정 3억 9,800만</div></div>
+    <div class="s"><div class="sk">보수 시세</div><div class="sv num">1억 6,775만</div><div class="sd">비교군 하위25% 기준</div></div>
+    <div class="s"><div class="sk">권장 낙찰상한</div><div class="sv num seal">−2억 2,356만</div><div class="sd">보수시세 손익분기</div></div>
+    <div class="s"><div class="sk">가격 쿠션</div><div class="sv num neg">−3억 703만</div><div class="sd">상한 − 최저가</div></div>
+  </div>
+  <div class="pbody">감정가 3.98억인데 화곡동 비교군(1,117건) 중앙값은 <b>2.08억</b>입니다. 감정가가 동네 시세의 191%로, 같은 지번의 3.50억 거래는 신축 분양가일 가능성이 큽니다. 여기에 임차보증금 <b>3억 8,800만원</b>이 최선순위 압류(2023.06.16)보다 앞서 인수 대상이고 확약서가 없습니다. 총부담 4억 7,700만원 대 시세 2.08억으로 권장 낙찰상한은 <b>−2억 2,400만원</b>입니다.</div>
+  <div class="prisk"><b>확인할 것</b> 감정가가 부풀려진 신축 빌라에 보증금이 그만큼 설정된 <b>전세사기 물건의 전형적 형태</b>입니다. 최저가가 감정가의 21%까지 떨어진 것은 할인이 아니라 시장이 물건 자체를 거부한 결과입니다.</div>
+  <div class="pgrid">
+    <div><div class="sub">권리 판정</div><span class="rb no">인수 3억 8,800만 발생</span>
+      <ul class="fl2"><li>최선순위 · 2023.06.16. 압류</li><li>임차인 2명 · 보증금 합 3억 8,800만</li><li>청구금액 · 385,000,000원</li><li>점유 · 이 사건 부동산 현지방문조사 당시 폐문부재로 아무도 만나지 못하여 점유관계 미상이므로 별도의 확인이 필요함. 안내문을 출입문에 끼워놓았음. 덧붙인 외국인체류확인서에는 소유자 아닌 </li></ul></div>
+    <div><div class="sub">기일 이력</div>
+      <table class="mini"><thead><tr><th>기일</th><th>결과</th><th class="r">최저가</th></tr></thead>
+      <tbody><tr><td>2026.01.21</td><td>유찰</td><td class="r num">3억 1,840만</td></tr><tr><td>2026.03.11</td><td>유찰</td><td class="r num">2억 5,472만</td></tr><tr><td>2026.04.16</td><td>유찰</td><td class="r num">2억 378만</td></tr><tr><td>2026.05.28</td><td>유찰</td><td class="r num">1억 6,302만</td></tr><tr><td>2026.07.20</td><td>유찰</td><td class="r num">1억 3,042만</td></tr><tr><td>2026.08.19</td><td>유찰</td><td class="r num">1억 433만</td></tr><tr><td>2026.09.22</td><td>&lt;b&gt;이번 기일&lt;/b&gt;</td><td class="r num">8,347만</td></tr></tbody></table></div>
+  </div>
+  <div class="sub" style="margin-top:20px">낙찰가 시나리오 · 중립시세 2억 800만 매도 가정</div>
+  <div class="tw"><table><thead><tr><th>구분</th><th class="r">낙찰가</th><th class="r">취득부대</th><th class="r">총원가</th><th class="r">세전차익</th><th class="r">ROI</th></tr></thead><tbody><tr><td>최저</td><td class="r num">8,347만</td><td class="r num">602만</td><td class="r num">4억 7,749만</td><td class="r num neg">−2억 7,032만</td><td class="r num neg">-56.6%</td></tr><tr><td>+5%</td><td class="r num">8,764만</td><td class="r num">606만</td><td class="r num">4억 8,170만</td><td class="r num neg">−2억 7,454만</td><td class="r num neg">-57.0%</td></tr><tr><td>+10%</td><td class="r num">9,181만</td><td class="r num">611만</td><td class="r num">4억 8,592만</td><td class="r num neg">−2억 7,876만</td><td class="r num neg">-57.4%</td></tr></tbody></table></div>
+</div>
+<div class="pcard" data-i="7">
+  <div class="ph"><span class="pt">구로 오류동 양지마을 104동 3층 302호</span><span class="rb no">입찰 불가</span></div>
+  <p class="phead">20회 유찰로 최저가 275만원 · 그래도 손익분기는 −6,100만원</p>
+  <div class="chips"><span class="chip">전용 33.5㎡</span><span class="chip">유찰 21회 (1%)</span><span class="chip">매각 2026.09.09 10:00</span><span class="chip">부동산강제경매</span></div>
+  <div class="stat4">
+    <div class="s"><div class="sk">최저매각가</div><div class="sv num">276만</div><div class="sd">감정 2억 3,900만</div></div>
+    <div class="s"><div class="sk">보수 시세</div><div class="sv num">1억 7,525만</div><div class="sd">비교군 하위25% 기준</div></div>
+    <div class="s"><div class="sk">권장 낙찰상한</div><div class="sv num seal">−6,088만</div><div class="sd">보수시세 손익분기</div></div>
+    <div class="s"><div class="sk">가격 쿠션</div><div class="sv num neg">−6,364만</div><div class="sd">상한 − 최저가</div></div>
+  </div>
+  <div class="pbody">2024년 3월 2.39억에서 시작해 <b>20회 유찰</b>되며 최저가가 <b>275만원</b>까지 내려왔습니다. 그런데도 아무도 사지 않는 이유는 임차인 김진운의 보증금 <b>2억 3,200만원</b>이 최선순위 가압류(2022.06.24)보다 앞선 2020.12.07 전입으로 대항력을 갖췄고 확약서가 없기 때문입니다. 전세권 2.32억도 설정돼 있습니다. 오류동 비교군 보수 시세는 1.75억이라, <b>낙찰가를 0원으로 놓아도 총부담이 시세를 넘습니다</b>.</div>
+  <div class="prisk"><b>확인할 것</b> 이 사건은 “유찰이 많을수록 싸다”는 통념이 왜 틀렸는지 보여주는 교과서적 사례입니다. 법원 최저가는 물건 가치의 하한이 아니라 <b>인수부담을 뺀 잔여가치</b>를 향해 수렴합니다. 매수신청보증금이 최저가의 20%로 가중된 특별매각조건도 붙어 있습니다.</div>
+  <div class="pgrid">
+    <div><div class="sub">권리 판정</div><span class="rb no">인수 2억 3,200만 발생</span>
+      <ul class="fl2"><li>최선순위 · 2022.06.24.가압류</li><li>임차인 1명 · 보증금 합 2억 3,200만</li><li>청구금액 · 142,000,000원</li><li>점유 · 현장에 임하였으나 아무도 만나지 못하여 점유관계 미상임. 별도의 확인이 필요함. 덧붙인 주민등록표등본에는 소유자 아닌 세대주 이계선 세대가 등재되어 있으므로, 그를 그 등본에 의해</li></ul></div>
+    <div><div class="sub">기일 이력</div>
+      <table class="mini"><thead><tr><th>기일</th><th>결과</th><th class="r">최저가</th></tr></thead>
+      <tbody><tr><td>2026.01.08</td><td>유찰</td><td class="r num">1,051만</td></tr><tr><td>2026.02.25</td><td>유찰</td><td class="r num">841만</td></tr><tr><td>2026.04.07</td><td>유찰</td><td class="r num">673만</td></tr><tr><td>2026.05.19</td><td>유찰</td><td class="r num">538만</td></tr><tr><td>2026.07.07</td><td>유찰</td><td class="r num">431만</td></tr><tr><td>2026.08.11</td><td>유찰</td><td class="r num">344만</td></tr><tr><td>2026.09.09</td><td>&lt;b&gt;이번 기일&lt;/b&gt;</td><td class="r num">276만</td></tr></tbody></table></div>
+  </div>
+  <div class="sub" style="margin-top:20px">낙찰가 시나리오 · 중립시세 1억 9,650만 매도 가정</div>
+  <div class="tw"><table><thead><tr><th>구분</th><th class="r">낙찰가</th><th class="r">취득부대</th><th class="r">총원가</th><th class="r">세전차익</th><th class="r">ROI</th></tr></thead><tbody><tr><td>최저</td><td class="r num">276만</td><td class="r num">413만</td><td class="r num">2억 3,889만</td><td class="r num neg">−4,317만</td><td class="r num neg">-18.1%</td></tr><tr><td>+5%</td><td class="r num">289만</td><td class="r num">413만</td><td class="r num">2억 3,903만</td><td class="r num neg">−4,331만</td><td class="r num neg">-18.1%</td></tr><tr><td>+10%</td><td class="r num">303만</td><td class="r num">413만</td><td class="r num">2억 3,916만</td><td class="r num neg">−4,345만</td><td class="r num neg">-18.2%</td></tr></tbody></table></div>
+</div>
+</section>
+
+<section>
+  <h2>인수금액이 0이 되는 두 가지 경로</h2>
+  <div class="card">
+    <p style="margin:0 0 12px;max-width:80ch">대항력 있는 임차인의 보증금은 배당으로 전액 변제되지 않으면 매수인이 인수합니다
+    (<span class="src">주택임대차보호법 §3의5 단서</span>). 대항력은 인도와 전입신고를 마친 <b>다음 날 0시</b>에 생기고
+    (<span class="src">대법원 99다9981</span>), 그 시점이 최선순위 저당권·압류·가압류보다 앞서는지로 인수 여부가 갈립니다
+    (<span class="src">민사집행법 §91③④</span>). 이번 8건에서 인수가 0이 된 경로는 둘뿐이었습니다.</p>
+    <div class="tw"><table>
+      <thead><tr><th>경로</th><th>해당 물건</th><th>근거</th><th>확인 방법</th></tr></thead>
+      <tbody>
+        <tr><td><b>① 임차인이 없거나 후순위</b></td><td>금천 시흥동 · 관악 봉천동 · 양천 신월동</td>
+          <td>명세서·현황조사 모두 임차인 없음, 또는 전입일이 최선순위보다 늦어 매각으로 소멸</td>
+          <td>전입세대열람원으로 전입일자 직접 확인</td></tr>
+        <tr><td><b>② 채권자 대항력 포기 확약</b></td><td>강서 화곡동 102-26 · 강서 화곡동 372-48</td>
+          <td>“배당 잔액 반환청구권을 포기하고 임차권등기를 말소한다”는 조건부 매각 (보증기관·채권자 제출)</td>
+          <td>사건기록에서 확약서 원문·제출 주체 대조</td></tr>
+        <tr><td>③ 인수 발생 <span class="rb no">위험</span></td><td>구로 오류동 2건 · 강서 화곡동 504-9</td>
+          <td>전입이 최선순위보다 앞서는데 확약서 없음 → 보증금 2.3억~3.9억 인수</td>
+          <td>—</td></tr>
+      </tbody>
+    </table></div>
+    <p class="lede" style="margin:16px 0 0"><b>주의</b> — 확약서는 사건기록에 편철된 문서이지 등기부에 공시되는 권리가 아닙니다.
+    또한 <b>인수금액이 0이어도 점유자가 자동으로 나가지는 않습니다.</b> 명도는 별도 절차이고, 8건 중 6건이 폐문부재로
+    점유 상태가 확인되지 않았습니다.</p>
+  </div>
+</section>
+
+<section>
+  <h2>빌라 시세를 어떻게 잡았나</h2>
+  <div class="card">
+    <p style="margin:0 0 12px;max-width:80ch">빌라는 아파트처럼 “동일 단지 동일 평형”이 성립하지 않습니다. 그래서 국토부
+    <b>연립다세대 매매 실거래</b>를 24개월치 받아 ① 동일 지번(같은 건물) ② 동일 법정동 + 전용면적 ±20% + 준공 ±7년 순으로
+    비교군을 만들고 상하위 5%를 잘랐습니다. 표본은 물건에 따라 68~1,172건입니다.</p>
+    <p style="margin:0 0 12px;max-width:80ch"><b>다만 빌라 비교군에는 신축 분양 실거래가 섞여 시세를 부풀립니다.</b>
+    화곡동 504-9는 감정가가 3억 9,800만원인데 화곡동 비교군 중앙값은 <b>2억 800만원</b>으로, 감정가가 동네 시세의 191%였습니다.
+    같은 지번의 3억 5,000만원 거래는 분양가일 가능성이 큽니다. 이런 왜곡을 막기 위해 보수 시세는
+    <b>비교군 하위 25%와 감정가 중 낮은 쪽</b>을 택했습니다. 지하·지층 물건은 비교군(지상 포함) 대비 30%를 낮췄습니다.</p>
+    <div class="tw"><table>
+      <thead><tr><th>물건</th><th class="r">감정가</th><th class="r">비교군 중앙</th>
+        <th class="r">감정 ÷ 비교군</th><th>해석</th></tr></thead>
+      <tbody>
+        <tr><td>강서 화곡동 504-9</td><td class="r num">3억 9,800만</td><td class="r num">2억 800만</td>
+          <td class="r num neg"><b>191%</b></td><td>신축 분양가 기반 과대평가 의심</td></tr>
+        <tr><td>구로 오류동 양지마을</td><td class="r num">2억 3,900만</td><td class="r num">1억 9,700만</td>
+          <td class="r num">122%</td><td>감정이 다소 높음</td></tr>
+        <tr><td>구로 오류동 81-171</td><td class="r num">3억 4,900만</td><td class="r num">2억 9,000만</td>
+          <td class="r num">120%</td><td>감정이 다소 높음</td></tr>
+        <tr><td>관악 봉천동 1615-21</td><td class="r num">3억 4,300만</td><td class="r num">3억 2,500만</td>
+          <td class="r num pos">106%</td><td>감정과 시세가 일치</td></tr>
+        <tr><td>금천 시흥동 3-20</td><td class="r num">2억 4,000만</td><td class="r num">3억</td>
+          <td class="r num">80%</td><td>감정이 보수적 → 감정가를 보수시세로 채택</td></tr>
+        <tr><td>강서 화곡동 372-48 <span class="chip">지층</span></td><td class="r num">1억 8,200만</td>
+          <td class="r num">2억 4,800만</td><td class="r num">74%</td><td>지하 할인이 감정에 반영됨</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</section>
+
+<section>
+  <h2>수집 129건 전체</h2>
+  <div class="card">
+    <details><summary>펼쳐 보기 — 유찰 횟수 내림차순</summary>
+      <div class="tw" style="margin-top:12px"><table>
+        <thead><tr><th>소재지</th><th class="r">전용</th><th class="r">유찰</th>
+          <th class="r">감정가</th><th class="r">최저가</th><th class="r">매각기일</th></tr></thead>
+        <tbody><tr><td>구로구 경인로15나길 20 제104동 제3층 제302호 (오류동, 양지마을)<span class="case">서울남부지방법원 2023타경108446 · 구로구</span></td><td class="r num">33.5㎡</td><td class="r num">21회</td><td class="r num">2억 3,900만</td><td class="r num">276만</td><td class="r">2026.09.09</td></tr>
+<tr><td>양천구 남부순환로59길 7 제3층 제302호 (신월동, 토브하우스)<span class="case">서울남부지방법원 2023타경4858 · 양천구</span></td><td class="r num">29.1㎡</td><td class="r num">18회</td><td class="r num">2억 4,600만</td><td class="r num">443만</td><td class="r">2026.09.09</td></tr>
+<tr><td>강서구 까치산로16길 19-4 제6층 제601호 (화곡동, 스마트뷰)<span class="case">서울남부지방법원 2024타경100609 · 강서구</span></td><td class="r num">42.1㎡</td><td class="r num">16회</td><td class="r num">2억 8,100만</td><td class="r num">791만</td><td class="r">2026.09.10</td></tr>
+<tr><td>구로구 중앙로 87-9 제3층 제301호 (고척동, 소담밸리)<span class="case">서울남부지방법원 2023타경6090 · 구로구</span></td><td class="r num">29.1㎡</td><td class="r num">14회</td><td class="r num">1억 3,800만</td><td class="r num">607만</td><td class="r">2026.09.10</td></tr>
+<tr><td>강서구 강서로45나길 39 제3층 제303호<span class="case">서울남부지방법원 2023타경6427 2024타경147493 (중복) · 강서구</span></td><td class="r num">30.0㎡</td><td class="r num">14회</td><td class="r num">2억 7,500만</td><td class="r num">968만</td><td class="r">2026.09.10</td></tr>
+<tr><td>도봉구 방학로 19 5층501호 (방학동,담하우스)<span class="case">서울북부지방법원 2023타경119425 2023타경2671 (중복) · 도봉구</span></td><td class="r num">27.6㎡</td><td class="r num">14회</td><td class="r num">2억 8,400만</td><td class="r num">1,249만</td><td class="r">2026.09.29</td></tr>
+<tr><td>금천구 독산로22길 64 제4층 제403호 (시흥동, 다음빌라)<span class="case">서울남부지방법원 2024타경116987 · 금천구</span></td><td class="r num">28.1㎡</td><td class="r num">13회</td><td class="r num">2억 3,500만</td><td class="r num">1,292만</td><td class="r">2026.09.16</td></tr>
+<tr><td>구로구 개봉로16가길 10-29 제5층 제502호<span class="case">서울남부지방법원 2024타경1702 2024타경127178 (중복) · 구로구</span></td><td class="r num">43.0㎡</td><td class="r num">12회</td><td class="r num">1억 8,800만</td><td class="r num">1,292만</td><td class="r">2026.09.11</td></tr>
+<tr><td>강서구 가로공원로76길 5 제4층 제403호 (화곡동, 아줄리움)<span class="case">서울남부지방법원 2024타경119832 · 강서구</span></td><td class="r num">38.0㎡</td><td class="r num">12회</td><td class="r num">2억 800만</td><td class="r num">1,429만</td><td class="r">2026.09.16</td></tr>
+<tr><td>강서구 월정로20길 86-4 제12층 제1204호 (화곡동, 위하우스아파트)<span class="case">서울남부지방법원 2024타경115533 · 강서구</span></td><td class="r num">30.2㎡</td><td class="r num">12회</td><td class="r num">2억 8,500만</td><td class="r num">1,959만</td><td class="r">2026.09.10</td></tr>
+<tr><td>영등포구 국회대로53길 24-12 제4층 제403호 (당산동, 나온타워)<span class="case">서울남부지방법원 2024타경120092 · 영등포구</span></td><td class="r num">13.7㎡</td><td class="r num">11회</td><td class="r num">1억 1,000만</td><td class="r num">945만</td><td class="r">2026.09.15</td></tr>
+<tr><td>금천구 남부순환로 1304-22 제5층 제503호 (가산동, 아이캐슬)<span class="case">서울남부지방법원 2024타경121057 · 금천구</span></td><td class="r num">26.6㎡</td><td class="r num">11회</td><td class="r num">2억 3,100만</td><td class="r num">1,984만</td><td class="r">2026.09.15</td></tr>
+<tr><td>강서구 화곡로58길 30-4 제102동 제3층 제301호 (화곡동, 소담밸리)<span class="case">서울남부지방법원 2023타경5394 · 강서구</span></td><td class="r num">36.6㎡</td><td class="r num">11회</td><td class="r num">2억 3,300만</td><td class="r num">2,001만</td><td class="r">2026.09.10</td></tr>
+<tr><td>성북구 삼양로9길 13-7 2층203호 (길음동,에스엠파크3차)<span class="case">서울북부지방법원 2024타경115536 · 성북구</span></td><td class="r num">48.7㎡</td><td class="r num">11회</td><td class="r num">2억 6,200만</td><td class="r num">2,251만</td><td class="r">2026.09.29</td></tr>
+<tr><td>강서구 초록마을로5길 25 제6층 제601호 (화곡동, 예담채)<span class="case">서울남부지방법원 2024타경135667 · 강서구</span></td><td class="r num">46.9㎡</td><td class="r num">11회</td><td class="r num">3억 1,400만</td><td class="r num">2,697만</td><td class="r">2026.09.09</td></tr>
+<tr><td>구로구 부일로1길 128-24 제101동 제4층 제401호 (온수동, 에코그린빌)<span class="case">서울남부지방법원 2024타경122067 · 구로구</span></td><td class="r num">43.0㎡</td><td class="r num">11회</td><td class="r num">3억 3,000만</td><td class="r num">2,835만</td><td class="r">2026.09.22</td></tr>
+<tr><td>서초구 반포대로19길 9-3 3층301호 (서초동,서초클레어)<span class="case">서울중앙지방법원 2024타경119027 · 서초구</span></td><td class="r num">30.0㎡</td><td class="r num">11회</td><td class="r num">5억 1,500만</td><td class="r num">4,424만</td><td class="r">2026.09.09</td></tr>
+<tr><td>강서구 가로공원로82길 72 제101동 제2층 제203호 (화곡동, 이도트라움2)<span class="case">서울남부지방법원 2024타경118945 · 강서구</span></td><td class="r num">35.3㎡</td><td class="r num">10회</td><td class="r num">2억 8,600만</td><td class="r num">3,071만</td><td class="r">2026.09.22</td></tr>
+<tr><td>은평구 갈현로3길 25-5 2층201호 (신사동,유성아이비디동)<span class="case">서울서부지방법원 2024타경62959 · 은평구</span></td><td class="r num">45.8㎡</td><td class="r num">10회</td><td class="r num">2억 9,900만</td><td class="r num">3,210만</td><td class="r">2026.09.29</td></tr>
+<tr><td>강서구 곰달래로57길 63-6 4층403호<span class="case">서울남부지방법원 2024타경144029 · 강서구</span></td><td class="r num">28.5㎡</td><td class="r num">9회</td><td class="r num">2억 4,600만</td><td class="r num">3,302만</td><td class="r">2026.09.09</td></tr>
+<tr><td>강동구 진황도로 45 10층1005호 (천호동,다성이즈빌)<span class="case">서울동부지방법원 2024타경63677 · 강동구</span></td><td class="r num">19.5㎡</td><td class="r num">9회</td><td class="r num">2억 7,500만</td><td class="r num">3,691만</td><td class="r">2026.09.21</td></tr>
+<tr><td>금천구 독산로58가길 25 제5층 제502호<span class="case">서울남부지방법원 2024타경140409 · 금천구</span></td><td class="r num">29.9㎡</td><td class="r num">9회</td><td class="r num">3억 800만</td><td class="r num">4,134만</td><td class="r">2026.09.09</td></tr>
+<tr><td>강서구 초록마을로32길 29-23 제1층 제101호 (화곡동, 남성아트빌)<span class="case">서울남부지방법원 2024타경136783 · 강서구</span></td><td class="r num">15.1㎡</td><td class="r num">8회</td><td class="r num">1억 5,900만</td><td class="r num">2,668만</td><td class="r">2026.09.16</td></tr>
+<tr><td>강서구 초록마을로32길 29-23 제2층 제202호 (화곡동, 남성아트빌)<span class="case">서울남부지방법원 2024타경136783 · 강서구</span></td><td class="r num">34.5㎡</td><td class="r num">8회</td><td class="r num">1억 5,900만</td><td class="r num">2,668만</td><td class="r">2026.09.16</td></tr>
+<tr><td>강서구 화곡동 788-4 블루힐 제2층 제204호<span class="case">서울남부지방법원 2025타경9903 · 강서구</span></td><td class="r num">28.9㎡</td><td class="r num">8회</td><td class="r num">1억 8,200만</td><td class="r num">3,053만</td><td class="r">2026.09.15</td></tr>
+<tr><td>구로구 개봉로11길 66-4 제비동 제2층 제202호 (개봉동, 해마루)<span class="case">서울남부지방법원 2025타경6773 · 구로구</span></td><td class="r num">27.0㎡</td><td class="r num">8회</td><td class="r num">1억 9,100만</td><td class="r num">3,204만</td><td class="r">2026.09.10</td></tr>
+<tr><td>강서구 공항대로7라길 22 제103동 제3층 제303호 (공항동, 웰스캐슬)<span class="case">서울남부지방법원 2024타경6462 · 강서구</span></td><td class="r num">25.9㎡</td><td class="r num">8회</td><td class="r num">2억 2,500만</td><td class="r num">3,775만</td><td class="r">2026.09.10</td></tr>
+<tr><td>강서구 화곡로18길 44-34(화곡동) 제3층 제303호 (화곡동, 큐브원)<span class="case">서울남부지방법원 2024타경112176 · 강서구</span></td><td class="r num">23.7㎡</td><td class="r num">8회</td><td class="r num">2억 4,700만</td><td class="r num">4,144만</td><td class="r">2026.09.10</td></tr>
+<tr><td>구로구 구로중앙로28길 35-12 제2층 제201호 (구로동, 삼성드림빌)<span class="case">서울남부지방법원 2024타경140874 · 구로구</span></td><td class="r num">28.0㎡</td><td class="r num">8회</td><td class="r num">2억 5,400만</td><td class="r num">4,261만</td><td class="r">2026.09.10</td></tr>
+<tr><td>동작구 사당동 1049-8 더원캐슬 9층902호<span class="case">서울중앙지방법원 2025타경102235 · 동작구</span></td><td class="r num">17.2㎡</td><td class="r num">8회</td><td class="r num">2억 5,500만</td><td class="r num">4,278만</td><td class="r">2026.09.09</td></tr>
+<tr><td>강동구 천호동 303-15 좋은빌 4층404호<span class="case">서울동부지방법원 2025타경50975 · 강동구</span></td><td class="r num">29.7㎡</td><td class="r num">8회</td><td class="r num">2억 6,200만</td><td class="r num">4,396만</td><td class="r">2026.09.21</td></tr>
+<tr><td>광진구 용마산로8다길 20-2 5층501호 (중곡동,헤라힐스)<span class="case">서울동부지방법원 2025타경50142 · 광진구</span></td><td class="r num">29.8㎡</td><td class="r num">8회</td><td class="r num">2억 8,800만</td><td class="r num">4,832만</td><td class="r">2026.09.21</td></tr>
+<tr><td>강서구 강서로 507 제6층 제603호 (가양동, 오성드림)<span class="case">서울남부지방법원 2024타경142641 · 강서구</span></td><td class="r num">32.0㎡</td><td class="r num">7회</td><td class="r num">2억 3,500만</td><td class="r num">4,928만</td><td class="r">2026.09.15</td></tr>
+<tr><td>금천구 시흥동 169-45 프라우드빌 제3층 제302호<span class="case">서울남부지방법원 2025타경10701 · 금천구</span></td><td class="r num">39.0㎡</td><td class="r num">7회</td><td class="r num">3억 2,300만</td><td class="r num">6,774만</td><td class="r">2026.09.15</td></tr>
+<tr><td>동작구 대방동 68-35 명성하우스5차 4층402호<span class="case">서울중앙지방법원 2025타경102483 · 동작구</span></td><td class="r num">29.4㎡</td><td class="r num">7회</td><td class="r num">3억 6,500만</td><td class="r num">7,655만</td><td class="r">2026.09.09</td></tr>
+<tr><td>강서구 화곡동 504-9 누리에스.에이치.티 제1동 제2층 제201호<span class="case">서울남부지방법원 2025타경10965 · 강서구</span></td><td class="r num">46.6㎡</td><td class="r num">7회</td><td class="r num">3억 9,800만</td><td class="r num">8,347만</td><td class="r">2026.09.22</td></tr>
+<tr><td>성북구 정릉동 685-13 무화과동(102) 4층 402호<span class="case">서울북부지방법원 2025타경12410 · 성북구</span></td><td class="r num">16.2㎡</td><td class="r num">6회</td><td class="r num">1억 8,900만</td><td class="r num">4,954만</td><td class="r">2026.09.29</td></tr>
+<tr><td>금천구 금하로 717-4 제2층 제201호 (시흥동, 에이엔캐슬)<span class="case">서울남부지방법원 2024타경138116 · 금천구</span></td><td class="r num">38.2㎡</td><td class="r num">6회</td><td class="r num">2억 300만</td><td class="r num">5,322만</td><td class="r">2026.09.11</td></tr>
+<tr><td>관악구 신림동 1437-19 태양오피스텔 5층505호<span class="case">서울중앙지방법원 2025타경102735 · 관악구</span></td><td class="r num">12.6㎡</td><td class="r num">6회</td><td class="r num">2억 2,500만</td><td class="r num">5,898만</td><td class="r">2026.09.15</td></tr>
+<tr><td>중랑구 상봉동 119-12 해피리움 6층 601호<span class="case">서울북부지방법원 2025타경12526 · 중랑구</span></td><td class="r num">25.6㎡</td><td class="r num">6회</td><td class="r num">2억 9,900만</td><td class="r num">7,838만</td><td class="r">2026.09.29</td></tr>
+<tr><td>금천구 독산로99길 18 제3층 제302호 (독산동, 블루972)<span class="case">서울남부지방법원 2024타경147899 · 금천구</span></td><td class="r num">29.9㎡</td><td class="r num">6회</td><td class="r num">3억 5,200만</td><td class="r num">9,227만</td><td class="r">2026.09.11</td></tr>
+<tr><td>강북구 우이동 73-53 경모파인포레 5층 501호<span class="case">서울북부지방법원 2025타경12402 · 강북구</span></td><td class="r num">47.5㎡</td><td class="r num">6회</td><td class="r num">4억 1,000만</td><td class="r num">1억 748만</td><td class="r">2026.09.29</td></tr>
+<tr><td>영등포구 당산동 121-130 리버뷰 제13층 제1307호<span class="case">서울남부지방법원 2025타경10051 · 영등포구</span></td><td class="r num">18.3㎡</td><td class="r num">5회</td><td class="r num">1억 6,100만</td><td class="r num">5,276만</td><td class="r">2026.09.09</td></tr>
+<tr><td>광진구 중곡동 147-216 헤라힐스 4층 402호<span class="case">서울동부지방법원 2025타경51370 · 광진구</span></td><td class="r num">26.3㎡</td><td class="r num">5회</td><td class="r num">2억 4,300만</td><td class="r num">7,963만</td><td class="r">2026.09.21</td></tr>
+<tr><td>관악구 봉천동 1513-5 4층402호<span class="case">서울중앙지방법원 2025타경102950 · 관악구</span></td><td class="r num">37.2㎡</td><td class="r num">5회</td><td class="r num">3억 8,480만</td><td class="r num">1억 2,609만</td><td class="r">2026.09.22</td></tr>
+<tr><td>영등포구 대림동 717 대림동쌍용플래티넘-에스 제7층 제702호<span class="case">서울남부지방법원 2025타경623 · 영등포구</span></td><td class="r num">18.2㎡</td><td class="r num">4회</td><td class="r num">1억 500만</td><td class="r num">4,301만</td><td class="r">2026.09.09</td></tr>
+<tr><td>관악구 봉천동 180-41 지하층101호<span class="case">서울중앙지방법원 2025타경102818 · 관악구</span></td><td class="r num">39.3㎡</td><td class="r num">4회</td><td class="r num">1억 4,500만</td><td class="r num">5,939만</td><td class="r">2026.09.15</td></tr>
+<tr><td>양천구 신월동 229-31 지하층 제비01호<span class="case">서울남부지방법원 2025타경8670 · 양천구</span></td><td class="r num">62.5㎡</td><td class="r num">4회</td><td class="r num">1억 7,900만</td><td class="r num">7,332만</td><td class="r">2026.09.11</td></tr>
+<tr><td>도봉구 쌍문동 75-51 우연리치빌 5층 501호<span class="case">서울북부지방법원 2025타경12749 · 도봉구</span></td><td class="r num">30.0㎡</td><td class="r num">4회</td><td class="r num">1억 8,300만</td><td class="r num">7,496만</td><td class="r">2026.09.29</td></tr>
+<tr><td>강동구 성내로 64 3층303호 (성내동,에스아이팰리스센트럴성내)<span class="case">서울동부지방법원 2023타경61278 · 강동구</span></td><td class="r num">14.0㎡</td><td class="r num">4회</td><td class="r num">2억 200만</td><td class="r num">8,274만</td><td class="r">2026.09.14</td></tr>
+<tr><td>노원구 월계로44가길 54 4층403호 (월계동,더하우스인)<span class="case">서울북부지방법원 2024타경117648 · 노원구</span></td><td class="r num">25.2㎡</td><td class="r num">4회</td><td class="r num">2억 985만</td><td class="r num">8,595만</td><td class="r">2026.09.29</td></tr>
+<tr><td>강서구 염창동 242-40 삼성펠리체 제6층 제603호<span class="case">서울남부지방법원 2025타경11139 · 강서구</span></td><td class="r num">29.9㎡</td><td class="r num">4회</td><td class="r num">2억 1,800만</td><td class="r num">8,929만</td><td class="r">2026.09.09</td></tr>
+<tr><td>강동구 성내로 64 10층1003호 (성내동,에스아이팰리스센트럴성내)<span class="case">서울동부지방법원 2024타경50145 · 강동구</span></td><td class="r num">14.0㎡</td><td class="r num">4회</td><td class="r num">2억 2,600만</td><td class="r num">9,257만</td><td class="r">2026.09.14</td></tr>
+<tr><td>강동구 성내로 64 12층1203호 (성내동,에스아이팰리스센트럴성내)<span class="case">서울동부지방법원 2024타경50145 · 강동구</span></td><td class="r num">14.0㎡</td><td class="r num">4회</td><td class="r num">2억 2,800만</td><td class="r num">9,339만</td><td class="r">2026.09.14</td></tr>
+<tr><td>강서구 화곡동 504-132 금호에스티지 제1층 제101호<span class="case">서울남부지방법원 2025타경10001 · 강서구</span></td><td class="r num">30.0㎡</td><td class="r num">4회</td><td class="r num">2억 3,900만</td><td class="r num">9,789만</td><td class="r">2026.09.10</td></tr>
+<tr><td>금천구 시흥동 3-20 제1층 제101호<span class="case">서울남부지방법원 2025타경11168 · 금천구</span></td><td class="r num">58.9㎡</td><td class="r num">4회</td><td class="r num">2억 4,000만</td><td class="r num">9,830만</td><td class="r">2026.09.10</td></tr>
+<tr><td>마포구 성산동 210-4 대명파크뷰 4층404호<span class="case">서울서부지방법원 2025타경52225 · 마포구</span></td><td class="r num">29.9㎡</td><td class="r num">4회</td><td class="r num">2억 4,400만</td><td class="r num">9,994만</td><td class="r">2026.09.29</td></tr>
+<tr><td>강서구 화곡동 351-36 더그레이스 제5층 제503호<span class="case">서울남부지방법원 2025타경10978 · 강서구</span></td><td class="r num">29.9㎡</td><td class="r num">4회</td><td class="r num">2억 6,000만</td><td class="r num">1억 650만</td><td class="r">2026.09.10</td></tr>
+<tr><td>강서구 등촌동 532-16 제4층 제402호<span class="case">서울남부지방법원 2025타경10055 · 강서구</span></td><td class="r num">50.3㎡</td><td class="r num">4회</td><td class="r num">2억 6,300만</td><td class="r num">1억 772만</td><td class="r">2026.09.10</td></tr>
+<tr><td>은평구 응암동 578-33 더세영 6층602호<span class="case">서울서부지방법원 2025타경52021 · 은평구</span></td><td class="r num">27.4㎡</td><td class="r num">4회</td><td class="r num">2억 6,500만</td><td class="r num">1억 854만</td><td class="r">2026.09.29</td></tr>
+<tr><td>구로구 개봉동 108-19 혜성팰리스 제6층 제603호<span class="case">서울남부지방법원 2025타경10641 · 구로구</span></td><td class="r num">29.7㎡</td><td class="r num">4회</td><td class="r num">2억 8,200만</td><td class="r num">1억 1,551만</td><td class="r">2026.09.10</td></tr>
+<tr><td>중랑구 망우로26길 51 5층501호 (면목동,성진빌)<span class="case">서울북부지방법원 2024타경117570 · 중랑구</span></td><td class="r num">49.1㎡</td><td class="r num">4회</td><td class="r num">2억 8,430만</td><td class="r num">1억 1,645만</td><td class="r">2026.09.29</td></tr>
+<tr><td>마포구 성산동 30-10 성산지오 5층504호<span class="case">서울서부지방법원 2025타경51826 · 마포구</span></td><td class="r num">20.1㎡</td><td class="r num">4회</td><td class="r num">2억 9,500만</td><td class="r num">1억 2,083만</td><td class="r">2026.09.29</td></tr>
+<tr><td>강서구 화곡동 366-35 제이투리더스 제4층 제404호<span class="case">서울남부지방법원 2025타경12209 · 강서구</span></td><td class="r num">27.2㎡</td><td class="r num">4회</td><td class="r num">3억 400만</td><td class="r num">1억 2,452만</td><td class="r">2026.09.22</td></tr>
+<tr><td>관악구 신림동 646-317 대림아트빌 3층303호<span class="case">서울중앙지방법원 2025타경102692 · 관악구</span></td><td class="r num">37.8㎡</td><td class="r num">4회</td><td class="r num">3억 1,400만</td><td class="r num">1억 2,861만</td><td class="r">2026.09.10</td></tr>
+<tr><td>강서구 화곡동 372-73 케이씨타운 제6층 제604호<span class="case">서울남부지방법원 2025타경11835 · 강서구</span></td><td class="r num">20.1㎡</td><td class="r num">4회</td><td class="r num">3억 3,200만</td><td class="r num">1억 3,599만</td><td class="r">2026.09.22</td></tr>
+<tr><td>강서구 화곡동 452-11 라피아노 제2층 제203호<span class="case">서울남부지방법원 2025타경12017 · 강서구</span></td><td class="r num">28.9㎡</td><td class="r num">4회</td><td class="r num">3억 3,600만</td><td class="r num">1억 3,763만</td><td class="r">2026.09.22</td></tr>
+<tr><td>송파구 새말로8길 29-51 4층401호 (문정동,집앤사베스타)<span class="case">서울동부지방법원 2024타경58606 · 송파구</span></td><td class="r num">29.2㎡</td><td class="r num">4회</td><td class="r num">3억 3,800만</td><td class="r num">1억 3,844만</td><td class="r">2026.09.14</td></tr>
+<tr><td>관악구 봉천동 1615-21 4층401호<span class="case">서울중앙지방법원 2025타경103194 · 관악구</span></td><td class="r num">60.5㎡</td><td class="r num">4회</td><td class="r num">3억 4,300만</td><td class="r num">1억 4,049만</td><td class="r">2026.09.22</td></tr>
+<tr><td>구로구 오류동 81-171 해츠빌 제202동 제2층 제202호<span class="case">서울남부지방법원 2025타경10752 · 구로구</span></td><td class="r num">53.7㎡</td><td class="r num">4회</td><td class="r num">3억 4,900만</td><td class="r num">1억 4,295만</td><td class="r">2026.09.15</td></tr>
+<tr><td>강서구 화곡동 161-12 제지하층 제비02호<span class="case">서울남부지방법원 2025타경11443 · 강서구</span></td><td class="r num">39.9㎡</td><td class="r num">3회</td><td class="r num">1억 924만</td><td class="r num">5,593만</td><td class="r">2026.09.22</td></tr>
+<tr><td>관악구 남현동 1064-23 씨에스타운 비동 4층404호<span class="case">서울중앙지방법원 2025타경103832 · 관악구</span></td><td class="r num">13.6㎡</td><td class="r num">3회</td><td class="r num">1억 3,900만</td><td class="r num">7,117만</td><td class="r">2026.09.22</td></tr>
+<tr><td>금천구 시흥동 822-16 제2층 제202호<span class="case">서울남부지방법원 2025타경11629 · 금천구</span></td><td class="r num">26.0㎡</td><td class="r num">3회</td><td class="r num">1억 6,200만</td><td class="r num">8,294만</td><td class="r">2026.09.10</td></tr>
+<tr><td>은평구 신사동 15-17 웰메이드 5층501호<span class="case">서울서부지방법원 2025타경52384 · 은평구</span></td><td class="r num">25.2㎡</td><td class="r num">3회</td><td class="r num">1억 6,200만</td><td class="r num">8,294만</td><td class="r">2026.09.29</td></tr>
+<tr><td>강서구 화곡동 56-359 제4층 제402호<span class="case">서울남부지방법원 2025타경12523 · 강서구</span></td><td class="r num">42.2㎡</td><td class="r num">3회</td><td class="r num">1억 6,850만</td><td class="r num">8,627만</td><td class="r">2026.09.22</td></tr>
+<tr><td>강서구 화곡동 56-109 제2층 제202호<span class="case">서울남부지방법원 2025타경12487 · 강서구</span></td><td class="r num">44.1㎡</td><td class="r num">3회</td><td class="r num">1억 7,100만</td><td class="r num">8,755만</td><td class="r">2026.09.09</td></tr>
+<tr><td>강서구 화곡동 372-48 보성빌라 제지층 제비01호<span class="case">서울남부지방법원 2025타경13004 · 강서구</span></td><td class="r num">68.9㎡</td><td class="r num">3회</td><td class="r num">1억 8,200만</td><td class="r num">9,318만</td><td class="r">2026.09.22</td></tr>
+<tr><td>강서구 화곡동 338-43 제1층 제1호<span class="case">서울남부지방법원 2025타경12933 · 강서구</span></td><td class="r num">40.8㎡</td><td class="r num">3회</td><td class="r num">1억 8,900만</td><td class="r num">9,677만</td><td class="r">2026.09.22</td></tr>
+<tr><td>구로구 개봉동 10-1 더존퍼스트 제2층 제203호<span class="case">서울남부지방법원 2025타경12497 · 구로구</span></td><td class="r num">23.5㎡</td><td class="r num">3회</td><td class="r num">1억 9,400만</td><td class="r num">9,933만</td><td class="r">2026.09.22</td></tr>
+<tr><td>양천구 신월동 239-4 제5층 제501호<span class="case">서울남부지방법원 2025타경705 · 양천구</span></td><td class="r num">37.0㎡</td><td class="r num">3회</td><td class="r num">2억 100만</td><td class="r num">1억 291만</td><td class="r">2026.09.10</td></tr>
+<tr><td>강서구 화곡동 157-21 에스케이파크리움 제2층 제201호<span class="case">서울남부지방법원 2025타경12639 · 강서구</span></td><td class="r num">18.7㎡</td><td class="r num">3회</td><td class="r num">2억 300만</td><td class="r num">1억 394만</td><td class="r">2026.09.22</td></tr>
+<tr><td>강서구 화곡동 488-18 제1층 제103호<span class="case">서울남부지방법원 2025타경12683 · 강서구</span></td><td class="r num">23.3㎡</td><td class="r num">3회</td><td class="r num">2억 400만</td><td class="r num">1억 445만</td><td class="r">2026.09.09</td></tr>
+<tr><td>강서구 화곡동 330-14 신영리치빌 제6층 제604호<span class="case">서울남부지방법원 2025타경13077 · 강서구</span></td><td class="r num">29.1㎡</td><td class="r num">3회</td><td class="r num">2억 700만</td><td class="r num">1억 598만</td><td class="r">2026.09.10</td></tr>
+<tr><td>관악구 신림동 1437-19 태양오피스텔 7층705호<span class="case">서울중앙지방법원 2025타경102507 · 관악구</span></td><td class="r num">12.6㎡</td><td class="r num">3회</td><td class="r num">2억 1,100만</td><td class="r num">1억 803만</td><td class="r">2026.09.15</td></tr>
+<tr><td>구로구 개봉동 279-24 원창아트빌 제4층 제402호<span class="case">서울남부지방법원 2025타경12700 · 구로구</span></td><td class="r num">26.4㎡</td><td class="r num">3회</td><td class="r num">2억 2,700만</td><td class="r num">1억 1,622만</td><td class="r">2026.09.22</td></tr>
+<tr><td>구로구 개봉동 279-24 원창아트빌 제3층 제304호<span class="case">서울남부지방법원 2025타경12869 · 구로구</span></td><td class="r num">29.0㎡</td><td class="r num">3회</td><td class="r num">2억 4,500만</td><td class="r num">1억 2,544만</td><td class="r">2026.09.22</td></tr>
+<tr><td>양천구 신월동 233-21 대흥미소가 제5층 제501호<span class="case">서울남부지방법원 2025타경12643 · 양천구</span></td><td class="r num">29.1㎡</td><td class="r num">3회</td><td class="r num">2억 5,300만</td><td class="r num">1억 2,954만</td><td class="r">2026.09.22</td></tr>
+<tr><td>강서구 화곡동 74-1 더라온 제2층 제201호<span class="case">서울남부지방법원 2025타경13068 · 강서구</span></td><td class="r num">29.7㎡</td><td class="r num">3회</td><td class="r num">2억 5,900만</td><td class="r num">1억 3,261만</td><td class="r">2026.09.22</td></tr>
+<tr><td>강서구 화곡동 968-17 백문하우스 제6층 제602호<span class="case">서울남부지방법원 2025타경11936 · 강서구</span></td><td class="r num">29.8㎡</td><td class="r num">3회</td><td class="r num">2억 5,980만</td><td class="r num">1억 3,302만</td><td class="r">2026.09.22</td></tr>
+<tr><td>강서구 화곡동 102-26 밀레니엄 제3층 제302호<span class="case">서울남부지방법원 2025타경12457 · 강서구</span></td><td class="r num">57.7㎡</td><td class="r num">3회</td><td class="r num">2억 6,800만</td><td class="r num">1억 3,722만</td><td class="r">2026.09.22</td></tr>
+<tr><td>강서구 화곡동 359-42 엘케이드림빌 제5층 제502호<span class="case">서울남부지방법원 2025타경12723 · 강서구</span></td><td class="r num">24.1㎡</td><td class="r num">3회</td><td class="r num">2억 6,912만</td><td class="r num">1억 3,779만</td><td class="r">2026.09.22</td></tr>
+<tr><td>강서구 화곡동 1120-2 소담밸리 제102동 제5층 제503호<span class="case">서울남부지방법원 2025타경12682 · 강서구</span></td><td class="r num">36.2㎡</td><td class="r num">3회</td><td class="r num">2억 7,100만</td><td class="r num">1억 3,875만</td><td class="r">2026.09.16</td></tr>
+<tr><td>강서구 화곡동 1169 더숨153 제102동 제4층 제402호<span class="case">서울남부지방법원 2025타경12662 · 강서구</span></td><td class="r num">15.3㎡</td><td class="r num">3회</td><td class="r num">2억 7,300만</td><td class="r num">1억 3,978만</td><td class="r">2026.09.22</td></tr>
+<tr><td>은평구 가좌로 312-7 5층501호<span class="case">서울서부지방법원 2024타경64825 · 은평구</span></td><td class="r num">58.4㎡</td><td class="r num">3회</td><td class="r num">2억 8,000만</td><td class="r num">1억 4,336만</td><td class="r">2026.09.29</td></tr>
+<tr><td>금천구 독산동 678-10 모던하우스금천2호점 제4층 제401호<span class="case">서울남부지방법원 2025타경10322 · 금천구</span></td><td class="r num">29.3㎡</td><td class="r num">3회</td><td class="r num">2억 8,100만</td><td class="r num">1억 4,387만</td><td class="r">2026.09.11</td></tr>
+<tr><td>양천구 신월동 233-21 대흥미소가 제5층 제504호<span class="case">서울남부지방법원 2025타경12624 · 양천구</span></td><td class="r num">29.0㎡</td><td class="r num">3회</td><td class="r num">2억 8,700만</td><td class="r num">1억 4,694만</td><td class="r">2026.09.22</td></tr>
+<tr><td>관악구 신림동 98-249 팔로스22 1동 1층202호<span class="case">서울중앙지방법원 2025타경102771 · 관악구</span></td><td class="r num">28.7㎡</td><td class="r num">3회</td><td class="r num">2억 9,100만</td><td class="r num">1억 4,899만</td><td class="r">2026.09.15</td></tr>
+<tr><td>구로구 오류동 242-1 건영포레스트빌 제비동 제4층 제401호<span class="case">서울남부지방법원 2025타경11379 · 구로구</span></td><td class="r num">46.3㎡</td><td class="r num">3회</td><td class="r num">2억 9,100만</td><td class="r num">1억 4,899만</td><td class="r">2026.09.10</td></tr>
+<tr><td>은평구 신사동 9-9 다세대주택 에이동 3층302호<span class="case">서울서부지방법원 2025타경52267 · 은평구</span></td><td class="r num">60.8㎡</td><td class="r num">3회</td><td class="r num">2억 9,200만</td><td class="r num">1억 4,950만</td><td class="r">2026.09.29</td></tr>
+<tr><td>강서구 방화동 247-158 동원아트빌 제5층 제503호<span class="case">서울남부지방법원 2025타경476 · 강서구</span></td><td class="r num">29.9㎡</td><td class="r num">3회</td><td class="r num">2억 9,800만</td><td class="r num">1억 5,258만</td><td class="r">2026.09.10</td></tr>
+<tr><td>서대문구 연희동 1-64 3층302호<span class="case">서울서부지방법원 2025타경52250 · 서대문구</span></td><td class="r num">64.0㎡</td><td class="r num">3회</td><td class="r num">2억 9,900만</td><td class="r num">1억 5,309만</td><td class="r">2026.09.29</td></tr>
+<tr><td>관악구 봉천동 1513-5 1층102호<span class="case">서울중앙지방법원 2025타경103687 · 관악구</span></td><td class="r num">29.6㎡</td><td class="r num">3회</td><td class="r num">3억 700만</td><td class="r num">1억 5,718만</td><td class="r">2026.09.22</td></tr>
+<tr><td>양천구 신정동 1148-9 양지 제6층 제601호<span class="case">서울남부지방법원 2025타경13064 · 양천구</span></td><td class="r num">23.4㎡</td><td class="r num">3회</td><td class="r num">3억 2,600만</td><td class="r num">1억 6,691만</td><td class="r">2026.09.22</td></tr>
+<tr><td>강서구 방화동 274-2 마곡제이엠팰리스 제9층 제901호<span class="case">서울남부지방법원 2025타경12755 · 강서구</span></td><td class="r num">24.5㎡</td><td class="r num">3회</td><td class="r num">3억 3,700만</td><td class="r num">1억 7,254만</td><td class="r">2026.09.22</td></tr>
+<tr><td>강서구 방화동 274-2 마곡제이엠팰리스 제12층 제1202호<span class="case">서울남부지방법원 2025타경12759 · 강서구</span></td><td class="r num">24.5㎡</td><td class="r num">3회</td><td class="r num">3억 3,700만</td><td class="r num">1억 7,254만</td><td class="r">2026.09.22</td></tr>
+<tr><td>은평구 역촌동 68-27 우방이지빌 5층501호<span class="case">서울서부지방법원 2025타경2015 2026타경50260 (중복) · 은평구</span></td><td class="r num">65.9㎡</td><td class="r num">3회</td><td class="r num">3억 3,800만</td><td class="r num">1억 7,306만</td><td class="r">2026.09.29</td></tr>
+<tr><td>강서구 화곡동 346-117 으뜸캐슬2차 제5층 제502호<span class="case">서울남부지방법원 2025타경12589 · 강서구</span></td><td class="r num">26.9㎡</td><td class="r num">3회</td><td class="r num">3억 4,230만</td><td class="r num">1억 7,526만</td><td class="r">2026.09.22</td></tr>
+<tr><td>송파구 문정동 80-8 집앤사베스타 2층204호<span class="case">서울동부지방법원 2025타경51693 · 송파구</span></td><td class="r num">29.8㎡</td><td class="r num">3회</td><td class="r num">3억 5,100만</td><td class="r num">1억 7,971만</td><td class="r">2026.09.21</td></tr>
+<tr><td>강동구 성내동 434-32 아미캐슬 4층402호<span class="case">서울동부지방법원 2025타경51253 · 강동구</span></td><td class="r num">17.8㎡</td><td class="r num">2회</td><td class="r num">1억 6,600만</td><td class="r num">1억 624만</td><td class="r">2026.09.21</td></tr>
+<tr><td>강동구 성내로 64 15층1501호 (성내동,에스아이팰리스센트럴성내)<span class="case">서울동부지방법원 2024타경52936 · 강동구</span></td><td class="r num">14.1㎡</td><td class="r num">2회</td><td class="r num">2억 3,100만</td><td class="r num">1억 4,784만</td><td class="r">2026.09.21</td></tr>
+<tr><td>성동구 살곶이길 150 101동 3층 304호 (사근동,청계더하임)<span class="case">서울동부지방법원 2024타경3378 · 성동구</span></td><td class="r num">28.2㎡</td><td class="r num">2회</td><td class="r num">2억 6,700만</td><td class="r num">1억 7,088만</td><td class="r">2026.09.14</td></tr>
+<tr><td>강서구 내발산동 718-20 도화엘리시아102 제4층 제402호<span class="case">서울남부지방법원 2025타경11091 · 강서구</span></td><td class="r num">29.1㎡</td><td class="r num">2회</td><td class="r num">2억 9,000만</td><td class="r num">1억 8,560만</td><td class="r">2026.09.15</td></tr>
+<tr><td>관악구 봉천동 180-252 아르떼빌 4층403호<span class="case">서울중앙지방법원 2025타경102703 · 관악구</span></td><td class="r num">14.8㎡</td><td class="r num">1회</td><td class="r num">1억 3,900만</td><td class="r num">1억 1,120만</td><td class="r">2026.09.09</td></tr>
+<tr><td>은평구 신사동 8-57 3층2호<span class="case">서울서부지방법원 2025타경51071 · 은평구</span></td><td class="r num">29.9㎡</td><td class="r num">1회</td><td class="r num">1억 5,100만</td><td class="r num">1억 2,080만</td><td class="r">2026.09.29</td></tr>
+<tr><td>관악구 신림동 497-5 그린플러스신림해담채 11층1104호<span class="case">서울중앙지방법원 2025타경103047 · 관악구</span></td><td class="r num">12.9㎡</td><td class="r num">1회</td><td class="r num">1억 5,400만</td><td class="r num">1억 2,320만</td><td class="r">2026.09.09</td></tr>
+<tr><td>서대문구 창천동 510-2 쓰리알유시티아파트 4층402호<span class="case">서울서부지방법원 2025타경51253 · 서대문구</span></td><td class="r num">12.1㎡</td><td class="r num">1회</td><td class="r num">1억 6,000만</td><td class="r num">1억 2,800만</td><td class="r">2026.09.29</td></tr>
+<tr><td>관악구 신림동 497-5 그린플러스신림해담채 12층1201호<span class="case">서울중앙지방법원 2025타경102675 · 관악구</span></td><td class="r num">12.9㎡</td><td class="r num">1회</td><td class="r num">1억 7,800만</td><td class="r num">1억 4,240만</td><td class="r">2026.09.15</td></tr>
+<tr><td>강동구 천호동 169-9 다성이즈빌 9층901호<span class="case">서울동부지방법원 2025타경51323 · 강동구</span></td><td class="r num">17.0㎡</td><td class="r num">1회</td><td class="r num">1억 7,900만</td><td class="r num">1억 4,320만</td><td class="r">2026.09.14</td></tr>
+<tr><td>은평구 서오릉로 228-15 2층204호 (갈현동,고은명가)<span class="case">서울서부지방법원 2024타경61543 · 은평구</span></td><td class="r num">29.5㎡</td><td class="r num">1회</td><td class="r num">2억 1,500만</td><td class="r num">1억 7,200만</td><td class="r">2026.09.29</td></tr>
+<tr><td>은평구 갈현로16길 12 에이동 3층302호 (구산동,거성리젠시)<span class="case">서울서부지방법원 2025타경50632 · 은평구</span></td><td class="r num">34.5㎡</td><td class="r num">1회</td><td class="r num">2억 2,100만</td><td class="r num">1억 7,680만</td><td class="r">2026.09.29</td></tr>
+<tr><td>강동구 길동 369-2 새봄빌라 4층401호<span class="case">서울동부지방법원 2025타경51075 · 강동구</span></td><td class="r num">29.6㎡</td><td class="r num">1회</td><td class="r num">2억 3,000만</td><td class="r num">1억 8,400만</td><td class="r">2026.09.14</td></tr>
+<tr><td>성동구 상왕십리동 12-47 청계센트럴큐브 9층904호<span class="case">서울동부지방법원 2025타경51595 · 성동구</span></td><td class="r num">19.4㎡</td><td class="r num">1회</td><td class="r num">2억 4,100만</td><td class="r num">1억 9,280만</td><td class="r">2026.09.14</td></tr>
+<tr><td>관악구 봉천동 635-449 1층101호<span class="case">서울중앙지방법원 2025타경102816 · 관악구</span></td><td class="r num">29.1㎡</td><td class="r num">1회</td><td class="r num">2억 4,200만</td><td class="r num">1억 9,360만</td><td class="r">2026.09.10</td></tr>
+<tr><td>서대문구 북가좌동 1-20 대림에코빌 1동 2층203호<span class="case">서울서부지방법원 2025타경51004 · 서대문구</span></td><td class="r num">29.6㎡</td><td class="r num">1회</td><td class="r num">2억 4,400만</td><td class="r num">1억 9,520만</td><td class="r">2026.09.29</td></tr>
+<tr><td>동작구 신대방동 342-15 디앤씨타워 9층904호<span class="case">서울중앙지방법원 2025타경102301 · 동작구</span></td><td class="r num">15.6㎡</td><td class="r num">1회</td><td class="r num">2억 4,600만</td><td class="r num">1억 9,680만</td><td class="r">2026.09.09</td></tr>
+<tr><td>관악구 봉천동 635-516 아르떼빌 5층502호<span class="case">서울중앙지방법원 2025타경102609 · 관악구</span></td><td class="r num">19.8㎡</td><td class="r num">1회</td><td class="r num">2억 4,700만</td><td class="r num">1억 9,760만</td><td class="r">2026.09.09</td></tr>
+<tr><td>관악구 신림동 571-5 모던하우스 4층403호<span class="case">서울중앙지방법원 2025타경103036 · 관악구</span></td><td class="r num">21.6㎡</td><td class="r num">1회</td><td class="r num">2억 4,700만</td><td class="r num">1억 9,760만</td><td class="r">2026.09.15</td></tr>
+<tr><td>양천구 신월동 243-30 다온캐슬 제5층 제503호<span class="case">서울남부지방법원 2025타경11088 · 양천구</span></td><td class="r num">29.9㎡</td><td class="r num">1회</td><td class="r num">2억 5,000만</td><td class="r num">2억</td><td class="r">2026.09.10</td></tr>
+<tr><td>서대문구 연희로25길 4-6 지층비01호<span class="case">서울서부지방법원 2025타경50311 · 서대문구</span></td><td class="r num">45.1㎡</td><td class="r num">0회</td><td class="r num">1억 4,700만</td><td class="r num">1억 4,700만</td><td class="r">2026.09.29</td></tr></tbody>
+      </table></div>
+    </details>
+  </div>
+</section>
+
+<section>
+  <h2>입찰 전 반드시 확인할 것</h2>
+  <div class="card">
+    <ul class="fl2" style="font-size:13.5px;color:var(--fg)">
+      <li><b>전입세대열람원</b> — 인수 판정의 전부가 전입일자에 달려 있습니다. 명세서 기재를 믿지 말고 직접 발급받으세요.</li>
+      <li><b>확약서 원문</b> — 2건의 인수 0원 판정은 확약서에 의존합니다. 사건기록에서 실물과 제출 주체를 확인하세요.</li>
+      <li><b>등기사항전부증명서</b> — 이 보고서는 등기부를 열람하지 않았습니다. 전세권·근저당·가압류의 전체 순위는 등기부로만 확정됩니다.</li>
+      <li><b>지하·지층 물건</b> — 침수 이력, 채광, 방수 상태를 현장에서 보세요. 시세 보정 30%는 가정치입니다.</li>
+      <li><b>거래 사례의 층</b> — 같은 지번 거래가 지상층이면 지층 물건의 비교 근거가 될 수 없습니다.</li>
+      <li><b>명도</b> — 인수금액이 0이어도 점유자는 그대로입니다. 폐문부재 물건은 명도 기간·비용을 별도로 잡으세요.</li>
+      <li><b>관리비 체납</b> — 공용부분 체납액은 매수인이 인수합니다. 관리사무소에 직접 확인하세요.</li>
+    </ul>
+  </div>
+</section>
+
+<footer>
+  <p><b>데이터 출처</b> · 법원경매정보(courtauction.go.kr) 2026.09.09 수집, 매각물건명세서·현황조사서·감정평가요약 직접 열람 ·
+  국토교통부 연립다세대 매매 실거래가(RTMS) 최근 24개월 · 조문·판례는 국가법령정보(law.go.kr) 원문 기준.</p>
+  <p><b>방법론</b> · 수익 계산은 auction-analysis-kit <span class="src">profit-analysis</span> 스킬의 8대 비용·권장 낙찰상한 산식을 따랐습니다.
+  권리 판정은 auction-law 지식베이스(민사집행법 §91, 주택임대차보호법 §3의5, 대법원 99다9981)를 근거로 했습니다.</p>
+  <p><b>한계</b> · 등기부등본을 열람하지 않아 권리분석은 매각물건명세서·현황조사서 기준이며 정밀 인수금액이 아닙니다.
+  인수금액은 보증금 전액을 인수한다는 <b>보수적 상한</b>으로 계산했고, 배당으로 일부 회수되면 실제 부담은 줄어듭니다.
+  수익표는 <b>세전</b>이며 양도세·보유세·대출이자는 반영하지 않았습니다.
+  서대문 연희동 1-64(2025타경52250)는 수집 이후 상세조회가 되지 않아 심층 분석에서 제외했습니다(사건 취소·정지 가능성).
+  지하·지층 시세 보정 30%는 가정치입니다.</p>
+  <p><b>이 보고서는 투자 권유가 아니라 스크리닝 참고자료입니다.</b> 최종 판단 전 변호사·법무사·세무사 상담을 권합니다.</p>
+</footer>
+</div>
+<script>
+document.querySelectorAll('.prop').forEach(function(el, i){
+  el.addEventListener('click', function(){
+    document.querySelectorAll('.prop').forEach(function(x, j){ x.classList.toggle('on', j === i); });
+    document.querySelectorAll('.pcard').forEach(function(x, j){ x.classList.toggle('on', j === i); });
+  });
+});
+var root = document.documentElement;
+document.getElementById('tt').addEventListener('click', function(){
+  var c = root.getAttribute('data-theme') ||
+          (matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light');
+  root.setAttribute('data-theme', c === 'dark' ? 'light' : 'dark');
+});
+</script>
