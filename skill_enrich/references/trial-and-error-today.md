@@ -47,3 +47,35 @@ pageSize=40, 11페이지 전량 수집(totalCnt 423 == 수집 423).
 - **bash `python` = import 세그폴트(139).** PowerShell python 사용.
 - 콘솔 한글 깨짐 → `$env:PYTHONIOENCODING='utf-8'` + `Out-File -Encoding utf8` 로 파일 확인.
 - `.env` 는 프로젝트 폴더에서 실행해야 인식(`find_dotenv(usecwd=True)`).
+
+---
+
+## 7) K-apt 오픈API 버전 폐기 (2026-09-09 발견)
+
+`getAphusBassInfoV4` 가 **HTTP 400 + `NO_OPENAPI_SERVICE_ERROR`("해당 오픈API 서비스가 없거나 폐기됨")** 를 반환.
+enrich_apt.py 가 예외를 삼키고 `{}` 를 돌려주는 구조라 **100건 전부 세대수·준공 `None`** 으로 조용히 실패했다.
+"매칭은 됐는데 값이 전부 None" 이면 매칭 로직이 아니라 **엔드포인트 폐기**를 먼저 의심할 것.
+
+| 용도 | 폐기(400) | 현행(200) |
+|---|---|---|
+| 시도 단지목록 | `AptListService3/getSidoAptList3` | `AptListService4/getSidoAptList4` |
+| 시군구 단지목록 | `AptListService3/getSigunguAptList3` | `AptListService4/getSigunguAptList4` |
+| 공동주택 기본정보 | `AptBasisInfoServiceV4/getAphusBassInfoV4` | `AptBasisInfoServiceV5/getAphusBassInfoV5` |
+| 공동주택 상세정보 | `AptBasisInfoServiceV4/getAphusDtlInfoV4` | `AptBasisInfoServiceV5/getAphusDtlInfoV5` |
+
+- 목록과 기본정보의 **버전 번호가 서로 다르다**(List=4, BasisInfo=5). 한쪽 버전을 다른 쪽에 맞춰 올리면 또 400.
+- 같은 이유로 `realprice_서울구별/collect_households.py`·`collect_kapt_detail.py`,
+  `skills/auction-priority-pipeline/scripts/{enrich_complex,eval_priority}.py` 도 죽어 있었고 함께 수정했다.
+- 진단 한 줄: 응답 본문에 `NO_OPENAPI_SERVICE_ERROR` 가 있으면 인접 버전(±1)을 먼저 찍어 볼 것.
+- **재발 방지**: API 래퍼에서 예외를 삼켜 빈 dict 를 반환하지 말 것. 최소한 `status_code != 200` 이면
+  첫 1회는 본문을 출력해야 이런 폐기를 즉시 알아챈다.
+
+## 8) 매각물건명세서 '비고' 다중행 파싱 (2026-09-09)
+
+`^\s*비고\s*:\s*(.+)$` 로 한 줄만 잡으면 **둘째 줄부터 시작하는 확약서 문구를 통째로 놓친다.**
+실제 사례(평택 2025타경43198): 1행은 "…전유부분임. (복도식)", 2행에 "신청채권자 서울보증보험…대항력포기확약서 제출".
+→ 다음 항목/구획(`■`, `──`, `⚠️`, `★`, `🔴`, `라벨:`) 전까지 이어붙이는 다중행 파서가 필요하다.
+
+**대항력 포기 확약서는 인수금액 판정을 뒤집는다.** analyze_case.py 의 자동 `🔴 인수위험` 은 비고를 읽지 않아
+확약서 물건 4건을 전부 오탐했다. 비고에 `대항력은/을 포기`, `반환청구권을 포기`, `임차권등기를 말소`,
+`말소해 주겠다`, `말소에 동의` 가 있으면 인수부담 해제로 재판정할 것.

@@ -23,8 +23,10 @@ from dotenv import load_dotenv, find_dotenv
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from sido_codes import resolve
 
-LIST = 'https://apis.data.go.kr/1613000/AptListService3/getSidoAptList3'
-INFO = 'https://apis.data.go.kr/1613000/AptBasisInfoServiceV4/getAphusBassInfoV4'
+# 2026-09-09: 구버전(List3 / BasisInfoV4)이 data.go.kr에서 폐기되어 NO_OPENAPI_SERVICE_ERROR(400) 반환.
+# 목록은 V4, 기본정보는 V5가 현행. 버전은 예고 없이 올라가므로 400이면 인접 버전을 먼저 의심할 것.
+LIST = 'https://apis.data.go.kr/1613000/AptListService4/getSidoAptList4'
+INFO = 'https://apis.data.go.kr/1613000/AptBasisInfoServiceV5/getAphusBassInfoV5'
 
 
 def parse_args():
@@ -108,7 +110,7 @@ def kinfo(code):
     try:
         r = requests.get(INFO, params={'serviceKey': KEY, 'kaptCode': code, '_type': 'json'}, verify=False, timeout=20)
         if r.status_code == 403:
-            sys.exit('403 — "공동주택 기본 정보제공 서비스(AptBasisInfoServiceV4)" 활용신청 필요.')
+            sys.exit('403 — "공동주택 기본 정보제공 서비스(AptBasisInfoServiceV5)" 활용신청 필요.')
         it = (r.json().get('response', {}).get('body', {}) or {}).get('item') or {}
     except Exception:
         it = {}

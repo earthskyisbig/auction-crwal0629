@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""서울 구별 공동주택(아파트) 세대수 합산 — AptListService3 + AptBasisInfoServiceV4.
+"""서울 구별 공동주택(아파트) 세대수 합산 — AptListService4 + AptBasisInfoServiceV5.
    구별 hh_<구>.json 증분 저장(재실행 시 스킵). K-apt 등재(의무관리대상) 단지 기준."""
 import json, os, sys, time, warnings
 warnings.filterwarnings('ignore')
@@ -11,8 +11,8 @@ load_dotenv(_ENV if os.path.exists(_ENV) else None)   # 저장소 루트 .env (�
 KEY = os.getenv('PUBLIC_DATA_SERVICE_KEY')
 if not KEY:
     sys.exit('PUBLIC_DATA_SERVICE_KEY 가 없습니다 — 저장소 루트 .env 확인 (.env.example 참고)')
-LIST = 'https://apis.data.go.kr/1613000/AptListService3/getSigunguAptList3'
-BASS = 'https://apis.data.go.kr/1613000/AptBasisInfoServiceV4/getAphusBassInfoV4'
+LIST = 'https://apis.data.go.kr/1613000/AptListService4/getSigunguAptList4'
+BASS = 'https://apis.data.go.kr/1613000/AptBasisInfoServiceV5/getAphusBassInfoV5'
 W = os.path.dirname(os.path.abspath(__file__))
 
 GUS = {

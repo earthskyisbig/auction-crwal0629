@@ -50,7 +50,29 @@
 플레이스홀더 `{{ROWS58}}` — 전체 스크리닝 목록 (접이식 표). `scripts/build_villa_simulator.py`가 CSV에서 생성·주입.
 예시 산출물: 루트 `서울_다세대_경매추천_보고서.html` (현재 버전).
 
-## 3) 데이터 파이프라인 (템플릿에 넣을 데이터 만드는 법)
+## 3) 통합 종합보고서 — `report_integrated_sample.html`
+
+4개 워크스페이스(due-deligence·law·location-kit·tax2)를 한 보고서로 합친 형식.
+문서형 보고서 + 물건 탭 + 세후수익 시뮬레이터를 한 페이지에 담고, **규제/비규제 토글**로 세제 차이를 즉석 비교한다.
+산출 예: 루트 `경기비규제_아파트경매_종합보고서.html` (경기 비규제 100건 / 심층 8건).
+
+섹션 순서: 결론 → **세금 비교(규제 vs 비규제 × 주택수)** → 스크리닝 퍼널 → 지역분포 →
+핵심 발견 → 물건별 심층분석(탭) → 세후수익 시뮬레이터 → 법적 근거 표 → 환금성 방법론 → 체크리스트.
+
+**빌드 2단계** (데이터 모듈 / 렌더 모듈 분리 — 판정 문구만 고칠 때 HTML을 건드리지 않기 위함):
+| 스크립트 | 역할 |
+|---|---|
+| `scripts/filter_regulated_areas.py` | 수집 CSV → 규제/비규제 분리. **규제지역 목록이 여기 하드코딩**돼 있으니 고시 변경 시 이 파일만 고친다 |
+| `scripts/rank_and_market.py` | 후보 랭킹 + RTMS 실거래 시세 대조(직접 requests, PublicDataReader 미사용) |
+| `scripts/calc_turnover.py` | 단지 회전율(=12개월 거래÷세대수) — apt-location-kit의 환금성 1차 지표 |
+| `scripts/assemble_report_data.py` | 위 결과 + `analyze_case.py` 로그 + 세금엔진 result.json → `report_data.json` |
+| `scripts/report_integrated_data.py` | 물건별 **판정 문구(VERDICT dict)** + 조각 렌더러. 사람이 검증한 판단은 여기에만 쓴다 |
+| `scripts/report_integrated_render.py` | HTML 조립·출력. 미치환 토큰 자동 검사 포함 |
+
+**세금 비교 데이터**: `auction-tax2/.claude/skills/tax-engine/scripts/calc.py` 를 `region_regulated` true/false ×
+`household_houses_before` 를 바꿔가며 4회 실행해 `result_*.json` 을 만든 뒤 assemble 이 읽는다. 세율을 코드에 박지 말 것.
+
+## 4) 데이터 파이프라인 (템플릿에 넣을 데이터 만드는 법)
 
 1. **목록 수집**: `skill/scripts/collect_api.py` (서울 등 단일시도) 또는 `skill_enrich/scripts/collect_region.py` (+ `enrich_apt.py` 세대수·연식)
 2. **사건 상세·권리분석**: `skill_detail/scripts/analyze_case.py --court … --case … [--auto-market]`
@@ -61,6 +83,12 @@
 ## 주의 (템플릿 유지사항)
 
 - 유찰횟수는 사이트 필드가 부정확 — 반드시 저감율 역산 표기 유지
+  (서울 20% 저감: 80/64/51% = 1/2/3회 · 경기 30% 저감: 70/49/34% = 1/2/3회)
+- **대항력 포기 확약서**: `analyze_case.py` 의 자동 `🔴 인수위험` 은 명세서 비고를 읽지 못해 오탐한다.
+  비고(다중행!)에 대항력 포기·임차권등기 말소 문구가 있으면 인수부담 해제로 재판정할 것 —
+  `assemble_report_data.py` 의 `grab_multi` + `waive_kw` 참조
+- **인수금액 0 ≠ 명도 가능**: 확약서로 인수가 0이어도 점유자는 그대로다. 명도 평가는 항상 별도로 쓸 것
+  (auction-due-deligence의 핵심 원칙)
 - 시뮬레이터 세율은 "대표 가정값" — ⚠️ 미검증 면책 문구 삭제 금지
 - 인수금액 dividend 모드는 "임차인 1순위 배당" 근사 — 배당표 확인 문구 유지
 - `<title>`·favicon은 산출물마다 새로 부여 (같은 Artifact 갱신 시엔 유지)

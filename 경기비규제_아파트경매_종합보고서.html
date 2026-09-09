@@ -1,0 +1,682 @@
+<meta charset="utf-8">
+<title>경기 비규제 아파트 경매</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --seal:#c0392b; --seal-deep:#8f2a1f; --ink:#1b2432;
+  --bg:#efe9dd; --card:#fff; --fg:#1b2432; --sub:#5b6472; --muted:#79828f;
+  --line:#d8d0bf; --line-soft:#e6e0d2; --field:#fbf9f4;
+  --gain:#1f7a4d; --gain-soft:#e4efe9; --loss:#b23b2e; --loss-soft:#f7e8e5;
+  --amber:#9a6410; --amber-soft:#f5ecdc;
+  --shadow:0 1px 2px rgba(27,36,50,.06),0 8px 30px rgba(27,36,50,.07);
+  --mono:"SF Mono",ui-monospace,"JetBrains Mono",Consolas,monospace;
+  --sans:"IBM Plex Sans KR",-apple-system,"Malgun Gothic",sans-serif;
+  --serif:"Nanum Myeongjo",serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --seal:#e0644f; --seal-deep:#c0392b; --ink:#e8eaf0;
+  --bg:#10141b; --card:#1a212c; --fg:#e8eaf0; --sub:#9aa3b2; --muted:#7f8896;
+  --line:#2b3342; --line-soft:#232b38; --field:#141a23;
+  --gain:#4ecf8f; --gain-soft:#1a2f26; --loss:#e9705f; --loss-soft:#33211e;
+  --amber:#d9a05b; --amber-soft:#332920;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 34px rgba(0,0,0,.5);
+}}
+:root[data-theme="dark"]{
+  --seal:#e0644f; --seal-deep:#c0392b; --ink:#e8eaf0;
+  --bg:#10141b; --card:#1a212c; --fg:#e8eaf0; --sub:#9aa3b2; --muted:#7f8896;
+  --line:#2b3342; --line-soft:#232b38; --field:#141a23;
+  --gain:#4ecf8f; --gain-soft:#1a2f26; --loss:#e9705f; --loss-soft:#33211e;
+  --amber:#d9a05b; --amber-soft:#332920;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 34px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);
+  font-size:15px;line-height:1.65;-webkit-font-smoothing:antialiased}
+.num{font-variant-numeric:tabular-nums}
+.wrap{max-width:1060px;margin:0 auto;padding:32px 22px 90px}
+.mut{color:var(--muted)} .pos{color:var(--gain)} .neg{color:var(--loss)}
+header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;
+  border-bottom:1px solid var(--line);padding-bottom:24px;margin-bottom:22px}
+.brand{display:flex;gap:15px;align-items:center}
+.stamp{width:50px;height:50px;flex:none;border-radius:9px;border:2px solid var(--seal);color:var(--seal);
+  display:grid;place-items:center;font-family:var(--serif);font-weight:800;font-size:13px;
+  transform:rotate(-6deg);position:relative;letter-spacing:1px}
+.stamp::after{content:"";position:absolute;inset:4px;border:1px solid var(--seal);border-radius:5px;opacity:.5}
+h1{font-family:var(--serif);font-weight:800;font-size:clamp(24px,4.4vw,34px);margin:0;letter-spacing:-.4px;text-wrap:balance}
+.eyebrow{font-size:11.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);font-weight:700;margin:0 0 7px}
+.themebtn{border:1px solid var(--line);background:var(--card);color:var(--sub);border-radius:8px;
+  padding:7px 11px;font-size:12px;cursor:pointer;font-family:inherit;flex:none}
+.conds{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:26px}
+.cond{border:1px solid var(--line);background:var(--card);border-radius:20px;padding:4px 12px;font-size:12.5px;color:var(--sub)}
+.cond b{color:var(--fg);font-weight:650;margin-left:5px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:1px;background:var(--line);
+  border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:36px}
+.kpi{background:var(--card);padding:16px 17px 14px}
+.kpi .k{font-size:11.5px;color:var(--muted);font-weight:600}
+.kpi .v{font-family:var(--serif);font-weight:800;font-size:24px;line-height:1.15;margin-top:5px}
+.kpi .v small{font-family:var(--sans);font-size:12.5px;font-weight:500;color:var(--muted);margin-left:3px}
+.kpi.good .v{color:var(--gain)} .kpi.seal .v{color:var(--seal)}
+section{margin-bottom:44px}
+h2{font-family:var(--serif);font-weight:800;font-size:21px;margin:0 0 5px;text-wrap:balance}
+.lede{color:var(--sub);font-size:13.5px;margin:0 0 20px;max-width:72ch}
+h3{font-size:14px;margin:22px 0 10px;font-weight:700}
+.card{background:var(--card);border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow);padding:20px 22px}
+.verdict{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--seal);
+  border-radius:0 12px 12px 0;padding:18px 22px;box-shadow:var(--shadow)}
+.verdict p{margin:0 0 11px;max-width:80ch} .verdict p:last-child{margin-bottom:0}
+.tb{display:flex;align-items:center;gap:12px;margin:9px 0;font-size:13px}
+.tb .tl{flex:none;width:118px;color:var(--sub)}
+.tb .tbar{flex:1;height:20px;background:var(--field);border-radius:4px;overflow:hidden}
+.tb .tbar i{display:block;height:100%;border-radius:4px}
+.tb .tbar i.non{background:var(--gain)} .tb .tbar i.reg{background:var(--seal)}
+.tb .tv{flex:none;width:96px;text-align:right;font-family:var(--mono);font-size:12.5px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+.tw table{min-width:600px}
+thead th{text-align:left;font-size:11px;letter-spacing:.05em;color:var(--muted);font-weight:700;
+  padding:10px 12px;border-bottom:2px solid var(--ink);white-space:nowrap;background:var(--card)}
+tbody td{padding:9px 12px;border-bottom:1px solid var(--line-soft);vertical-align:top}
+tbody tr:last-child td{border-bottom:0}
+td.r,th.r{text-align:right;white-space:nowrap}
+.fn{display:flex;align-items:center;gap:12px;margin:8px 0;font-size:13px}
+.fn .fl{flex:none;width:104px;font-weight:600}
+.fn .fbar{flex:none;width:200px;height:16px;background:var(--field);border-radius:4px;overflow:hidden}
+.fn .fbar i{display:block;height:100%;background:var(--seal);opacity:.82;border-radius:4px}
+.fn .fv{flex:none;width:44px;text-align:right;font-family:var(--mono);font-weight:700}
+.fn .fd{flex:1;color:var(--muted);font-size:12px}
+@media(max-width:660px){.fn{flex-wrap:wrap}.fn .fd{width:100%;padding-left:116px}}
+.rg{display:flex;align-items:center;gap:10px;margin:6px 0;font-size:12.5px}
+.rg .rl{flex:none;width:112px;color:var(--sub)}
+.rg .rbar{flex:1;height:14px;background:var(--field);border-radius:3px;overflow:hidden}
+.rg .rbar i{display:block;height:100%;background:var(--ink);opacity:.42;border-radius:3px}
+.rg .rv{flex:none;width:28px;text-align:right;font-family:var(--mono)}
+.props{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+@media(max-width:880px){.props{grid-template-columns:repeat(2,1fr)}}
+.prop{border:1px solid var(--line);border-radius:11px;background:var(--card);padding:10px 12px;cursor:pointer;
+  user-select:none;box-shadow:var(--shadow)}
+.prop.on{border-color:var(--seal);outline:2px solid var(--seal);outline-offset:-1px}
+.prop .pn{font-size:12.5px;font-weight:700;letter-spacing:-.2px}
+.prop .pm{font-size:10.5px;color:var(--muted);margin-top:2px;font-family:var(--mono)}
+.prop .pv{display:inline-block;margin-top:7px;font-size:10px;font-weight:700;border-radius:5px;padding:1px 6px;border:1px solid}
+.pv.ok,.rb.ok{color:var(--gain);border-color:var(--gain);background:var(--gain-soft)}
+.pv.cond,.rb.cond{color:var(--amber);border-color:var(--amber);background:var(--amber-soft)}
+.rb{display:inline-block;font-size:11px;font-weight:700;border-radius:5px;padding:2px 8px;border:1px solid}
+.rb.warn{color:var(--amber);border-color:var(--amber);background:var(--amber-soft)}
+.pcard{display:none;background:var(--card);border:1px solid var(--line);border-radius:13px;
+  padding:20px 22px;box-shadow:var(--shadow)}
+.pcard.on{display:block}
+.ph{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;margin-bottom:6px}
+.pt{font-family:var(--serif);font-weight:800;font-size:18px}
+.phead{color:var(--seal);font-size:13.5px;font-weight:650;margin:0 0 12px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+.chip{font-size:11.5px;background:var(--field);border:1px solid var(--line);border-radius:20px;padding:3px 10px;color:var(--sub)}
+.stat4{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);
+  border-radius:10px;overflow:hidden;margin-bottom:16px}
+@media(max-width:620px){.stat4{grid-template-columns:repeat(2,1fr)}}
+.stat4 .s{background:var(--card);padding:11px 13px}
+.stat4 .sk{font-size:10.5px;color:var(--muted);font-weight:600}
+.stat4 .sv{font-family:var(--serif);font-weight:800;font-size:17px;margin-top:3px}
+.stat4 .sv.seal{color:var(--seal)}
+.stat4 .sd{font-size:10.5px;color:var(--muted);margin-top:2px}
+.pbody{font-size:13.5px;max-width:80ch;margin-bottom:14px}
+.prisk{font-size:12.5px;color:var(--sub);background:var(--field);border:1px solid var(--line-soft);
+  border-left:3px solid var(--amber);border-radius:0 8px 8px 0;padding:11px 14px;margin-bottom:16px}
+.prisk b{color:var(--amber);margin-right:6px}
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+@media(max-width:720px){.pgrid{grid-template-columns:1fr}}
+.sub{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:8px}
+.fl2{margin:9px 0 0;padding-left:17px;font-size:12.5px;color:var(--sub)}
+.fl2 li{margin:4px 0}
+table.mini{font-size:12px}
+table.mini th{border-bottom:1px solid var(--line);padding:5px 7px;font-size:10.5px}
+table.mini td{padding:5px 7px;border-bottom:1px solid var(--line-soft)}
+.simg{display:grid;grid-template-columns:1fr 1fr;gap:20px 26px}
+@media(max-width:720px){.simg{grid-template-columns:1fr}}
+.ctl{margin-bottom:14px}
+.ctl label{display:block;font-size:12px;color:var(--sub);font-weight:600;margin-bottom:5px}
+.ctl input[type=range]{width:100%;accent-color:var(--seal)}
+.ctl .val{font-family:var(--serif);font-weight:800;font-size:20px}
+.ctl .hint{font-size:11px;color:var(--muted);margin-top:2px}
+.segs{display:flex;gap:6px;flex-wrap:wrap}
+.seg{flex:1;min-width:64px;text-align:center;padding:7px 5px;border:1px solid var(--line);border-radius:8px;
+  background:var(--field);color:var(--sub);font-size:12px;cursor:pointer;user-select:none}
+.seg.on{border-color:var(--seal);color:var(--seal);background:var(--loss-soft);font-weight:650}
+.out{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;align-content:start}
+.out .o{border:1px solid var(--line-soft);background:var(--field);border-radius:8px;padding:10px 12px}
+.out .o .ol{font-size:10.5px;color:var(--muted);font-weight:600}
+.out .o .ov{font-family:var(--serif);font-weight:800;font-size:17px;margin-top:3px;white-space:nowrap}
+.law td:first-child{font-weight:600;white-space:nowrap}
+.src{font-family:var(--mono);font-size:11px;color:var(--muted)}
+footer{border-top:1px solid var(--line);padding-top:22px;font-size:12px;color:var(--muted);max-width:84ch}
+footer p{margin:0 0 9px} footer b{color:var(--sub)}
+</style>
+<div class="wrap">
+<header>
+  <div class="brand">
+    <div class="stamp">落札</div>
+    <div>
+      <p class="eyebrow">경매 종합보고서 · 실사 · 법률 · 입지 · 세금 통합 · 2026. 09. 09.</p>
+      <h1>경기 비규제 아파트 경매</h1>
+    </div>
+  </div>
+  <button class="themebtn" id="tt">◐ 테마</button>
+</header>
+
+<div class="conds">
+  <span class="cond">지역<b>경기도 비규제지역</b></span>
+  <span class="cond">용도<b>아파트</b></span>
+  <span class="cond">유찰<b>1 ~ 3회</b></span>
+  <span class="cond">최저매각가<b>2억원 이하</b></span>
+  <span class="cond">매각기일<b>2026.09.09 ~ 09.23</b></span>
+</div>
+
+<div class="kpis"><div class="kpi "><div class="k">비규제 조건부합</div><div class="v num">100<small>건</small></div></div>
+<div class="kpi "><div class="k">최저가 중앙값</div><div class="v num">1억1,414만<small></small></div></div>
+<div class="kpi "><div class="k">심층 권리분석</div><div class="v num">8<small>건</small></div></div>
+<div class="kpi good"><div class="k">인수금액 0원</div><div class="v num">7<small>건</small></div></div>
+<div class="kpi seal"><div class="k">보증기관 확약서</div><div class="v num">4<small>건</small></div></div></div>
+
+<section>
+  <h2>결론</h2>
+  <div class="verdict">
+    <p>조건에 맞는 경기도 <b>비규제지역 아파트는 100건</b>입니다. 이 가운데 단지 규모·연식·실거래 표본으로 압축한 8건의
+    매각물건명세서와 현황조사서를 직접 열람한 결과, <b>8건 모두 지분매각이 아니었고 7건은 매수인이 떠안을 인수금액이 0원</b>입니다.
+    같은 방식으로 검증한 서울 빌라에서 상위 10건 중 5건이 지분매각이었던 것과 대조적입니다.</p>
+    <p>핵심 발견은 따로 있습니다. 8건 중 <b>4건이 주택도시보증공사·서울보증보험이 대위변제 후 신청한 경매</b>이고, 이들 보증기관은
+    낙찰을 촉진하려고 <b>“대항력을 포기하고 임차권등기를 말소하겠다”는 확약서</b>를 제출해 두었습니다. 겉보기에는 보증금 2억대가
+    선순위로 걸린 위험 물건이지만 실제로는 인수부담 없이 시세의 55~75%에 살 수 있는 물건이고,
+    <b>자동 수집 스크립트는 이 확약서를 읽지 못해 네 건 모두 “인수위험”으로 잘못 표시</b>했습니다.</p>
+    <p>여기에 비규제라는 조건이 세금에서 결정적으로 작동합니다. 동일한 물건·동일한 차익 4,000만원을 가정해도
+    <b>비규제 2주택자의 세후 순익은 2,702만원(17.2%)인 반면 규제지역 3주택자는 65만원 적자</b>입니다. 물건을 고르는 일보다
+    어느 지역에서 몇 번째 주택으로 사느냐가 수익을 더 크게 가릅니다.</p>
+    <p>다만 8건 중 <b>입찰을 권할 수 있는 것은 6건</b>입니다. 양주 세창리베하우스는 명세서와 현황조사의 임차인 기재가 어긋나
+    전입세대열람 전에는 인수금액을 확정할 수 없고, 파주 동광모닝스카이는 권리가 깨끗한데도 227세대·연 7건 거래에 그쳐
+    <b>할인폭이 큰 이유가 물건이 아니라 지역 수요 부족일 가능성</b>을 배제하기 어렵습니다.</p>
+  </div>
+</section>
+
+<section>
+  <h2>비규제지역이 만드는 세금 차이</h2>
+  <p class="lede">같은 물건(낙찰 1.5억 · 2년 보유 · 매도 1.9억 · 차익 4,000만원)을 규제 여부와 주택수만 바꿔 계산했습니다.
+  수치는 auction-tax2 세금엔진이 <span class="src">data/tax-rates.yaml</span>의 법령별 세율표를 읽어 산출한 값이며 암산·추정치가 아닙니다.</p>
+  <div class="card">
+    <div class="tb"><span class="tl">비규제 · 2주택</span><span class="tbar"><i class="non" style="width:18%"></i></span><span class="tv num">598만</span></div>
+<div class="tb"><span class="tl">규제 · 2주택</span><span class="tbar"><i class="reg" style="width:72%"></i></span><span class="tv num">2,408만</span></div>
+<div class="tb"><span class="tl">비규제 · 3주택</span><span class="tbar"><i class="non" style="width:50%"></i></span><span class="tv num">1,693만</span></div>
+<div class="tb"><span class="tl">규제 · 3주택</span><span class="tbar"><i class="reg" style="width:100%"></i></span><span class="tv num">3,365만</span></div>
+    <div style="height:16px"></div>
+    <div class="tw"><table>
+      <thead><tr><th>시나리오</th><th class="r">취득세</th><th class="r">양도세</th><th class="r">총 세금</th><th class="r">세후 순익</th><th class="r">수익률</th></tr></thead>
+      <tbody><tr><td>비규제 · 2주택</td><td class="r num">165만</td><td class="r num">398만</td><td class="r num"><b>598만</b></td><td class="r num pos"><b>2,702만</b></td><td class="r num pos">+17.2%</td></tr>
+<tr><td>규제 · 2주택</td><td class="r num">1,260만</td><td class="r num">1,113만</td><td class="r num"><b>2,408만</b></td><td class="r num pos"><b>892만</b></td><td class="r num pos">+5.7%</td></tr>
+<tr><td>비규제 · 3주택</td><td class="r num">1,260만</td><td class="r num">398만</td><td class="r num"><b>1,693만</b></td><td class="r num pos"><b>1,607만</b></td><td class="r num pos">+10.2%</td></tr>
+<tr><td>규제 · 3주택</td><td class="r num">1,860만</td><td class="r num">1,470만</td><td class="r num"><b>3,365만</b></td><td class="r num neg"><b>−65만</b></td><td class="r num neg">-0.4%</td></tr></tbody>
+    </table></div>
+    <h3>왜 이렇게 벌어지나</h3>
+    <ul class="fl2" style="font-size:13px">
+      <li><b>취득세</b> — 비규제지역은 <b>3주택까지 일반세율(1~3%)</b>이고 4주택부터 12% 중과입니다. 규제지역은 2주택에서 이미 8%,
+      3주택부터 12%입니다. 같은 2주택자가 1.5억을 낙찰받으면 비규제 165만원 vs 규제 1,260만원으로 <b>7.6배</b> 차이입니다.
+      <span class="src">지방세법 §13의2①</span></li>
+      <li><b>양도세 다주택 중과</b> — 조정대상지역 주택에만 2주택 +20%p, 3주택 이상 +30%p가 붙고 장기보유특별공제가 배제됩니다.
+      비규제지역 주택은 이 중과 대상이 아닙니다. <span class="src">소득세법 §104⑦</span></li>
+      <li><b>단기양도 중과는 지역과 무관</b> — 1년 미만 70%, 2년 미만 60%는 비규제에서도 그대로 적용됩니다.
+      비규제의 이점은 “빨리 팔아도 된다”가 아니라 <b>“주택수를 늘려도 벌칙이 작다”</b>입니다. <span class="src">소득세법 §104①2·3</span></li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <h2>어떻게 100건으로 좁혔나</h2>
+  <p class="lede">법원경매정보 전국 검색에서 시작해 단계마다 조건을 걸었습니다. 각 단계는 실제로 실행한 스크립트 한 개에 대응합니다.</p>
+  <div class="card"><div class="fn"><span class="fl">전국 수집</span><span class="fbar"><i style="width:100%"></i></span><span class="fv num">682</span><span class="fd">유찰 1~3회 · 최저가 2억 이하 · 아파트</span></div>
+<div class="fn"><span class="fl">경기도</span><span class="fbar"><i style="width:16%"></i></span><span class="fv num">109</span><span class="fd">소재지 접두어 사후필터</span></div>
+<div class="fn"><span class="fl">비규제지역</span><span class="fbar"><i style="width:15%"></i></span><span class="fv num">100</span><span class="fd">규제 15개 지역 제외</span></div>
+<div class="fn"><span class="fl">단지스펙 확인</span><span class="fbar"><i style="width:9%"></i></span><span class="fv num">58</span><span class="fd">K-apt 세대수·준공 매칭</span></div>
+<div class="fn"><span class="fl">실거래 대조</span><span class="fbar"><i style="width:3%"></i></span><span class="fv num">14</span><span class="fd">국토부 RTMS 동일단지·평형</span></div>
+<div class="fn"><span class="fl">권리분석</span><span class="fbar"><i style="width:3%"></i></span><span class="fv num">8</span><span class="fd">매각물건명세서·현황조사 직접 열람</span></div></div>
+  <h3>비규제 100건은 어디에 몰려 있나</h3>
+  <div class="card"><div class="rg"><span class="rl">의정부시</span><span class="rbar"><i style="width:100%"></i></span><span class="rv num">14</span></div>
+<div class="rg"><span class="rl">파주시</span><span class="rbar"><i style="width:100%"></i></span><span class="rv num">14</span></div>
+<div class="rg"><span class="rl">양주시</span><span class="rbar"><i style="width:79%"></i></span><span class="rv num">11</span></div>
+<div class="rg"><span class="rl">평택시</span><span class="rbar"><i style="width:71%"></i></span><span class="rv num">10</span></div>
+<div class="rg"><span class="rl">안성시</span><span class="rbar"><i style="width:50%"></i></span><span class="rv num">7</span></div>
+<div class="rg"><span class="rl">이천시</span><span class="rbar"><i style="width:36%"></i></span><span class="rv num">5</span></div>
+<div class="rg"><span class="rl">여주시</span><span class="rbar"><i style="width:36%"></i></span><span class="rv num">5</span></div>
+<div class="rg"><span class="rl">고양시 덕양구</span><span class="rbar"><i style="width:29%"></i></span><span class="rv num">4</span></div>
+<div class="rg"><span class="rl">고양시 일산서구</span><span class="rbar"><i style="width:29%"></i></span><span class="rv num">4</span></div>
+<div class="rg"><span class="rl">고양시 일산동구</span><span class="rbar"><i style="width:29%"></i></span><span class="rv num">4</span></div>
+<div class="rg"><span class="rl">연천군</span><span class="rbar"><i style="width:21%"></i></span><span class="rv num">3</span></div>
+<div class="rg"><span class="rl">포천시</span><span class="rbar"><i style="width:14%"></i></span><span class="rv num">2</span></div>
+    <p class="lede" style="margin:16px 0 0">의정부·파주·양주·평택·안성이 전체의 56%를 차지합니다. 규제지역 15곳(과천·광명·성남 전역·수원 3개 구·
+    안양 동안구·용인 수지구·용인 기흥구·의왕·하남·구리·화성 동탄구)을 빼고 나면 남는 것은 경기 북부와 남부 외곽입니다.
+    <b>비규제는 세제 혜택인 동시에 “규제할 만큼 과열되지 않은 지역”이라는 뜻</b>이기도 하다는 점을 기억해야 합니다.</p>
+  </div>
+</section>
+
+<section>
+  <h2>핵심 발견 — 보증기관이 대항력을 포기한 물건들</h2>
+  <div class="card">
+    <p style="margin:0 0 12px;max-width:80ch">심층 분석한 8건 중 4건에서 같은 구조가 나왔습니다. 전세보증금 반환보증에 가입한 임차인이
+    보증사고를 당하자 <b>주택도시보증공사(HUG) 또는 서울보증보험이 보증금을 대신 지급하고 임차인의 채권을 넘겨받아</b> 경매를 신청한 사건입니다.</p>
+    <p style="margin:0 0 12px;max-width:80ch">문제는 이 임차인의 전입일이 근저당·가압류보다 앞선다는 점입니다. 원칙대로면
+    <span class="src">주택임대차보호법 §3의5 단서</span>에 따라 배당에서 못 받은 보증금 잔액을 매수인이 인수해야 하고, 보증금이 2억대라
+    아무도 입찰하지 않습니다. 그래서 보증기관은 <b>“우선변제권만 주장하고 대항력은 포기하며, 전액을 못 받아도 임차권등기를 말소하겠다”</b>는
+    확약서를 법원에 제출합니다. 이 확약서가 들어오는 순간 인수부담은 0원이 되고, 이미 한두 번 저감된 최저가만 남습니다.</p>
+    <div class="tw"><table>
+      <thead><tr><th>물건</th><th>보증기관</th><th class="r">보증금</th><th>확약서 제출일</th><th class="r">최저가 ÷ 시세</th></tr></thead>
+      <tbody>
+        <tr><td>안성 롯데캐슬 1306호</td><td>주택도시보증공사</td><td class="r num">2억 4,000만</td><td>2026.06.01</td><td class="r num">74.9%</td></tr>
+        <tr><td>파주 팜스프링 2003호</td><td>주택도시보증공사</td><td class="r num">2억 7,000만</td><td>2026.05.21</td><td class="r num">55.6%</td></tr>
+        <tr><td>안성 공도 주은풍림 1001호</td><td>서울보증보험</td><td class="r num">1억 3,500만</td><td>2026.04.28</td><td class="r num">72.4%</td></tr>
+        <tr><td>파주 동광모닝스카이 302호</td><td>주택도시보증공사</td><td class="r num">2억 1,000만</td><td>2026.05.21</td><td class="r num">57.2%</td></tr>
+      </tbody>
+    </table></div>
+    <p class="lede" style="margin:16px 0 0"><b>주의</b> — 확약서는 사건기록에 편철된 문서이지 등기부에 공시되는 권리가 아닙니다.
+    매각물건명세서 비고란의 원문과 사건기록의 확약서 실물을 직접 확인하고, 제출 주체가 현재의 채권자와 일치하는지 대조하세요.</p>
+  </div>
+</section>
+
+<section>
+  <h2>물건별 심층분석</h2>
+  <p class="lede">탭을 눌러 물건을 전환하면 권리 판정·시세·환금성·기일 이력이 함께 바뀌고, 아래 시뮬레이터도 그 물건 기준으로 다시 계산됩니다.
+  유찰횟수는 사이트 필드가 부정확해 저감율로 역산했습니다(경기 30% 저감 기준 70%=1회, 49%=2회, 34%=3회).</p>
+  <div class="props"><div class="prop on" data-i="0"><div class="pn">안성 롯데캐슬</div><div class="pm">평택지원 2025타경43094</div><span class="pv ok">✓ 입찰 검토</span></div>
+<div class="prop" data-i="1"><div class="pn">파주 팜스프링 115㎡</div><div class="pm">고양지원 2025타경65184</div><span class="pv ok">✓ 입찰 검토</span></div>
+<div class="prop" data-i="2"><div class="pn">안성 공도 주은풍림</div><div class="pm">평택지원 2025타경43198</div><span class="pv ok">✓ 입찰 검토</span></div>
+<div class="prop" data-i="3"><div class="pn">안성 원곡 제일오투</div><div class="pm">평택지원 2025타경43222</div><span class="pv ok">✓ 입찰 검토</span></div>
+<div class="prop" data-i="4"><div class="pn">평택 청북 이지더원</div><div class="pm">평택지원 2025타경43133</div><span class="pv ok">✓ 입찰 검토</span></div>
+<div class="prop" data-i="5"><div class="pn">양주 세창리베하우스</div><div class="pm">의정부지방법원 2026타경70505</div><span class="pv cond">△ 조건부</span></div>
+<div class="prop" data-i="6"><div class="pn">파주 그린시티동문</div><div class="pm">고양지원 2026타경60032</div><span class="pv ok">✓ 입찰 검토</span></div>
+<div class="prop" data-i="7"><div class="pn">파주 동광모닝스카이</div><div class="pm">고양지원 2026타경60131</div><span class="pv cond">△ 조건부</span></div></div>
+  <div class="pcard on" data-i="0">
+  <div class="ph"><span class="pt">안성 롯데캐슬 130동 1306호</span><span class="rb ok">입찰 검토</span></div>
+  <p class="phead">보증기관 확약서로 인수부담 해소 · 2,320세대 최대 표본</p>
+  <div class="chips"><span class="chip">전용 59.9492㎡</span><span class="chip">2,320세대</span><span class="chip">2016년 준공</span><span class="chip">유찰 1회 (70%)</span><span class="chip">매각 2026.09.21</span><span class="chip">부동산강제경매</span></div>
+  <div class="stat4">
+    <div class="s"><div class="sk">최저매각가</div><div class="sv num">1억 6,100만</div><div class="sd">감정 2억 3,000만</div></div>
+    <div class="s"><div class="sk">실거래 시세</div><div class="sv num">2억 1,500만</div><div class="sd">12개월 65건 중앙값</div></div>
+    <div class="s"><div class="sk">시세 대비</div><div class="sv num seal">74.9%</div><div class="sd">최저가 ÷ 시세</div></div>
+    <div class="s"><div class="sk">환금성 회전율</div><div class="sv num">5.04%</div><div class="sd">12개월 117건 ÷ 세대수</div></div>
+  </div>
+  <div class="pbody">임차인 보증금 2.4억이 최선순위(2025.11.27 경매개시결정)보다 앞서 형식상 인수 대상이지만, 주택도시보증공사가 2026.06.01자로 <b>“우선변제권만 주장하고 대항력은 포기하며, 전액을 변제받지 못하더라도 임차권등기를 말소하겠다”</b>는 확약서를 제출해 매수인 인수부담이 사라졌습니다. 전입세대확인서상 등재인이 없어 명도 부담도 낮습니다. 2016년 준공 2,320세대로 12개월 117건이 거래돼 회전율 5.04% — 후보 중 가장 두터운 표본입니다.</div>
+  <div class="prisk"><b>확인할 것</b> 확약서는 배당요구종기(2026.02.24) 이후인 2026.06.01자 제출입니다. 채권자의 일방적 권리포기라 효력에 문제는 없다고 보지만, 입찰 전 사건기록에서 확약서 원문과 제출 주체를 직접 확인하세요.</div>
+  <div class="pgrid">
+    <div><div class="sub">권리 판정</div><span class="rb ok">인수 0원 — 보증기관 대항력 포기 확약</span>
+      <ul class="fl2"><li>최선순위 설정 · 2025. 11. 27. 개시결정</li>
+      <li>명세서 임차인 · 1명</li><li>청구금액 · 254,866,848원</li>
+      <li>인근 읍면동 평균 매각가율 · 86.9% (75건)</li></ul></div>
+    <div><div class="sub">기일 이력</div>
+      <table class="mini"><thead><tr><th>기일</th><th>결과</th><th class="r">최저가</th></tr></thead>
+      <tbody><tr><td>2026.08.24</td><td>유찰</td><td class="r num">2억 3,000만</td></tr><tr><td>2026.09.21</td><td>이번 기일</td><td class="r num">1억 6,100만</td></tr></tbody></table></div>
+  </div>
+</div>
+<div class="pcard" data-i="1">
+  <div class="ph"><span class="pt">파주 팜스프링 126동 2003호</span><span class="rb ok">입찰 검토</span></div>
+  <p class="phead">시세 대비 할인폭 최대(55.6%) · 대형 평형 유찰 2회</p>
+  <div class="chips"><span class="chip">전용 115.062㎡</span><span class="chip">2,944세대</span><span class="chip">2001년 준공</span><span class="chip">유찰 2회 (49%)</span><span class="chip">매각 2026.09.09</span><span class="chip">부동산강제경매</span></div>
+  <div class="stat4">
+    <div class="s"><div class="sk">최저매각가</div><div class="sv num">1억 4,847만</div><div class="sd">감정 3억 300만</div></div>
+    <div class="s"><div class="sk">실거래 시세</div><div class="sv num">2억 6,700만</div><div class="sd">12개월 7건 중앙값</div></div>
+    <div class="s"><div class="sk">시세 대비</div><div class="sv num seal">55.6%</div><div class="sd">최저가 ÷ 시세</div></div>
+    <div class="s"><div class="sk">환금성 회전율</div><div class="sv num">3.19%</div><div class="sd">12개월 94건 ÷ 세대수</div></div>
+  </div>
+  <div class="pbody">115㎡ 대형 평형이 두 번 유찰되며 최저가가 시세(2.67억)의 <b>55.6%</b>인 1.48억까지 내려왔습니다. 임차인 보증금 2.7억은 감정가를 넘지만, 주택도시보증공사가 2026.05.21자 확약서로 <b>대항력 포기 + 잔존 반환청구권 포기 + 임차권등기 말소 동의</b>를 명시해 인수부담이 없습니다. 2,944세대 대단지입니다.</div>
+  <div class="prisk"><b>확인할 것</b> 대형 평형이라 회전율 3.19%로 후보 중 하위권입니다. 115㎡ 실거래는 12개월 7건·24개월 28건으로 손바뀜이 느려 매도까지 기간을 길게 잡아야 합니다. 단기 전매 전략에는 부적합합니다.</div>
+  <div class="pgrid">
+    <div><div class="sub">권리 판정</div><span class="rb ok">인수 0원 — 보증기관 대항력 포기 확약</span>
+      <ul class="fl2"><li>최선순위 설정 · 2025.12.18. 개시결정</li>
+      <li>명세서 임차인 · 1명</li><li>청구금액 · 270,000,000원</li>
+      <li>인근 읍면동 평균 매각가율 · 75.8% (80건)</li></ul></div>
+    <div><div class="sub">기일 이력</div>
+      <table class="mini"><thead><tr><th>기일</th><th>결과</th><th class="r">최저가</th></tr></thead>
+      <tbody><tr><td>2026.04.22</td><td>유찰</td><td class="r num">3억 300만</td></tr><tr><td>2026.07.01</td><td>유찰</td><td class="r num">3억 300만</td></tr><tr><td>2026.08.05</td><td>유찰</td><td class="r num">2억 1,210만</td></tr><tr><td>2026.09.09</td><td>이번 기일</td><td class="r num">1억 4,847만</td></tr></tbody></table></div>
+  </div>
+</div>
+<div class="pcard" data-i="2">
+  <div class="ph"><span class="pt">안성 공도 주은풍림 108동 1001호</span><span class="rb ok">입찰 검토</span></div>
+  <p class="phead">환금성 1위(회전율 6.27%) · 절대가격 8,400만원</p>
+  <div class="chips"><span class="chip">전용 49.77㎡</span><span class="chip">2,615세대</span><span class="chip">2002년 준공</span><span class="chip">유찰 1회 (70%)</span><span class="chip">매각 2026.09.15</span><span class="chip">부동산강제경매</span></div>
+  <div class="stat4">
+    <div class="s"><div class="sk">최저매각가</div><div class="sv num">8,400만</div><div class="sd">감정 1억 2,000만</div></div>
+    <div class="s"><div class="sk">실거래 시세</div><div class="sv num">1억 1,600만</div><div class="sd">12개월 87건 중앙값</div></div>
+    <div class="s"><div class="sk">시세 대비</div><div class="sv num seal">72.4%</div><div class="sd">최저가 ÷ 시세</div></div>
+    <div class="s"><div class="sk">환금성 회전율</div><div class="sv num">6.27%</div><div class="sd">12개월 164건 ÷ 세대수</div></div>
+  </div>
+  <div class="pbody">서울보증보험이 2026.04.28자 <b>대항력포기확약서</b>를 제출해 임차보증금 1.35억의 인수부담이 없습니다. 2,615세대 대단지로 최근 12개월 164건이 거래돼 회전율 6.27% — 후보 중 환금성 1위입니다. 49.77㎡ 소형이라 절대가격이 8,400만원으로 가장 낮아 진입장벽이 작고, 시세(1.16억) 대비 72.4% 수준입니다.</div>
+  <div class="prisk"><b>확인할 것</b> 명세서 임차인란의 전입일 표기가 “2025.12.11”로 경매개시(2025.12.12) 직전이고 원문에는 2022년 날짜가 섞여 있어 파싱이 불안정합니다. 확약서로 인수부담은 해소되나, 전입일 원본은 명세서 정본으로 대조하세요.</div>
+  <div class="pgrid">
+    <div><div class="sub">권리 판정</div><span class="rb ok">인수 0원 — 보증기관 대항력 포기 확약</span>
+      <ul class="fl2"><li>최선순위 설정 · 2025.01.08. 압류</li>
+      <li>명세서 임차인 · 1명</li><li>청구금액 · 148,925,342원</li>
+      <li>인근 읍면동 평균 매각가율 · 77.3% (75건)</li></ul></div>
+    <div><div class="sub">기일 이력</div>
+      <table class="mini"><thead><tr><th>기일</th><th>결과</th><th class="r">최저가</th></tr></thead>
+      <tbody><tr><td>2026.08.11</td><td>유찰</td><td class="r num">1억 2,000만</td></tr><tr><td>2026.09.15</td><td>이번 기일</td><td class="r num">8,400만</td></tr></tbody></table></div>
+  </div>
+</div>
+<div class="pcard" data-i="3">
+  <div class="ph"><span class="pt">안성 원곡 제일오투그란데 308동 504호</span><span class="rb ok">입찰 검토</span></div>
+  <p class="phead">임차인 없음 · 2018년 준공 · 권리관계 가장 단순</p>
+  <div class="chips"><span class="chip">전용 59.67㎡</span><span class="chip">797세대</span><span class="chip">2018년 준공</span><span class="chip">유찰 1회 (70%)</span><span class="chip">매각 2026.09.15</span><span class="chip">부동산임의경매</span></div>
+  <div class="stat4">
+    <div class="s"><div class="sk">최저매각가</div><div class="sv num">1억 3,160만</div><div class="sd">감정 1억 8,800만</div></div>
+    <div class="s"><div class="sk">실거래 시세</div><div class="sv num">1억 8,000만</div><div class="sd">12개월 42건 중앙값</div></div>
+    <div class="s"><div class="sk">시세 대비</div><div class="sv num seal">73.1%</div><div class="sd">최저가 ÷ 시세</div></div>
+    <div class="s"><div class="sk">환금성 회전율</div><div class="sv num">6.27%</div><div class="sd">12개월 50건 ÷ 세대수</div></div>
+  </div>
+  <div class="pbody">최선순위가 2022.03.17 근저당권이고 <b>명세서·현황조사 모두 임차인이 없습니다</b>. 전입세대확인서상 채무자(소유자) 외 등재인이 없어 소유자 점유로 보이며, 인수할 권리도 명도 대상 임차인도 없는 가장 단순한 구조입니다. 2018년 준공으로 후보 중 가장 신축이고 회전율 6.27%로 환금성도 최상위입니다. 시세 1.8억 대비 73.1%.</div>
+  <div class="prisk"><b>확인할 것</b> 폐문부재로 실제 점유자를 만나지 못했습니다. 소유자 점유라면 인도명령으로 비교적 빠르게 처리되지만, 점유 실태와 관리비 체납은 현장 확인이 필요합니다.</div>
+  <div class="pgrid">
+    <div><div class="sub">권리 판정</div><span class="rb ok">인수 0원 — 명세서상 임차인 없음</span>
+      <ul class="fl2"><li>최선순위 설정 · 2022.03.17.근저당권</li>
+      <li>명세서 임차인 · 0명</li><li>청구금액 · 205,917,266원</li>
+      <li>인근 읍면동 평균 매각가율 · 74.1% (75건)</li></ul></div>
+    <div><div class="sub">기일 이력</div>
+      <table class="mini"><thead><tr><th>기일</th><th>결과</th><th class="r">최저가</th></tr></thead>
+      <tbody><tr><td>2026.08.11</td><td>유찰</td><td class="r num">1억 8,800만</td></tr><tr><td>2026.09.15</td><td>이번 기일</td><td class="r num">1억 3,160만</td></tr></tbody></table></div>
+  </div>
+</div>
+<div class="pcard" data-i="4">
+  <div class="ph"><span class="pt">평택 청북 이지더원 101동 1401호</span><span class="rb ok">입찰 검토</span></div>
+  <p class="phead">임차인 없음 · 2016년 준공 · 시세 표본 53건</p>
+  <div class="chips"><span class="chip">전용 76.8266㎡</span><span class="chip">513세대</span><span class="chip">2016년 준공</span><span class="chip">유찰 1회 (70%)</span><span class="chip">매각 2026.09.14</span><span class="chip">부동산강제경매</span></div>
+  <div class="stat4">
+    <div class="s"><div class="sk">최저매각가</div><div class="sv num">1억 8,410만</div><div class="sd">감정 2억 6,300만</div></div>
+    <div class="s"><div class="sk">실거래 시세</div><div class="sv num">2억 4,700만</div><div class="sd">12개월 30건 중앙값</div></div>
+    <div class="s"><div class="sk">시세 대비</div><div class="sv num seal">74.5%</div><div class="sd">최저가 ÷ 시세</div></div>
+    <div class="s"><div class="sk">환금성 회전율</div><div class="sv num">5.85%</div><div class="sd">12개월 30건 ÷ 세대수</div></div>
+  </div>
+  <div class="pbody">최선순위 2018.07.13 근저당권, <b>명세서·현황조사 모두 임차인 없음</b>, 전입세대확인서상 채무자 겸 소유자 외 등재자가 없습니다. 인수·명도 리스크가 모두 낮은 구조입니다. 76.83㎡ 국민평형대이고 24개월 53건이 거래돼 시세(2.47억) 근거가 탄탄합니다. 최저가 1.84억은 시세의 74.5% 수준입니다.</div>
+  <div class="prisk"><b>확인할 것</b> 513세대로 대단지는 아니어서 매수 대기 수요층이 얇습니다. 청북읍은 평택 시내권과 떨어진 신도시 외곽이라 입지 프리미엄보다 가격 메리트로 접근해야 합니다.</div>
+  <div class="pgrid">
+    <div><div class="sub">권리 판정</div><span class="rb ok">인수 0원 — 명세서상 임차인 없음</span>
+      <ul class="fl2"><li>최선순위 설정 · 2018.7.13. 근저당권</li>
+      <li>명세서 임차인 · 0명</li><li>청구금액 · 15,315,616원</li>
+      <li>인근 읍면동 평균 매각가율 · 78.0% (270건)</li></ul></div>
+    <div><div class="sub">기일 이력</div>
+      <table class="mini"><thead><tr><th>기일</th><th>결과</th><th class="r">최저가</th></tr></thead>
+      <tbody><tr><td>2026.08.03</td><td>유찰</td><td class="r num">2억 6,300만</td></tr><tr><td>2026.09.14</td><td>이번 기일</td><td class="r num">1억 8,410만</td></tr></tbody></table></div>
+  </div>
+</div>
+<div class="pcard" data-i="5">
+  <div class="ph"><span class="pt">양주 세창리베하우스 104동 104호</span><span class="rb cond">조건부</span></div>
+  <p class="phead">문서 간 불일치 — 명세서엔 임차인 없음, 현황조사엔 전입세대 있음</p>
+  <div class="chips"><span class="chip">전용 84.9862㎡</span><span class="chip">998세대</span><span class="chip">2003년 준공</span><span class="chip">유찰 1회 (70%)</span><span class="chip">매각 2026.09.10</span><span class="chip">부동산임의경매</span></div>
+  <div class="stat4">
+    <div class="s"><div class="sk">최저매각가</div><div class="sv num">1억 4,630만</div><div class="sd">감정 2억 900만</div></div>
+    <div class="s"><div class="sk">실거래 시세</div><div class="sv num">2억 500만</div><div class="sd">12개월 56건 중앙값</div></div>
+    <div class="s"><div class="sk">시세 대비</div><div class="sv num seal">71.4%</div><div class="sd">최저가 ÷ 시세</div></div>
+    <div class="s"><div class="sk">환금성 회전율</div><div class="sv num">5.61%</div><div class="sd">12개월 56건 ÷ 세대수</div></div>
+  </div>
+  <div class="pbody">최선순위는 2022.12.29 근저당권이고 매각물건명세서에는 <b>임차인이 없다</b>고 기재돼 있습니다. 그러나 현황조사서에는 <b>“임차인으로 조사한 황태양의 세대가 등재되어 있다”</b>고 적혀 있어 두 문서가 어긋납니다. 권리신고를 하지 않은 임차인이 있을 수 있고, 그의 전입일이 2022.12.29보다 앞서면 보증금이 매수인에게 인수됩니다.</div>
+  <div class="prisk"><b>확인할 것</b> 이 불일치를 해소하기 전에는 인수금액을 0으로 볼 수 없습니다. <b>전입세대열람원을 직접 발급받아 전입일자를 확인</b>하고, 배당요구종기(2026.06.08)까지 권리신고·배당요구가 있었는지 문건송달내역으로 대조하세요. 확인 전 입찰은 권하지 않습니다.</div>
+  <div class="pgrid">
+    <div><div class="sub">권리 판정</div><span class="rb warn">인수 여부 확인 필요</span>
+      <ul class="fl2"><li>최선순위 설정 · 2022.12.29.근저당권</li>
+      <li>명세서 임차인 · 0명</li><li>청구금액 · 105,649,613원</li>
+      <li>인근 읍면동 평균 매각가율 · 82.9% (111건)</li></ul></div>
+    <div><div class="sub">기일 이력</div>
+      <table class="mini"><thead><tr><th>기일</th><th>결과</th><th class="r">최저가</th></tr></thead>
+      <tbody><tr><td>2026.08.06</td><td>유찰</td><td class="r num">2억 900만</td></tr><tr><td>2026.09.10</td><td>이번 기일</td><td class="r num">1억 4,630만</td></tr></tbody></table></div>
+  </div>
+</div>
+<div class="pcard" data-i="6">
+  <div class="ph"><span class="pt">파주 그린시티동문 509동 303호</span><span class="rb ok">입찰 검토</span></div>
+  <p class="phead">임차인 없음 · 소유자 직접 점유 확인 · 101㎡ 대형</p>
+  <div class="chips"><span class="chip">전용 101.66㎡</span><span class="chip">1,759세대</span><span class="chip">2000년 준공</span><span class="chip">유찰 1회 (70%)</span><span class="chip">매각 2026.09.16</span><span class="chip">부동산임의경매</span></div>
+  <div class="stat4">
+    <div class="s"><div class="sk">최저매각가</div><div class="sv num">1억 6,450만</div><div class="sd">감정 2억 3,500만</div></div>
+    <div class="s"><div class="sk">실거래 시세</div><div class="sv num">2억 2,400만</div><div class="sd">12개월 9건 중앙값</div></div>
+    <div class="s"><div class="sk">시세 대비</div><div class="sv num seal">73.4%</div><div class="sd">최저가 ÷ 시세</div></div>
+    <div class="s"><div class="sk">환금성 회전율</div><div class="sv num">3.41%</div><div class="sd">12개월 60건 ÷ 세대수</div></div>
+  </div>
+  <div class="pbody">최선순위 2015.10.19 근저당권이고 명세서상 임차인이 없습니다. 현황조사에서 <b>채무자(소유자) 본인을 직접 만나 “전부 점유하고 있다”는 진술</b>을 받아, 폐문부재로 점유가 미상인 다른 물건보다 명도 시나리오가 명확합니다. 1,759세대이고 101.66㎡ 대형이 시세(2.24억) 대비 73.4%인 1.65억입니다.</div>
+  <div class="prisk"><b>확인할 것</b> 회전율 3.41%로 대형 평형 특유의 낮은 손바뀜을 보입니다. 101㎡ 실거래가 24개월 12건뿐이라 시세 밴드(2.0~2.5억)가 넓습니다. 매도가를 밴드 하단 기준으로 보수적으로 잡으세요.</div>
+  <div class="pgrid">
+    <div><div class="sub">권리 판정</div><span class="rb ok">인수 0원 — 명세서상 임차인 없음</span>
+      <ul class="fl2"><li>최선순위 설정 · 2015.10.19. 근저당권</li>
+      <li>명세서 임차인 · 0명</li><li>청구금액 · 119,330,410원</li>
+      <li>인근 읍면동 평균 매각가율 · 71.0% (80건)</li></ul></div>
+    <div><div class="sub">기일 이력</div>
+      <table class="mini"><thead><tr><th>기일</th><th>결과</th><th class="r">최저가</th></tr></thead>
+      <tbody><tr><td>2026.08.12</td><td>유찰</td><td class="r num">2억 3,500만</td></tr><tr><td>2026.09.16</td><td>이번 기일</td><td class="r num">1억 6,450만</td></tr></tbody></table></div>
+  </div>
+</div>
+<div class="pcard" data-i="7">
+  <div class="ph"><span class="pt">파주 동광모닝스카이 105동 302호</span><span class="rb cond">조건부</span></div>
+  <p class="phead">할인폭은 크지만(57.2%) 단지 규모·표본이 가장 얇음</p>
+  <div class="chips"><span class="chip">전용 84.932㎡</span><span class="chip">227세대</span><span class="chip">2009년 준공</span><span class="chip">유찰 2회 (49%)</span><span class="chip">매각 2026.09.16</span><span class="chip">부동산강제경매</span></div>
+  <div class="stat4">
+    <div class="s"><div class="sk">최저매각가</div><div class="sv num">1억 290만</div><div class="sd">감정 2억 1,000만</div></div>
+    <div class="s"><div class="sk">실거래 시세</div><div class="sv num">1억 8,000만</div><div class="sd">12개월 7건 중앙값</div></div>
+    <div class="s"><div class="sk">시세 대비</div><div class="sv num seal">57.2%</div><div class="sd">최저가 ÷ 시세</div></div>
+    <div class="s"><div class="sk">환금성 회전율</div><div class="sv num">3.08%</div><div class="sd">12개월 7건 ÷ 세대수</div></div>
+  </div>
+  <div class="pbody">최저가 1.03억은 시세(1.8억)의 57.2%로 팜스프링 다음으로 할인폭이 큽니다. 권리 자체는 깨끗합니다 — 임차보증금 2.1억(전입 2022.04.28)이 최선순위 가압류(2025.06.13)보다 앞서지만, 주택도시보증공사가 2026.05.21자로 <b>대항력 포기 · 임차권등기 말소 동의</b> 확약서를 제출했고 전입세대확인서상 등재자도 없습니다.</div>
+  <div class="prisk"><b>확인할 것</b> 227세대 소규모 단지이고 12개월 거래가 7건뿐이라 회전율 3.08%로 후보 중 최하위입니다. 시세 근거가 24개월 13건에 불과해 “시세 1.8억”의 신뢰구간이 넓고, 파주읍 연풍리는 운정·교하 생활권과 떨어진 외곽입니다. 할인폭이 큰 이유가 물건 자체보다 <b>지역 수요 부족</b>일 가능성을 배제하기 어렵습니다.</div>
+  <div class="pgrid">
+    <div><div class="sub">권리 판정</div><span class="rb ok">인수 0원 — 보증기관 대항력 포기 확약</span>
+      <ul class="fl2"><li>최선순위 설정 · 2025. 6. 13. 가압류</li>
+      <li>명세서 임차인 · 1명</li><li>청구금액 · 210,000,000원</li>
+      <li>인근 읍면동 평균 매각가율 · 72.6% (80건)</li></ul></div>
+    <div><div class="sub">기일 이력</div>
+      <table class="mini"><thead><tr><th>기일</th><th>결과</th><th class="r">최저가</th></tr></thead>
+      <tbody><tr><td>2026.07.08</td><td>유찰</td><td class="r num">2억 1,000만</td></tr><tr><td>2026.08.12</td><td>유찰</td><td class="r num">1억 4,700만</td></tr><tr><td>2026.09.16</td><td>이번 기일</td><td class="r num">1억 290만</td></tr></tbody></table></div>
+  </div>
+</div>
+</section>
+
+<section>
+  <h2>세후 수익 시뮬레이터</h2>
+  <p class="lede">선택한 물건에 낙찰가·매도가·보유기간·주택수·규제여부를 적용해 세후 순익을 계산합니다.
+  세율 체계는 세금엔진과 동일합니다(취득세 비규제 3주택까지 일반세율, 단기양도 70/60%, 지방소득세 10%, 기본공제 250만원).
+  <b>“규제 가정”으로 바꿔 보면 같은 물건에서 비규제가 만드는 차이가 바로 보입니다.</b></p>
+  <div class="card">
+    <div class="simg">
+      <div>
+        <div class="ctl">
+          <label for="bid">낙찰가</label>
+          <input type="range" id="bid" min="0" max="100" value="0">
+          <div class="val num" id="bidv">—</div>
+          <div class="hint" id="bidh"></div>
+        </div>
+        <div class="ctl">
+          <label for="sell">예상 매도가</label>
+          <input type="range" id="sell" min="0" max="100" value="50">
+          <div class="val num" id="sellv">—</div>
+          <div class="hint" id="sellh"></div>
+        </div>
+        <div class="ctl"><label>보유기간</label>
+          <div class="segs" id="segMonths">
+            <div class="seg" data-v="6">6개월</div><div class="seg" data-v="18">1.5년</div>
+            <div class="seg on" data-v="30">2.5년</div><div class="seg" data-v="60">5년</div>
+          </div></div>
+        <div class="ctl"><label>취득 후 보유 주택수</label>
+          <div class="segs" id="segHouses">
+            <div class="seg on" data-v="1">1주택</div><div class="seg" data-v="2">2주택</div>
+            <div class="seg" data-v="3">3주택</div><div class="seg" data-v="4">4주택</div>
+          </div></div>
+        <div class="ctl"><label>지역 규제 (비교용)</label>
+          <div class="segs" id="segReg">
+            <div class="seg on" data-v="0">비규제 (실제)</div><div class="seg" data-v="1">규제 가정</div>
+          </div></div>
+      </div>
+      <div class="out" id="out"></div>
+    </div>
+    <p class="lede" style="margin:16px 0 0">비용 가정: 법무등기 낙찰가 0.5%, 명도비 300만원, 수리비 전용면적×20만원, 중개보수 매도가 0.5%.
+    대출이자·보유세·인수금액은 미반영이라 실제 수익률은 이보다 낮을 수 있습니다.</p>
+  </div>
+</section>
+
+<section>
+  <h2>판정에 쓴 법적 근거</h2>
+  <p class="lede">아래 조문·판례는 auction-law 워크스페이스의 사전 검증된 지식베이스에서 가져왔으며,
+  각 항목은 국가법령정보(law.go.kr) 원문 조회로 확인된 것입니다.</p>
+  <div class="tw"><table class="law">
+    <thead><tr><th>쟁점</th><th>근거</th><th>이 보고서에서의 적용</th></tr></thead>
+    <tbody>
+      <tr><td>말소기준권리</td><td class="src">민사집행법 §91② ③ ④<br>시행 2026.02.01</td>
+        <td>“말소기준권리”는 법률 용어가 아닙니다. ②는 <b>모든 저당권이 순위와 무관하게 소멸</b>한다고 정하고,
+        ③④는 용익권·등기임차권이 저당권·압류·가압류에 대항할 수 있는지로 소멸과 인수를 가릅니다.
+        이번 8건의 최선순위는 근저당 5건·가압류 1건·경매개시결정 2건이었습니다.</td></tr>
+      <tr><td>대항력 임차인 인수</td><td class="src">주택임대차보호법 §3의5 단서<br>대법원 99다9981</td>
+        <td>대항력은 인도와 전입신고를 마친 <b>다음 날 0시</b>에 발생하고, 보증금이 전액 변제되지 않은 대항력 있는 임차권은
+        경락으로 소멸하지 않습니다. 확약서 4건은 이 보호를 채권자가 <b>스스로 포기</b>한 경우입니다.</td></tr>
+      <tr><td>지분매각</td><td class="src">민사집행법 §140<br>대법원 2023다217916</td>
+        <td>공유자는 매각기일 종결 고지 전까지 최고가와 같은 값으로 <b>우선매수</b>할 수 있어 낙찰이 뒤집힐 수 있고,
+        “싸게 받아 공유물분할로 전체를 경매에 부친다”는 기대는 판례가 부정합니다(대금분할은 예외적 방법).
+        이번 8건에는 지분매각이 없었습니다.</td></tr>
+      <tr><td>유치권</td><td class="src">민사집행법 §91⑤</td>
+        <td>유치권은 순위 논리 밖의 인수 항목이라 권리분석이 완벽해도 별도 부담이 남습니다.
+        8건 모두 유치권 신고는 확인되지 않았으나 등기부에 공시되지 않으므로 현장 확인이 필요합니다.</td></tr>
+      <tr><td>인수금액과 명도는 별개</td><td class="src">auction-due-deligence 실무 원칙</td>
+        <td>확약서로 인수금액이 0이 되어도 점유자가 자동으로 나가지는 않습니다. “권리는 깨끗한데 못 들어가는 물건”이
+        가장 흔한 함정입니다. 8건 중 6건이 폐문부재로 점유가 미상이고, 전입세대 등재인이 없는 4건은 명도가 비교적 수월할 것으로 봅니다.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <h2>환금성을 어떻게 쟀나</h2>
+  <div class="card">
+    <p style="margin:0 0 14px;max-width:80ch">apt-location-kit은 경매 물건에서 <b>입지 점수보다 환금성이 1차 지표</b>라고 규정합니다.
+    같은 워크스페이스의 실측(은계 13개 단지, 스피어만 상관 −0.14)은 역세권 순위가 실제 손바뀜을 거의 설명하지 못한다는 것을 보여줍니다.
+    그래서 이 보고서는 입지 점수를 매기는 대신 국토부 실거래로 <b>회전율 = 최근 12개월 거래건수 ÷ 세대수</b>를 직접 계산했습니다.</p>
+    <div class="tw"><table>
+      <thead><tr><th>단지</th><th class="r">세대수</th><th class="r">12개월 거래</th><th class="r">회전율</th><th>해석</th></tr></thead>
+      <tbody><tr><td>안성 롯데캐슬</td><td class="r num">2,320</td><td class="r num">117</td><td class="r num"><b>5.04%</b></td><td class="mut">손바뀜 활발 — 매도 대기 짧음</td></tr>
+<tr><td>파주 팜스프링 115㎡</td><td class="r num">2,944</td><td class="r num">94</td><td class="r num"><b>3.19%</b></td><td class="mut">손바뀜 느림 — 출구 좁음</td></tr>
+<tr><td>안성 공도 주은풍림</td><td class="r num">2,615</td><td class="r num">164</td><td class="r num"><b>6.27%</b></td><td class="mut">손바뀜 활발 — 매도 대기 짧음</td></tr>
+<tr><td>안성 원곡 제일오투</td><td class="r num">797</td><td class="r num">50</td><td class="r num"><b>6.27%</b></td><td class="mut">손바뀜 활발 — 매도 대기 짧음</td></tr>
+<tr><td>평택 청북 이지더원</td><td class="r num">513</td><td class="r num">30</td><td class="r num"><b>5.85%</b></td><td class="mut">손바뀜 활발 — 매도 대기 짧음</td></tr>
+<tr><td>양주 세창리베하우스</td><td class="r num">998</td><td class="r num">56</td><td class="r num"><b>5.61%</b></td><td class="mut">손바뀜 활발 — 매도 대기 짧음</td></tr>
+<tr><td>파주 그린시티동문</td><td class="r num">1,759</td><td class="r num">60</td><td class="r num"><b>3.41%</b></td><td class="mut">손바뀜 느림 — 출구 좁음</td></tr>
+<tr><td>파주 동광모닝스카이</td><td class="r num">227</td><td class="r num">7</td><td class="r num"><b>3.08%</b></td><td class="mut">손바뀜 느림 — 출구 좁음</td></tr></tbody>
+    </table></div>
+    <p class="lede" style="margin:14px 0 0">회전율 5% 이상이면 연간 스무 채 중 한 채가 손바뀜한다는 뜻으로 낙찰 후 매도 대기가 짧습니다.
+    3%대는 대형 평형이나 소규모 단지에서 나타나며, 할인폭이 커도 출구가 좁다는 신호입니다.
+    할인폭 1·2위인 팜스프링 115㎡와 동광모닝스카이가 모두 회전율 하위권이라는 점은 우연이 아닙니다.</p>
+  </div>
+</section>
+
+<section>
+  <h2>입찰 전 반드시 확인할 것</h2>
+  <div class="card">
+    <ul class="fl2" style="font-size:13.5px;color:var(--fg)">
+      <li><b>확약서 원문</b> — 4건의 인수 0원 판정은 전적으로 확약서에 의존합니다. 사건기록 열람으로 실물과 제출 주체를 확인하세요.</li>
+      <li><b>전입세대열람원</b> — 세창리베하우스는 명세서와 현황조사가 어긋납니다. 전입일자를 확인하기 전에는 입찰하지 마세요.</li>
+      <li><b>등기사항전부증명서</b> — 이 보고서는 등기부를 열람하지 않았습니다. 전체 근저당·가압류·가처분은 등기부로만 확정됩니다.</li>
+      <li><b>관리비 체납</b> — 공용부분 체납액은 매수인이 인수합니다. 관리사무소에 직접 확인하세요.</li>
+      <li><b>주택수 확정</b> — 세액은 취득 후 주택수에 따라 완전히 달라집니다. 분양권·입주권·오피스텔 포함 여부를 세무 상담으로 확정하세요.</li>
+      <li><b>규제지역 재확인</b> — 지정은 수시로 바뀝니다. 잔금일 기준으로 국토교통부 고시를 다시 확인하세요.</li>
+    </ul>
+  </div>
+</section>
+
+<footer>
+  <p><b>데이터 출처</b> · 법원경매정보(courtauction.go.kr) 2026.09.09 수집 및 매각물건명세서·현황조사서 직접 열람 ·
+  국토교통부 아파트 매매 실거래가(RTMS) 최근 12~24개월 · 한국부동산원 공동주택 기본정보(K-apt) 세대수·준공연도 ·
+  국가법령정보(law.go.kr) 조문·판례 원문 · 규제지역은 국토교통부 2025.10.15 대책과 2026.06.29 주거정책심의위원회 의결 기준.</p>
+  <p><b>통합한 워크스페이스</b> · auction-crawl0629(수집·단지보강) · auction-due-deligence(실사 원칙·문서 교차검증) ·
+  auction-law(조문·판례 지식베이스) · apt-location-kit(환금성 방법론) · auction-tax2(세금엔진).</p>
+  <p><b>한계</b> · 등기부등본을 열람하지 않아 권리분석은 매각물건명세서·현황조사서 기준입니다(정밀 인수금액이 아닙니다).
+  세액은 대표 가정값 기반 추정이며, 종합부동산세는 다른 보유주택 공시가격을 반영하지 않아 과소계산됐을 수 있습니다.
+  다주택 양도세 중과의 시행 상태(유예·부활)는 양도 시점에 재확인이 필요합니다.
+  실거래 표본이 10건 미만인 평형은 시세 신뢰구간이 넓고, 회전율은 동일 단지 전 평형 기준입니다.</p>
+  <p><b>이 보고서는 투자 권유가 아니라 스크리닝 참고자료입니다.</b> 최종 판단 전 변호사·법무사·세무사 상담을 권합니다.</p>
+</footer>
+</div>
+<script>
+const PROPS = [{"case": "2025타경43094", "short": "안성 롯데캐슬", "apr": 23000, "low": 16100, "mkt": 21500, "area": 59.9492, "waive": true, "grade": "ok"}, {"case": "2025타경65184", "short": "파주 팜스프링 115㎡", "apr": 30300, "low": 14847, "mkt": 26700, "area": 115.062, "waive": true, "grade": "ok"}, {"case": "2025타경43198", "short": "안성 공도 주은풍림", "apr": 12000, "low": 8400, "mkt": 11600, "area": 49.77, "waive": true, "grade": "ok"}, {"case": "2025타경43222", "short": "안성 원곡 제일오투", "apr": 18800, "low": 13160, "mkt": 18000, "area": 59.67, "waive": false, "grade": "ok"}, {"case": "2025타경43133", "short": "평택 청북 이지더원", "apr": 26300, "low": 18410, "mkt": 24700, "area": 76.8266, "waive": false, "grade": "ok"}, {"case": "2026타경70505", "short": "양주 세창리베하우스", "apr": 20900, "low": 14630, "mkt": 20500, "area": 84.9862, "waive": false, "grade": "cond"}, {"case": "2026타경60032", "short": "파주 그린시티동문", "apr": 23500, "low": 16450, "mkt": 22400, "area": 101.66, "waive": false, "grade": "ok"}, {"case": "2026타경60131", "short": "파주 동광모닝스카이", "apr": 21000, "low": 10290, "mkt": 18000, "area": 84.932, "waive": true, "grade": "cond"}];
+const won = n => Math.round(n).toLocaleString('ko-KR');
+const asEok = n => { const neg = n < 0; n = Math.abs(n);
+  const k = Math.floor(n / 10000), m = Math.round(n % 10000);
+  return (neg ? '−' : '') + (k > 0 ? (m ? k + '억 ' + won(m) + '만' : k + '억') : won(m) + '만'); };
+let cur = 0, months = 30, houses = 1, regulated = 0;
+const BR = [[1400,.06,0],[5000,.15,126],[8800,.24,576],[15000,.35,1544],
+            [30000,.38,1994],[50000,.40,2594],[100000,.42,3594],[Infinity,.45,6594]];
+function prog(b){ for (const x of BR) if (b <= x[0]) return Math.max(0, Math.round(b * x[1] - x[2])); return 0; }
+function acqRate(price, h, reg){
+  if (reg) { if (h >= 3) return .12; if (h === 2) return .08; }
+  else     { if (h >= 4) return .12; if (h === 3) return .08; }
+  if (price <= 60000) return .01;
+  if (price >= 90000) return .03;
+  return (price * 2 / 30000 - 3) / 100;
+}
+function calc(){
+  const p = PROPS[cur];
+  const bid = +document.getElementById('bid').dataset.v;
+  const sell = +document.getElementById('sell').dataset.v;
+  const ar = acqRate(bid, houses, regulated);
+  const acq = Math.round(bid * ar * 1.1);
+  const costs = Math.round(bid * 0.005) + 300 + Math.round(p.area * 20) + Math.round(sell * 0.005);
+  const gain = sell - bid - acq - costs;
+  const taxable = Math.max(0, gain - 250);
+  let nat = 0, label = '양도차익 없음';
+  if (taxable > 0) {
+    if (months < 12) { nat = Math.round(taxable * .70); label = '1년 미만 단기양도 70% 중과'; }
+    else if (months < 24) { nat = Math.round(taxable * .60); label = '2년 미만 단기양도 60% 중과'; }
+    else {
+      nat = prog(taxable); label = '기본세율 누진';
+      if (regulated && houses >= 2) {
+        const add = houses >= 3 ? .30 : .20;
+        nat += Math.round(taxable * add);
+        label += ' + 조정지역 ' + (houses >= 3 ? '3주택' : '2주택') + ' +' + (add * 100) + '%p 중과';
+      }
+    }
+  }
+  const capTax = nat + Math.round(nat * .1);
+  const net = gain - capTax;
+  const invest = bid + acq + costs;
+  const roi = invest > 0 ? net / invest * 100 : 0;
+  const cls = net >= 0 ? 'pos' : 'neg';
+  document.getElementById('out').innerHTML =
+    '<div class="o"><div class="ol">취득세 (' + (ar * 100).toFixed(1) + '% + 지방교육세)</div><div class="ov num">' + asEok(acq) + '</div></div>' +
+    '<div class="o"><div class="ol">기타 비용</div><div class="ov num">' + asEok(costs) + '</div></div>' +
+    '<div class="o"><div class="ol">양도차익</div><div class="ov num">' + asEok(gain) + '</div></div>' +
+    '<div class="o"><div class="ol">양도세 + 지방소득세</div><div class="ov num">' + asEok(capTax) + '</div></div>' +
+    '<div class="o"><div class="ol">세후 순익</div><div class="ov num ' + cls + '">' + asEok(net) + '</div></div>' +
+    '<div class="o"><div class="ol">투자원금 대비</div><div class="ov num ' + cls + '">' + (net >= 0 ? '+' : '') + roi.toFixed(1) + '%</div></div>' +
+    '<div class="o" style="grid-column:1/-1"><div class="ol">적용 양도세율</div><div class="ov" style="font-size:13px;font-family:var(--sans);font-weight:600;white-space:normal">' + label + '</div></div>';
+}
+function syncSliders(){
+  const p = PROPS[cur];
+  const bs = document.getElementById('bid'), ss = document.getElementById('sell');
+  const bv = Math.round(p.low + (p.apr - p.low) * (bs.value / 100));
+  bs.dataset.v = bv;
+  document.getElementById('bidv').textContent = asEok(bv);
+  document.getElementById('bidh').textContent =
+    '최저 ' + asEok(p.low) + ' ~ 감정 ' + asEok(p.apr) + ' · 감정가의 ' + (bv / p.apr * 100).toFixed(1) + '%';
+  const slo = Math.round(p.mkt * 0.8), shi = Math.round(p.mkt * 1.1);
+  const sv = Math.round(slo + (shi - slo) * (ss.value / 100));
+  ss.dataset.v = sv;
+  document.getElementById('sellv').textContent = asEok(sv);
+  document.getElementById('sellh').textContent =
+    '실거래 중앙값 ' + asEok(p.mkt) + ' 대비 ' + (sv / p.mkt * 100).toFixed(0) + '%';
+  calc();
+}
+function selectProp(i){
+  cur = i;
+  document.querySelectorAll('.prop').forEach((x, j) => x.classList.toggle('on', j === i));
+  document.querySelectorAll('.pcard').forEach((x, j) => x.classList.toggle('on', j === i));
+  document.getElementById('bid').value = 0;
+  document.getElementById('sell').value = 67;
+  syncSliders();
+}
+document.querySelectorAll('.prop').forEach((el, i) => el.addEventListener('click', () => selectProp(i)));
+['bid', 'sell'].forEach(id => document.getElementById(id).addEventListener('input', syncSliders));
+function seg(boxId, fn){
+  document.querySelectorAll('#' + boxId + ' .seg').forEach(s => s.addEventListener('click', () => {
+    document.querySelectorAll('#' + boxId + ' .seg').forEach(x => x.classList.remove('on'));
+    s.classList.add('on'); fn(+s.dataset.v); calc();
+  }));
+}
+seg('segMonths', v => months = v); seg('segHouses', v => houses = v); seg('segReg', v => regulated = v);
+const root = document.documentElement;
+document.getElementById('tt').addEventListener('click', () => {
+  const c = root.getAttribute('data-theme') || (matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light');
+  root.setAttribute('data-theme', c === 'dark' ? 'light' : 'dark');
+});
+selectProp(0);
+</script>

@@ -11,8 +11,8 @@ from dotenv import load_dotenv, find_dotenv
 load_dotenv(find_dotenv(usecwd=True))
 KEY = os.getenv('PUBLIC_DATA_SERVICE_KEY')
 
-LIST = 'https://apis.data.go.kr/1613000/AptListService3/getSigunguAptList3'
-INFO = 'https://apis.data.go.kr/1613000/AptBasisInfoServiceV4/getAphusBassInfoV4'
+LIST = 'https://apis.data.go.kr/1613000/AptListService4/getSigunguAptList4'
+INFO = 'https://apis.data.go.kr/1613000/AptBasisInfoServiceV5/getAphusBassInfoV5'
 
 # 경기도 시군구코드 (화성 2026 분구 반영: 41591 만세 / 41593 효행 / 41595 병점 / 41597 동탄)
 SGG_CODES = {

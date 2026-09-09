@@ -19,8 +19,8 @@ urllib3.disable_warnings()
 from dotenv import load_dotenv, find_dotenv
 load_dotenv(find_dotenv(usecwd=True))
 KEY = os.getenv('PUBLIC_DATA_SERVICE_KEY')
-LIST = 'https://apis.data.go.kr/1613000/AptListService3/getSigunguAptList3'
-DTL  = 'https://apis.data.go.kr/1613000/AptBasisInfoServiceV4/getAphusDtlInfoV4'
+LIST = 'https://apis.data.go.kr/1613000/AptListService4/getSigunguAptList4'
+DTL  = 'https://apis.data.go.kr/1613000/AptBasisInfoServiceV5/getAphusDtlInfoV5'
 RTMS = 'https://apis.data.go.kr/1613000/RTMSDataSvcAptTradeDev/getRTMSDataSvcAptTradeDev'
 
 TURNOVER_MIN_PCT = 4.0     # 연간 실거래량 / 세대수

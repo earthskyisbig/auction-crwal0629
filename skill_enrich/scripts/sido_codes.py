@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """시도명 → (K-apt sidoCode, 주소 접두어들). 경매 물건소재지(printSt) 접두어로 사후필터하고,
-K-apt getSidoAptList3(sidoCode) 로 시도 전역 단지 인덱스를 받는다.
+K-apt getSidoAptList4(sidoCode) 로 시도 전역 단지 인덱스를 받는다.
 
 ⚠️ 지역 드롭다운은 프로그램적 set 이 서버에 등록 안 됨(오늘의 함정 #1). 그래서 경매 수집은
 '법원·지역 없이 전국 + 서버 조건필터' 로 받고, 시도는 printSt 접두어로 사후필터한다.
