@@ -141,3 +141,71 @@ def test_summarize_market_restricts_to_dong_when_given():
 def test_acq_tax_adds_rural_special_tax_over_85m2():
     assert ac._acq_tax_rate(500_000_000, area_m2=84.9) == 0.011
     assert ac._acq_tax_rate(500_000_000, area_m2=101.0) == 0.013
+
+
+# ── 명세서 비고/특별매각조건 기반 인수 면제 판정 (2026-09-09 광진 실측 3건 기준) ──
+def test_waiver_detected_in_special_condition():
+    assert ac.is_deposit_waived('특별매각조건 채권자의 보증금반환청구권 포기', '') == '특별매각조건상 보증금반환청구권 포기'
+
+
+def test_waiver_detected_in_remarks_hug_undertaking():
+    # 2025타경51818: HUG 가 대항력 포기·임차권등기 말소 동의 확약서를 제출한 사례
+    bg = ("주택도시보증공사로부터 2026.06.26.자에 '임차보증금에 대하여 우선변제권만 주장하고 대항력은 포기하며, "
+          "임대차 보증금 전액을 변제받지 못하더라도 임차권등기를 말소하는 데 동의한다'는 내용의 확약서가 제출됨")
+    assert ac.is_deposit_waived('', bg) == '비고상 대항력 포기 확약서 제출'
+
+
+def test_remarks_stating_assumption_is_not_a_waiver():
+    # 2025타경51897: 비고가 오히려 '전액을 매수인이 인수함' 을 명시 → 면제 아님
+    bg = '매수인에게 대항할 수 있는 을구 순위 9번 주택임차권 등기(배당에서 보증금이 전액 변제되지 아니하면 전액을 매수인이 인수함)'
+    assert ac.is_deposit_waived('', bg) is None
+    assert ac.is_deposit_waived('', '') is None
+
+
+def test_compute_investment_zeroes_deposit_when_remarks_waive_it():
+    dxdy = {'aeeEvlAmt': '198000000', 'fstPbancLwsDspslPrc': '158400000'}
+    myse = {'임차인': [{'성명': '이주현', '보증금': 220_000_000, '배당요구일': '2025.7.22.', '확정일자': '2022.04.11'}],
+            '대항력앞선임차인': ['이주현'],
+            '비고': "주택도시보증공사로부터 '대항력은 포기하며 임차권등기를 말소하는 데 동의한다'는 확약서가 제출됨"}
+    iv = ac.compute_investment(dxdy, myse, {'동일단지사례': []}, {})
+    assert iv['인수보증금'] == 0
+    assert '확약서 원본' in iv['인수주석']
+
+
+def test_compute_investment_keeps_deposit_when_remarks_confirm_assumption():
+    dxdy = {'aeeEvlAmt': '304000000', 'fstPbancLwsDspslPrc': '194560000'}
+    myse = {'임차인': [{'성명': '백은실', '보증금': 280_000_000}], '대항력앞선임차인': ['백은실'],
+            '비고': '배당에서 보증금이 전액 변제되지 아니하면 전액을 매수인이 인수함'}
+    iv = ac.compute_investment(dxdy, myse, {'동일단지사례': []}, {})
+    assert iv['인수보증금'] == 280_000_000
+    assert '전액 인수 위험' in iv['인수주석']
+
+
+def test_dividend_adjusted_assumption_leaves_only_the_shortfall():
+    # 감정 3.04억·최저 1.95억, 선순위 임차인 보증금 2.8억을 HUG 가 대위변제·경매신청 → 배당 후 잔액만 인수
+    dxdy = {'aeeEvlAmt': '304000000', 'fstPbancLwsDspslPrc': '194560000'}
+    myse = {'임차인': [{'성명': '백은실', '보증금': 280_000_000}], '대항력앞선임차인': ['백은실'],
+            '비고': '주택도시보증공사 : 경매신청채권자로 임차보증금반환채권 전액을 대위변제로 승계함'}
+    iv = ac.compute_investment(dxdy, myse, {'동일단지사례': []}, {'sale_rate': 64})
+    bid = iv['예상낙찰가']
+    assert iv['인수보증금'] == 280_000_000                     # 최악 상한은 그대로
+    assert iv['배당후예상인수'] == 280_000_000 - (bid - round(bid * 0.015))
+    assert iv['실질취득원가'] < iv['총취득원가']
+    assert iv['손익분기매도가'] == iv['실질취득원가']
+
+
+def test_no_dividend_claim_keeps_full_assumption():
+    dxdy = {'aeeEvlAmt': '300000000', 'fstPbancLwsDspslPrc': '200000000'}
+    myse = {'임차인': [{'성명': 'A', '보증금': 100_000_000}], '대항력앞선임차인': ['A'], '비고': ''}
+    iv = ac.compute_investment(dxdy, myse, {'동일단지사례': []}, {'sale_rate': 66.7})
+    assert iv['배당후예상인수'] == 100_000_000
+    assert iv['실질취득원가'] == iv['총취득원가']
+    assert '전액 인수 가정' in iv['배당근거']
+
+
+def test_profit_uses_dividend_adjusted_cost():
+    dxdy = {'aeeEvlAmt': '304000000', 'fstPbancLwsDspslPrc': '194560000'}
+    myse = {'임차인': [{'성명': 'B', '보증금': 280_000_000, '배당요구일': '2025.7.1.', '확정일자': '2022.1.1.'}],
+            '대항력앞선임차인': ['B'], '비고': ''}
+    iv = ac.compute_investment(dxdy, myse, {'동일단지사례': []}, {'sale_rate': 64, 'market': 330_000_000})
+    assert iv['예상순수익'] == 330_000_000 - iv['실질취득원가'] - iv['매도중개보수']

@@ -1,0 +1,342 @@
+<title>광진구 다세대 경매 3건</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --bg:#F7F7F4; --surface:#FFFFFF; --ink:#22303C; --muted:#5D6B77;
+  --line:#DCE0E3; --line-soft:#E9ECEE;
+  --seal:#9E2B25; --seal-soft:#F6E9E7;
+  --amber:#A05E12; --amber-soft:#F5EDDF;
+  --calm:#4A6072; --calm-soft:#E8EDF1;
+  --good:#2E6B4F; --good-soft:#E3EFE8;
+  --row-hover:#F2F3F0;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#151A20; --surface:#1D242C; --ink:#E5E9ED; --muted:#93A0AB;
+    --line:#333D47; --line-soft:#28313A;
+    --seal:#E06A5A; --seal-soft:#3A2622;
+    --amber:#D9A05B; --amber-soft:#3A3122;
+    --calm:#8FA6B8; --calm-soft:#232E37;
+    --good:#7FBE9E; --good-soft:#21332B;
+    --row-hover:#232B34;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#151A20; --surface:#1D242C; --ink:#E5E9ED; --muted:#93A0AB;
+  --line:#333D47; --line-soft:#28313A;
+  --seal:#E06A5A; --seal-soft:#3A2622;
+  --amber:#D9A05B; --amber-soft:#3A3122;
+  --calm:#8FA6B8; --calm-soft:#232E37;
+  --good:#7FBE9E; --good-soft:#21332B;
+  --row-hover:#232B34;
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--bg); color:var(--ink);
+  font-family:"IBM Plex Sans KR",-apple-system,"Malgun Gothic",sans-serif;
+  font-size:15px; line-height:1.65; -webkit-font-smoothing:antialiased;}
+.doc{max-width:960px; margin:0 auto; padding:52px 28px 80px}
+.serif{font-family:"Nanum Myeongjo","IBM Plex Sans KR",serif}
+.num{font-variant-numeric:tabular-nums}
+
+header{border-top:3px solid var(--ink); border-bottom:1px solid var(--line); padding:26px 0 28px; margin-bottom:36px}
+.eyebrow{font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); font-weight:600; margin:0 0 14px}
+.eyebrow b{color:var(--seal); font-weight:700}
+h1{font-family:"Nanum Myeongjo",serif; font-weight:800; font-size:clamp(27px,5vw,40px); line-height:1.25; margin:0 0 12px; text-wrap:balance}
+.sub{color:var(--muted); margin:0 0 22px; max-width:48em}
+.conds{display:flex; flex-wrap:wrap; gap:8px}
+.cond{border:1px solid var(--line); background:var(--surface); border-radius:3px; padding:5px 12px; font-size:13px; color:var(--muted)}
+.cond b{color:var(--ink); font-weight:600; margin-left:6px}
+
+.kpis{display:grid; grid-template-columns:repeat(auto-fit,minmax(168px,1fr)); gap:1px; background:var(--line); border:1px solid var(--line); margin-bottom:46px}
+.kpi{background:var(--surface); padding:18px 20px 15px}
+.kpi .k-label{font-size:12px; letter-spacing:.06em; color:var(--muted); font-weight:600; margin-bottom:6px}
+.kpi .k-value{font-family:"Nanum Myeongjo",serif; font-weight:800; font-size:26px; line-height:1.1}
+.kpi .k-value small{font-family:"IBM Plex Sans KR",sans-serif; font-size:13px; font-weight:500; color:var(--muted); margin-left:3px}
+.kpi .k-note{font-size:12px; color:var(--muted); margin-top:5px}
+
+h2{font-family:"Nanum Myeongjo",serif; font-weight:800; font-size:22px; margin:0 0 6px; padding-top:8px}
+.lead{color:var(--muted); margin:0 0 20px; max-width:50em}
+section{margin-bottom:48px}
+.rule{border:0; border-top:1px solid var(--line); margin:0 0 22px}
+
+.card{border:1px solid var(--line); background:var(--surface); border-radius:4px; padding:0; margin-bottom:20px; overflow:hidden}
+.card > .top{padding:18px 22px 16px; border-bottom:1px solid var(--line-soft); display:flex; gap:14px; align-items:flex-start; flex-wrap:wrap}
+.card .rank{font-family:"Nanum Myeongjo",serif; font-weight:800; font-size:26px; color:var(--seal); line-height:1; min-width:28px}
+.card .hd{flex:1 1 320px; min-width:0}
+.card .hd .nm{font-family:"Nanum Myeongjo",serif; font-weight:700; font-size:19px; margin-bottom:3px}
+.card .hd .addr{font-size:13px; color:var(--muted); word-break:keep-all}
+.badge{display:inline-block; font-size:12px; font-weight:600; padding:4px 11px; border-radius:3px; white-space:nowrap}
+.b-ok{background:var(--good-soft); color:var(--good)}
+.b-cond{background:var(--amber-soft); color:var(--amber)}
+.b-no{background:var(--seal-soft); color:var(--seal)}
+.grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:1px; background:var(--line-soft)}
+.cell{background:var(--surface); padding:13px 18px}
+.cell .l{font-size:11.5px; letter-spacing:.05em; color:var(--muted); font-weight:600; margin-bottom:3px}
+.cell .v{font-weight:600; font-size:16px}
+.cell .v.seal{color:var(--seal)}
+.cell .v.good{color:var(--good)}
+.cell .s{font-size:11.5px; color:var(--muted); margin-top:2px}
+.body{padding:16px 22px 20px; border-top:1px solid var(--line-soft)}
+.body p{margin:0 0 11px}
+.body p:last-child{margin-bottom:0}
+.body .tag{display:inline-block; font-size:11.5px; font-weight:600; color:var(--muted); border:1px solid var(--line); border-radius:3px; padding:2px 8px; margin-right:6px}
+.quote{border-left:3px solid var(--seal); background:var(--seal-soft); padding:11px 15px; font-size:13.5px; margin:0 0 12px; border-radius:0 3px 3px 0}
+.quote.calm{border-left-color:var(--calm); background:var(--calm-soft)}
+.quote.good{border-left-color:var(--good); background:var(--good-soft)}
+.quote b{font-weight:700}
+.hist{padding:14px 22px 18px; border-top:1px solid var(--line-soft)}
+.hist .l{font-size:11.5px; letter-spacing:.05em; color:var(--muted); font-weight:600; margin-bottom:9px}
+
+table{border-collapse:collapse; width:100%; font-size:13.5px}
+.tablebox{overflow-x:auto; border:1px solid var(--line); border-radius:4px; background:var(--surface)}
+th{font-size:11.5px; letter-spacing:.05em; color:var(--muted); font-weight:600; text-align:right; padding:11px 13px; border-bottom:1px solid var(--line); white-space:nowrap; background:var(--surface)}
+th:first-child, th.l{text-align:left}
+td{padding:10px 13px; border-bottom:1px solid var(--line-soft); text-align:right; white-space:nowrap}
+td.l{text-align:left; white-space:normal; word-break:keep-all}
+td.nm{font-weight:600; text-align:left}
+tr:last-child td{border-bottom:none}
+tbody tr:hover{background:var(--row-hover)}
+
+.notes{border:1px solid var(--line); border-left:3px solid var(--amber); background:var(--surface); border-radius:0 4px 4px 0; padding:18px 22px}
+.notes ol{margin:0; padding-left:20px}
+.notes li{margin-bottom:9px}
+.notes li:last-child{margin-bottom:0}
+.notes b{font-weight:700}
+footer{border-top:1px solid var(--line); margin-top:44px; padding-top:20px; font-size:12.5px; color:var(--muted)}
+footer code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:11.5px; background:var(--line-soft); padding:1px 5px; border-radius:3px}
+</style>
+
+<div class="doc">
+
+<header>
+  <p class="eyebrow"><b>서울동부지방법원</b> · 매각물건 스크리닝 · 2026.09.09 조사</p>
+  <h1>광진구 다세대 3건 — 전부 대항력 임차인이 있고,<br>인수 부담이 사라진 물건은 하나뿐</h1>
+  <p class="sub">조건에 맞는 물건은 3건입니다. 세 건 모두 최선순위 설정보다 앞서 전입한 임차인이 있어 최저가만 보면 판단이 뒤집힙니다. 실제 부담은 매각물건명세서 비고와 배당 구조에서 갈립니다.</p>
+  <div class="conds">
+    <span class="cond">지역<b>서울 광진구</b></span>
+    <span class="cond">용도<b>다세대주택</b></span>
+    <span class="cond">유찰<b>1~3회</b></span>
+    <span class="cond">최저가<b>4억 이하</b></span>
+    <span class="cond">매각기일<b>2026.09.09~11.08</b></span>
+    <span class="cond">관할<b>서울동부지방법원</b></span>
+  </div>
+</header>
+
+<div class="kpis">
+  <div class="kpi"><div class="k-label">조건 부합</div><div class="k-value num">3<small>건</small></div><div class="k-note">관할 전체 20건 중</div></div>
+  <div class="kpi"><div class="k-label">대항력 임차인</div><div class="k-value num seal" style="color:var(--seal)">3<small>건 전부</small></div><div class="k-note">보증금 2.2억~5.15억</div></div>
+  <div class="kpi"><div class="k-label">인수 부담 없음</div><div class="k-value num">1<small>건</small></div><div class="k-note">HUG 대항력 포기 확약</div></div>
+  <div class="kpi"><div class="k-label">가장 가까운 기일</div><div class="k-value num">09.14</div><div class="k-note">2건 · 나머지 1건 09.21</div></div>
+</div>
+
+<section>
+  <h2 class="serif">먼저 읽을 것 — 세 건 모두 전세보증금 사고 물건</h2>
+  <hr class="rule">
+  <p class="lead">세 건 다 <b>부동산강제경매</b>이고, 채권자가 임차인 본인이거나 주택도시보증공사(HUG)입니다. 보증금을 돌려받지 못해 경매로 넘어온 이른바 깡통 물건입니다. 이런 물건은 최저가가 싸 보여도 <b>낙찰가 + 인수 보증금</b>이 실제 원가이므로, 감정가 대비 저감율은 의미가 없습니다. 판단 기준은 세 가지입니다.</p>
+  <div class="notes">
+    <ol>
+      <li><b>명세서 비고에 대항력 포기 확약이 있는가.</b> HUG가 대위변제 후 &ldquo;우선변제권만 주장하고 대항력은 포기한다&rdquo;는 확약서를 내면 매수인 인수는 사라집니다. 3건 중 1건(화양동)이 해당합니다.</li>
+      <li><b>임차인이 배당을 받는가.</b> 배당요구를 했거나 경매신청채권자라면 낙찰대금에서 먼저 배당받고 <b>모자란 잔액만</b> 인수됩니다. 낙찰가와 보증금을 그냥 더하면 6억 물건 원가가 11억으로 나오는 착시가 생깁니다.</li>
+      <li><b>남은 잔액을 시세가 덮는가.</b> 실질 취득원가가 같은 단지·같은 평형 실거래보다 낮아야 의미가 있습니다.</li>
+    </ol>
+  </div>
+</section>
+
+<section>
+  <h2 class="serif">물건별 판정</h2>
+  <hr class="rule">
+
+  <div class="card">
+    <div class="top">
+      <div class="rank serif">1</div>
+      <div class="hd">
+        <div class="nm">엘리시아1차 1205호 <span style="font-weight:400;color:var(--muted);font-size:15px">· 12.05㎡ (3.65평)</span></div>
+        <div class="addr">서울 광진구 화양동 94-13 · 2025타경51818 · 매각 2026.09.14 10:00 · 경매4계</div>
+      </div>
+      <span class="badge b-ok">인수 부담 소멸 — 유일하게 단순한 건</span>
+    </div>
+    <div class="grid">
+      <div class="cell"><div class="l">감정가</div><div class="v num">1억 9,800만</div><div class="s">평당 5,432만</div></div>
+      <div class="cell"><div class="l">최저가 (80%)</div><div class="v num">1억 5,840만</div><div class="s">평당 4,346만</div></div>
+      <div class="cell"><div class="l">인수 보증금</div><div class="v num good">0원</div><div class="s">확약서 반영</div></div>
+      <div class="cell"><div class="l">실질 취득원가</div><div class="v num">1억 6,593만</div><div class="s">최저가 낙찰 가정</div></div>
+    </div>
+    <div class="body">
+      <div class="quote good"><b>명세서 비고</b> — 주택도시보증공사로부터 2026.06.26.자에 &lsquo;임차보증금에 대하여 우선변제권만 주장하고 <b>대항력은 포기</b>하며, 임대차 보증금 전액을 변제받지 못하더라도 <b>임차권등기를 말소하는 데 동의</b>한다&rsquo;는 내용의 확약서가 제출됨</div>
+      <p><span class="tag">임차인</span>이주현 · 보증금 2억 2,000만 · 전입 2022.04.28 · 확정일자 2022.04.11 · 배당요구 2025.07.22. 최선순위 설정(2025.02.14 가압류)보다 3년 가까이 앞서 원래는 전액 인수 대상이었습니다. HUG의 확약서가 그 부담을 지웁니다.</p>
+      <p><span class="tag">쓰임</span>준주거지역, 오피스텔·도시형생활주택 건부지. 건대입구 상권 배후의 12㎡ 원룸입니다. 청구금액이 보증금과 같은 2억 2,000만원으로, 보증금 사고가 경매 원인입니다.</p>
+      <p><span class="tag">확인할 것</span>확약서 원본과 HUG의 대위변제 범위입니다. 임차인 보증금 전액을 HUG가 승계했는지, 일부만 승계해 잔여분에 대한 임차인 고유의 대항력이 남는지를 문건송달내역으로 확인해야 합니다. 여기서 갈리면 2.2억이 되살아납니다. 현황조사에서 공부상 등재자(설경운)와 명세서상 임차인(이주현)이 다른 점도 전입세대 열람으로 맞춰봐야 합니다.</p>
+      <p><span class="tag">약점</span>12.05㎡ 초소형이라 매도 상대가 실거주자가 아닌 임대 투자자로 한정됩니다. 화양동 다세대 실거래는 최근 12개월 23건뿐이고 그중 24㎡ 미만은 <b>한 건도 없습니다</b>. 환금성이 이 물건의 진짜 위험입니다.</p>
+    </div>
+    <div class="hist">
+      <div class="l">기일 이력 — 최저가</div>
+      <svg viewBox="0 0 900 96" role="img" aria-label="엘리시아1차 기일별 최저가" style="width:100%;height:auto">
+        <rect x="96" y="18" width="392" height="22" rx="2" fill="var(--calm)" opacity="0.45"></rect>
+        <text x="496" y="34" font-size="12.5" fill="var(--muted)">2026.06.15 · 1억 9,800만 · 유찰</text>
+        <rect x="96" y="46" width="392" height="22" rx="2" fill="var(--calm)" opacity="0.45"></rect>
+        <text x="496" y="62" font-size="12.5" fill="var(--muted)">2026.08.03 · 1억 9,800만 · 유찰</text>
+        <rect x="96" y="74" width="314" height="22" rx="2" fill="var(--good)"></rect>
+        <text x="418" y="90" font-size="12.5" fill="var(--ink)" font-weight="600">2026.09.14 · 1억 5,840만 · 진행</text>
+        <text x="88" y="34" font-size="12" fill="var(--muted)" text-anchor="end">1회</text>
+        <text x="88" y="62" font-size="12" fill="var(--muted)" text-anchor="end">2회</text>
+        <text x="88" y="90" font-size="12" fill="var(--muted)" text-anchor="end">이번</text>
+      </svg>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="top">
+      <div class="rank serif">2</div>
+      <div class="hd">
+        <div class="nm">레졸루트아차산 비동 401호 <span style="font-weight:400;color:var(--muted);font-size:15px">· 53.29㎡ (16.12평) · 2022년 준공</span></div>
+        <div class="addr">서울 광진구 중곡동 116-18 · 2025타경51836 · 매각 2026.09.14 10:00 · 경매4계</div>
+      </div>
+      <span class="badge b-cond">마진은 있으나 인수 계산이 전부</span>
+    </div>
+    <div class="grid">
+      <div class="cell"><div class="l">감정가</div><div class="v num">6억 800만</div><div class="s">평당 3,772만</div></div>
+      <div class="cell"><div class="l">최저가 (64%)</div><div class="v num">3억 8,912만</div><div class="s">평당 2,414만</div></div>
+      <div class="cell"><div class="l">배당 후 인수</div><div class="v num seal">1억 3,172만</div><div class="s">최악 상한 5억 1,500만</div></div>
+      <div class="cell"><div class="l">실질 취득원가</div><div class="v num">5억 3,206만</div><div class="s">최저가 낙찰 가정</div></div>
+    </div>
+    <div class="body">
+      <div class="quote calm"><b>같은 단지 실거래</b> — 레졸루트아차산A 52.61㎡ 6억 4,000만(2026.05) · 52.61㎡ 6억 3,500만(2026.06) · 51.96㎡ 6억(2026.07). 대상은 비동 53.29㎡로 <b>6.0~6.4억</b> 구간입니다.</div>
+      <p><span class="tag">임차인</span>김은 · 보증금 5억 1,500만 · 전입 2022.07.05 · 확정일자 2022.06.07 · 임차권등기 · 배당요구 2025.07.23. 최선순위 설정(2024.11.29 가압류)보다 2년 이상 앞선 선순위입니다. 권리신고는 &lsquo;공사&rsquo; 명의로 되어 있어 HUG가 대위변제한 것으로 보이고, 청구금액 5억 4,147만원이 그 근거입니다.</p>
+      <p><span class="tag">인수 구조</span>확정일자가 전입보다 앞서 우선변제권이 있고 배당요구도 했으므로, 낙찰대금에서 먼저 배당받고 모자란 잔액만 인수됩니다. 최저가 3억 8,912만에 낙찰되면 약 3억 8,328만이 배당되고 <b>1억 3,172만이 남아 인수</b>됩니다. 낙찰가를 올릴수록 인수액이 같은 크기로 줄어드는 구조라, 실질 원가는 낙찰가와 무관하게 대략 5.3억 근처에 고정됩니다.</p>
+      <p><span class="tag">숫자</span>실질 원가 5억 3,206만 대 시세 6.0~6.4억. 매도 중개보수를 빼면 <b>약 6,800만~1억 800만원</b>, 원가 대비 13~20%입니다. 2022년 준공 신축이고 아차산역 생활권이라 물건 자체는 무난합니다.</p>
+      <p><span class="tag">확인할 것</span>배당표가 이 계산의 전제입니다. 당해세·집행비용이 임차인보다 앞서 빠지면 인수액이 그만큼 늘어납니다. 또 현황조사에서 양승하 세대(전입 2025.06.13, 보증금 500만원, 확정일자 미상, 배당요구 없음)가 가족과 실제 거주 중이라고 진술했습니다. 후순위라 권리는 소멸하지만 <b>명도 상대는 이 세대</b>입니다.</p>
+    </div>
+    <div class="hist">
+      <div class="l">기일 이력 — 최저가</div>
+      <svg viewBox="0 0 900 96" role="img" aria-label="레졸루트아차산 기일별 최저가" style="width:100%;height:auto">
+        <rect x="96" y="18" width="490" height="22" rx="2" fill="var(--calm)" opacity="0.45"></rect>
+        <text x="594" y="34" font-size="12.5" fill="var(--muted)">2026.06.15 · 6억 800만 · 유찰</text>
+        <rect x="96" y="46" width="392" height="22" rx="2" fill="var(--calm)" opacity="0.45"></rect>
+        <text x="496" y="62" font-size="12.5" fill="var(--muted)">2026.08.03 · 4억 8,640만 · 유찰</text>
+        <rect x="96" y="74" width="314" height="22" rx="2" fill="var(--good)"></rect>
+        <text x="418" y="90" font-size="12.5" fill="var(--ink)" font-weight="600">2026.09.14 · 3억 8,912만 · 진행</text>
+        <text x="88" y="34" font-size="12" fill="var(--muted)" text-anchor="end">1회</text>
+        <text x="88" y="62" font-size="12" fill="var(--muted)" text-anchor="end">2회</text>
+        <text x="88" y="90" font-size="12" fill="var(--muted)" text-anchor="end">이번</text>
+      </svg>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="top">
+      <div class="rank serif">3</div>
+      <div class="hd">
+        <div class="nm">경일리치빌 303호 <span style="font-weight:400;color:var(--muted);font-size:15px">· 29.62㎡ (8.96평)</span></div>
+        <div class="addr">서울 광진구 군자동 117-52 · 2025타경51897 · 매각 2026.09.21 10:00</div>
+      </div>
+      <span class="badge b-no">위반건축물 + 얇은 마진</span>
+    </div>
+    <div class="grid">
+      <div class="cell"><div class="l">감정가</div><div class="v num">3억 400만</div><div class="s">평당 3,393만</div></div>
+      <div class="cell"><div class="l">최저가 (64%)</div><div class="v num">1억 9,456만</div><div class="s">평당 2,171만</div></div>
+      <div class="cell"><div class="l">배당 후 인수</div><div class="v num seal">8,836만</div><div class="s">최악 상한 2억 8,000만</div></div>
+      <div class="cell"><div class="l">실질 취득원가</div><div class="v num">2억 9,103만</div><div class="s">최저가 낙찰 가정</div></div>
+    </div>
+    <div class="body">
+      <div class="quote"><b>명세서 비고</b> — 주택도시보증공사: 경매신청채권자로 임차권자 백은실의 임차보증금반환채권 전액을 대위변제로 승계함 / 매수인에게 대항할 수 있는 을구 순위 9번 주택임차권 등기(배당에서 보증금이 전액 변제되지 아니하면 <b>전액을 매수인이 인수함</b>) / 집합건축물대장(표제부, 갑)상 <b>위반건축물 표시 있음</b></div>
+      <p><span class="tag">임차인</span>백은실 · 보증금 2억 8,000만 · 전입 2022.05.19 · 임차권등기(을구 9번). 최선순위 설정(2024.03.06 가압류)보다 앞섭니다. HUG가 대위변제로 승계해 경매를 신청했고 청구금액은 2억 9,473만원입니다. 임차권등기는 확정일자와 같은 우선변제권을 가지므로 배당은 받지만, 명세서가 잔액 인수를 못 박아 두었습니다.</p>
+      <p><span class="tag">숫자</span>최저가 낙찰 시 실질 원가 2억 9,103만원입니다. 군자동 25~35㎡ 다세대 최근 12개월 실거래 중위값은 3억 3,100만원(2015년 이후 준공만 보면 3억 4,500만원)이라 <b>차이가 4,000만원 안팎</b>입니다. 취득세·명도비를 이미 넣은 값이므로, 여기서 양도세와 중개보수를 빼면 남는 게 거의 없습니다.</p>
+      <p><span class="tag">위반건축물</span>이게 결정적입니다. 이행강제금이 매년 부과될 수 있고, 원상복구 전까지 담보대출이 막히거나 한도가 깎입니다. 매도할 때도 같은 이유로 상대가 줄어듭니다. 얇은 마진이 이 비용을 감당하지 못합니다.</p>
+      <p><span class="tag">참고</span>군자역(5·7호선 환승) 북동쪽 670m, 세종초 인근입니다. 경일리치빌 자체 실거래는 최근 12개월 <b>0건</b>이고, 군자동 인근 경매 낙찰가율은 평균 77.2%(범위 67.2~84.3%)였습니다.</p>
+    </div>
+    <div class="hist">
+      <div class="l">기일 이력 — 최저가</div>
+      <svg viewBox="0 0 900 96" role="img" aria-label="경일리치빌 기일별 최저가" style="width:100%;height:auto">
+        <rect x="96" y="18" width="490" height="22" rx="2" fill="var(--calm)" opacity="0.45"></rect>
+        <text x="594" y="34" font-size="12.5" fill="var(--muted)">2026.07.06 · 3억 400만 · 유찰</text>
+        <rect x="96" y="46" width="392" height="22" rx="2" fill="var(--calm)" opacity="0.45"></rect>
+        <text x="496" y="62" font-size="12.5" fill="var(--muted)">2026.08.10 · 2억 4,320만 · 유찰</text>
+        <rect x="96" y="74" width="314" height="22" rx="2" fill="var(--seal)"></rect>
+        <text x="418" y="90" font-size="12.5" fill="var(--ink)" font-weight="600">2026.09.21 · 1억 9,456만 · 진행</text>
+        <text x="88" y="34" font-size="12" fill="var(--muted)" text-anchor="end">1회</text>
+        <text x="88" y="62" font-size="12" fill="var(--muted)" text-anchor="end">2회</text>
+        <text x="88" y="90" font-size="12" fill="var(--muted)" text-anchor="end">이번</text>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2 class="serif">한 표로 비교</h2>
+  <hr class="rule">
+  <p class="lead">실질 취득원가는 최저가에 낙찰된다는 가정이고, 배당 후 잔액만 인수한다는 계산입니다. 취득세는 1주택·비규제 기준이며 다주택이면 8~12% 중과로 그림이 완전히 달라집니다.</p>
+  <div class="tablebox">
+    <table>
+      <thead>
+        <tr>
+          <th class="l">물건</th><th class="l">사건번호 · 물건번호</th><th>전용</th><th>감정가</th><th>최저가</th>
+          <th>보증금</th><th>배당 후 인수</th><th>실질 원가</th><th>시세 참조</th><th>매각기일</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="nm">화양동 엘리시아1차 1205호</td><td class="l">2025타경51818 · 1</td><td class="num">12.05㎡</td>
+          <td class="num">1.98억</td><td class="num">1.58억</td><td class="num">2.20억</td>
+          <td class="num" style="color:var(--good);font-weight:600">0</td><td class="num" style="font-weight:600">1.66억</td>
+          <td class="num">표본 없음</td><td class="num">09.14</td>
+        </tr>
+        <tr>
+          <td class="nm">중곡동 레졸루트아차산 401호</td><td class="l">2025타경51836 · 1</td><td class="num">53.29㎡</td>
+          <td class="num">6.08억</td><td class="num">3.89억</td><td class="num">5.15억</td>
+          <td class="num" style="color:var(--seal)">1.32억</td><td class="num" style="font-weight:600">5.32억</td>
+          <td class="num">6.0~6.4억</td><td class="num">09.14</td>
+        </tr>
+        <tr>
+          <td class="nm">군자동 경일리치빌 303호</td><td class="l">2025타경51897 · 1</td><td class="num">29.62㎡</td>
+          <td class="num">3.04억</td><td class="num">1.95억</td><td class="num">2.80억</td>
+          <td class="num" style="color:var(--seal)">0.88억</td><td class="num" style="font-weight:600">2.91억</td>
+          <td class="num">3.31억</td><td class="num">09.21</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2 class="serif">실거래 참조 — 광진구 다세대·연립 최근 12개월</h2>
+  <hr class="rule">
+  <p class="lead">국토교통부 연립다세대 매매 실거래 2,751건에서 대상 법정동·평형대만 추린 값입니다. 해제거래는 제외했습니다.</p>
+  <div class="tablebox">
+    <table>
+      <thead><tr><th class="l">구간</th><th>표본</th><th>중위 매매가</th><th>평당 중위</th><th class="l">메모</th></tr></thead>
+      <tbody>
+        <tr><td class="nm">화양동 전체</td><td class="num">23건</td><td class="num">3.30억</td><td class="num">3,713만</td>
+          <td class="l">최소 면적이 24.25㎡ — 대상 12.05㎡와 비교할 표본이 없음</td></tr>
+        <tr><td class="nm">중곡동 50~57㎡</td><td class="num">121건</td><td class="num">4.50억</td><td class="num">2,812만</td>
+          <td class="l">2015년 이후 준공만 53건, 중위 5.40억 — 대상은 2022년 준공</td></tr>
+        <tr><td class="nm">레졸루트아차산A</td><td class="num">7건</td><td class="num">4.30억</td><td class="num">4,022만</td>
+          <td class="l">52㎡대 3건이 6.00~6.40억 — 대상과 같은 평형</td></tr>
+        <tr><td class="nm">군자동 25~35㎡</td><td class="num">18건</td><td class="num">3.31억</td><td class="num">3,838만</td>
+          <td class="l">2015년 이후 준공 11건, 중위 3.45억</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2 class="serif">입찰 전 확인 목록</h2>
+  <hr class="rule">
+  <div class="notes">
+    <ol>
+      <li><b>등기사항전부증명서</b> — 이 보고서의 인수 판정은 매각물건명세서 기준입니다. 등기부로 선순위 권리를 다시 확인해야 하고, 특히 화양동 건은 임차권등기 말소 동의의 실제 이행 가능성을 봐야 합니다.</li>
+      <li><b>전입세대 확인서</b> — 화양동은 명세서상 임차인과 공부상 등재자가 다르고, 중곡동은 후순위 세대가 실거주 중입니다. 명도 대상과 난이도가 여기서 정해집니다.</li>
+      <li><b>배당표</b> — 중곡동·군자동의 인수액은 배당 순위 가정 위에 있습니다. 당해세와 집행비용이 임차인보다 앞서면 인수액이 늘어납니다.</li>
+      <li><b>군자동 위반건축물</b> — 건축물대장을 떼어 위반 내용과 이행강제금 부과 이력을 확인하고, 원상복구 비용을 원가에 더해야 합니다.</li>
+      <li><b>취득세</b> — 1주택·비규제 기준 1.1%로 계산했습니다. 다주택이면 8~12%로 뛰어 세 건 모두 마진이 사라집니다.</li>
+    </ol>
+  </div>
+</section>
+
+<footer>
+  <p>출처 — 법원경매정보(courtauction.go.kr) 매각물건명세서·사건상세·현황조사서·감정평가서요약·인근매각물건사례(2026.09.09 수집), 국토교통부 연립다세대 매매 실거래(최근 12개월, 해제거래 제외).</p>
+  <p>재현 — 목록 <code>skill/scripts/collect_api.py --court 서울동부지방법원 --sido 서울특별시 --sgg 광진구 --scl 다세대주택 --flbd-min 1회 --flbd-max 3 --max-price 400000000 --bid-days 60</code> / 사건별 <code>skill_detail/scripts/analyze_case.py --court 서울동부지방법원 --case 2025타경51818</code></p>
+  <p>이 보고서의 금액은 전부 추정입니다. 인수 보증금·배당 순위·명도 난이도·세율은 등기사항증명서, 전입세대 확인서, 배당표, 현장 확인으로 검증한 뒤 입찰하십시오.</p>
+</footer>
+
+</div>

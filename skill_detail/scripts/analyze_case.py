@@ -664,6 +664,25 @@ def _acq_tax_rate(price, area_m2=None):
     return round(rate, 5)
 
 
+def is_deposit_waived(특별매각조건, 비고):
+    """대항력 임차인의 보증금 인수가 면제되는 문구가 명세서에 있는지 판정 → 사유 문자열 | None.
+
+    두 경로가 있다(2026-09-09 광진 2025타경51818 실측으로 비고 경로 추가):
+      · 특별매각조건: "채권자 …보증금반환청구권 포기"
+      · 비고: 보증기관(HUG 등)이 "대항력은 포기하며 …임차권등기를 말소하는 데 동의" 확약서 제출
+    비고에는 반대로 '전액을 매수인이 인수함' 같은 인수 확정 문구도 자주 들어가므로,
+    그런 문구가 있으면 면제로 보지 않는다(보수적).
+    """
+    특조, bg = 특별매각조건 or '', 비고 or ''
+    if re.search(r'인수(?:함|됨|하여야|하게)', bg) and '포기' not in bg:
+        return None
+    if '포기' in 특조 and '반환' in 특조:
+        return '특별매각조건상 보증금반환청구권 포기'
+    if '대항력' in bg and '포기' in bg:
+        return '비고상 대항력 포기 확약서 제출'
+    return None
+
+
 def compute_investment(dxdy, myse, near, opts):
     """예상낙찰가·인수금·취득원가·손익분기 매도가, (시세 입력 시) 예상수익·수익률.
 
@@ -696,6 +715,8 @@ def compute_investment(dxdy, myse, near, opts):
 
     # 인수 보증금: 등기부 정밀분석(B안)이 있으면 그 값 우선, 없으면 명세서 기반 보수적 상한
     특조 = myse.get('특별매각조건', '') or ''
+    비고 = myse.get('비고', '') or ''
+    waived = is_deposit_waived(특조, 비고)
     risky_names = set(myse.get('대항력앞선임차인', []))
     risky_deposit = sum(t.get('보증금', 0) for t in myse.get('임차인', []) if t.get('성명') in risky_names)
     dbu = opts.get('deungibu')   # {'정밀인수금':int, '인수권리':[...], '말소기준권리':str}
@@ -704,9 +725,11 @@ def compute_investment(dxdy, myse, near, opts):
         n_ins = len(dbu.get('인수권리', []))
         인수주석 = (f"등기부 정밀분석 — 말소기준 {dbu.get('말소기준권리','?')}, "
                   f"인수권리 {n_ins}건" + (f" + 대항력임차인" if dbu.get('대항력임차인') else '')
-                  + (' (특조 반환포기 반영은 별도확인)' if ('포기' in 특조) else ''))
-    elif risky_deposit and ('포기' in 특조 and '반환' in 특조):
-        인수금, 인수주석 = 0, '특별매각조건상 채권자 보증금반환청구권 포기 → 매수인 인수 부담 없음'
+                  + (' (명세서상 포기 확약 반영은 별도확인)' if waived else ''))
+    elif risky_deposit and waived:
+        인수금 = 0
+        인수주석 = (waived + ' → 매수인 인수 부담 없음. '
+                  '⚠️ 확약서 원본·대위변제 범위(승계채권 전액 여부)를 법원 문건송달내역으로 확인할 것')
     elif risky_deposit:
         # 배당요구+확정일자 있으면 배당으로 상당분 회수 가능 → 실제 인수는 상한보다 작을 수 있음
         배당가능 = any(t.get('배당요구일') and t.get('확정일자') for t in myse.get('임차인', []) if t.get('성명') in risky_names)
@@ -717,12 +740,32 @@ def compute_investment(dxdy, myse, near, opts):
     else:
         인수금, 인수주석 = 0, '대항력 인수 임차인 없음(명세서 기준)'
 
+    # 배당 반영 실질 인수액 — 선순위 임차인이 배당요구(또는 경매신청채권자로 대위변제 승계)했고
+    # 우선변제권(확정일자 또는 임차권등기)이 있으면 낙찰대금에서 먼저 배당받고 '잔액만' 인수된다.
+    # 낙찰가+보증금 전액을 더하면 6억 물건 원가가 11억으로 나오는 식의 과대계상이 된다(2026-09-09 실측).
+    배당후인수 = 인수금
+    배당근거 = ''
+    if 인수금:
+        ten = [t for t in myse.get('임차인', []) if t.get('성명') in risky_names]
+        신청채권자 = ('경매신청채권자' in 비고) or ('대위변제' in 비고)
+        우선변제 = any(t.get('확정일자') for t in ten) or ('임차권' in 비고) or 신청채권자
+        배당요구 = any(t.get('배당요구일') for t in ten) or 신청채권자
+        if 우선변제 and 배당요구:
+            집행비용 = round(expected_bid * 0.015)      # 경매비용·조세 등 선공제 가정 1.5%
+            배당가능액 = max(0, expected_bid - 집행비용)
+            배당후인수 = max(0, 인수금 - 배당가능액)
+            배당근거 = (f'선순위 임차인이 배당요구(또는 경매신청채권자 승계)·우선변제권 보유 → '
+                     f'낙찰대금에서 약 {배당가능액:,}원 배당 후 잔액만 인수 추정')
+        else:
+            배당근거 = '배당요구·우선변제권 정황 없음 → 전액 인수 가정'
+
     # 취득비용 (가정값, opts로 조정 가능)
     tax_rate = float(opts['acq_tax']) / 100 if opts.get('acq_tax') else _acq_tax_rate(expected_bid, opts.get('area_m2'))
     취득세 = round(expected_bid * tax_rate)
     법무등기 = round(expected_bid * 0.005)                      # 낙찰가 0.5% 가정
     명도비 = int(opts.get('evict_cost') or (5_000_000 if 인수금 or myse.get('임차인') else 3_000_000))
     총원가 = expected_bid + 인수금 + 취득세 + 법무등기 + 명도비
+    실질원가 = expected_bid + 배당후인수 + 취득세 + 법무등기 + 명도비
 
     result = {
         '가능': True,
@@ -731,18 +774,20 @@ def compute_investment(dxdy, myse, near, opts):
         '취득세': 취득세, '취득세율': round(tax_rate*100, 2),
         '법무등기비': 법무등기, '명도비': 명도비,
         '총취득원가': 총원가,
-        '손익분기매도가': 총원가,   # 이 값 이상에 팔아야 원금 회수(양도세·중개보수 제외)
+        '배당후예상인수': 배당후인수, '배당근거': 배당근거,
+        '실질취득원가': 실질원가,   # 배당 반영 — 판단은 이 값 기준, 총취득원가는 최악 상한
+        '손익분기매도가': 실질원가,   # 이 값 이상에 팔아야 원금 회수(양도세·중개보수 제외)
         '_가정': '취득세=1주택·비규제 가정(85㎡ 초과 농특세 포함) / 법무등기=낙찰가0.5% / 명도비 정액 / 양도세·중개보수·보유비용 제외',
     }
     market = opts.get('market')
     if market:
         market = int(market)
         중개 = round(market * 0.005)          # 매도 중개보수 0.5% 가정
-        순수익 = market - 총원가 - 중개
+        순수익 = market - 실질원가 - 중개       # 배당 반영 원가 기준(총원가는 최악 상한이라 과소평가됨)
         result.update({
             '입력시세': market, '매도중개보수': 중개,
             '예상순수익': 순수익,
-            '수익률': round(순수익 / 총원가 * 100, 1) if 총원가 else None,
+            '수익률': round(순수익 / 실질원가 * 100, 1) if 실질원가 else None,
         })
     return result
 
@@ -820,9 +865,12 @@ def print_report(rep):
     else:
         eok = lambda v: f"{v/1e8:.2f}억"
         line('예상낙찰가', f"{iv['예상낙찰가']:,}원 ({eok(iv['예상낙찰가'])}) — 감정가×{iv['매각가율']}% ({iv['매각가율출처']})")
-        line('인수보증금', f"{iv['인수보증금']:,}원 — {iv['인수주석']}")
+        line('인수보증금', f"{iv['인수보증금']:,}원 (최악 상한) — {iv['인수주석']}")
+        if iv.get('배당근거'):
+            line('배당후 예상인수', f"{iv['배당후예상인수']:,}원 — {iv['배당근거']}")
         line('취득비용', f"취득세 {iv['취득세']:,}({iv['취득세율']}%) + 법무등기 {iv['법무등기비']:,} + 명도 {iv['명도비']:,}")
-        line('총취득원가', f"{iv['총취득원가']:,}원 ({eok(iv['총취득원가'])})")
+        line('총취득원가', f"{iv['총취득원가']:,}원 ({eok(iv['총취득원가'])}) — 전액 인수 가정 최악치")
+        line('실질취득원가', f"{iv['실질취득원가']:,}원 ({eok(iv['실질취득원가'])}) — 배당 반영, 판단 기준")
         line('손익분기 매도가', f"{iv['손익분기매도가']:,}원 이상이어야 원금회수")
         if iv.get('입력시세'):
             line('입력 시세', f"{iv['입력시세']:,}원 ({eok(iv['입력시세'])})")
