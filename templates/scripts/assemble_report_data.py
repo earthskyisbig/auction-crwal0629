@@ -48,12 +48,16 @@ def parse_deep(path):
     out['특별매각조건'] = m.group(1).strip()[:400] if m else ''
     out['지분매각'] = ('지분매각' in t)
 
-    # ⚠️ 스크립트의 자동 '인수위험'은 명세서 비고의 확약서(대항력 포기·임차권등기 말소)를
-    # 읽지 못해 오탐이 난다. 비고에 포기 문구가 있으면 인수부담을 해제로 판정한다.
+    # 구버전 analyze_case.py 로그용 폴백 — 자동 '인수위험'이 명세서 비고의 확약서
+    # (대항력 포기·임차권등기 말소)를 읽지 못해 오탐이 난다.
+    # (2026-09-09 이후 analyze_case.py 는 is_deposit_waived() 로 상류에서 처리한다.)
     blob = (out['비고'] or '') + ' ' + (out['특별매각조건'] or '')
     waive_kw = ('대항력은 포기', '대항력을 포기', '반환청구권을 포기', '임차권등기를 말소',
-                '임차권등기 말소', '말소해 주겠다', '말소에 동의')
-    out['대항력포기확약'] = any(k in blob for k in waive_kw)
+                '임차권등기 말소', '말소해 주겠다', '말소에 동의', '대항력포기확약')
+    # 비고에는 반대로 '전액을 매수인이 인수함' 같은 인수 확정 문구도 들어간다 —
+    # '포기' 없이 인수 문구만 있으면 확약으로 보지 않는다(upstream is_deposit_waived 와 동일 가드).
+    assume_confirmed = bool(re.search(r'인수(?:함|됨|하여야|하게)', blob)) and '포기' not in blob
+    out['대항력포기확약'] = (not assume_confirmed) and any(k in blob for k in waive_kw)
     out['인수위험'] = out['인수위험_원시'] and not out['대항력포기확약']
     out['확약문구'] = blob.strip()[:500] if out['대항력포기확약'] else ''
     # 인근매각
