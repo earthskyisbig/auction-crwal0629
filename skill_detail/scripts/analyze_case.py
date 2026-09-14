@@ -191,6 +191,28 @@ def parse_tenant_table(runs0, chosun_setting=''):
     return {'없음': False, '임차인': tenants, '인수위험': bool(risky), '대항력앞선임차인': risky}
 
 
+
+
+def _install_bid_window_route(page, days=180):
+    """사이트 기본 기일창(오늘~+14일) 밖의 물건은 사건번호로 검색해도 "검색 결과 없음"이 난다.
+    실측(2026-09-14): 09.29 물건이 기본창(~09.28)에서 하루 차이로 누락.
+    UI 달력을 어떤 방식(value+event / $p setValue)으로 바꿔도 WebSquare 검증에 걸려
+    검색 요청 자체가 안 나간다 → 나가는 요청을 가로채 bidEndYmd 만 +days 로 고쳐 보낸다."""
+    from datetime import datetime as _dt, timedelta as _td
+    end = (_dt.now() + _td(days=days)).strftime('%Y%m%d')
+    def _handler(route, request):
+        try:
+            body = json.loads(request.post_data or '{}')
+            si = body.get('dma_srchGdsDtlSrchInfo')
+            if isinstance(si, dict) and si.get('bidEndYmd'):
+                si['bidEndYmd'] = end
+                route.continue_(post_data=json.dumps(body))
+                return
+        except Exception:
+            pass
+        route.continue_()
+    page.route("**/searchControllerMain.on", _handler)
+
 def collect(court, year, caseno, headless=True):
     """검색 → 상세 진입 → dma_result + 현황조사서 + 인근매각/진행 반환."""
     captures = []
@@ -208,6 +230,7 @@ def collect(court, year, caseno, headless=True):
         ctx.add_init_script(INIT_JS)
         ctx.on("response", on_response)
         page = ctx.new_page()
+        _install_bid_window_route(page)
 
         page.goto(SEARCH_URL, wait_until="domcontentloaded", timeout=60000)
         page.wait_for_function(
@@ -312,6 +335,7 @@ def fetch_myseseo(court, year, caseno, headless=True):
         ctx.add_init_script(INIT_JS)
         ctx.on("request", on_request)
         page = ctx.new_page()
+        _install_bid_window_route(page)
 
         page.goto(SEARCH_URL, wait_until="domcontentloaded", timeout=60000)
         page.wait_for_function(
