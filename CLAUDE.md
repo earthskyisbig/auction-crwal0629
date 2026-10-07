@@ -45,3 +45,9 @@
 
 - 서울 구별 리포트·아파트 파인더 아티팩트 URL, 분기 자동 갱신 루틴 ID: `skills/seoul-apt-analytics/SKILL.md`.
 - 개선 이력: `docs/개선기록_2026-09-02.md`.
+
+## 변경 이력
+
+| 날짜 | 변경 내용 | 대상 | 사유 |
+|---|---|---|---|
+| 2026-10-07 | 서울 84㎡ 가격 지도 파이프라인 편입 — 구별 84㎡ 중앙값·대표 단지 5곳·σ 분포, 재건축 추진 단지 분류(정비구역 대표지번·단지명 대조, 171단지), 가격 차이 분해(구 52%·유형 13%·단지 30%), 지표 전환 지도. 문장까지 데이터로 생성(josa 조사 처리)해 분기 루틴에서 그대로 재생성. 매매 수집에 지번 칸 추가, jaegaebal DB는 rebuild_zones.json 스냅샷으로 | realprice_서울구별/p84_{compute,build,export_zones}.py·p84_template.html·rebuild_zones.json·collect_seoul.py·refresh_all.sh, tests/test_p84.py, skills/seoul-apt-analytics/SKILL.md | 사용자 요청("분기 갱신 때 다시 만들어지게"). 교훈: 이름 포함 매칭은 숫자가 다르면 다른 단지(창동주공1≠18) · 대표지번에 부번이 없는 구역은 같은 본번 다른 단지를 삼킨다(삼부→목화) — 부번 정확 일치 우선 · 클라우드 루틴엔 형제 워크스페이스 DB가 없다 |

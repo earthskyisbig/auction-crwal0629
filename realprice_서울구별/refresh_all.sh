@@ -28,4 +28,7 @@ python3 compute_complex.py
 python3 build_complex_report.py
 python3 build_terrain.py
 python3 build_galaxy.py
+# 84㎡ 가격 지도(구별 분포·재건축/신축 효과). 실패해도 본 리포트 갱신은 계속한다.
+#   rebuild_zones.json 은 jaegaebal DB 스냅샷 — 로컬에서 p84_export_zones.py 로 갱신·커밋
+(python3 p84_compute.py && python3 p84_build.py) || echo "84㎡ 지도 갱신 실패(기존 seoul84_report.html 유지)"
 echo "REFRESH_DONE"

@@ -22,7 +22,7 @@ GUS = {
 }
 import sys as _sys; _sys.path.insert(0, WORKDIR)
 from windows import MONTHS
-FIELDS = ['gu','ym','umdNm','aptNm','excluUseAr','dealAmount','floor','buildYear','dealDay','cdealType']
+FIELDS = ['gu','ym','umdNm','aptNm','excluUseAr','dealAmount','floor','buildYear','dealDay','cdealType','jibun','bonbun','bubun']  # 지번: 정비구역 대표지번 대조용(p84_compute.py)
 
 def fetch_month(code, ym):
     """순차 호출 + 초당제한(429/에러XML) 백오프. 실패 시 예외 → 상위에서 구 단위 재시도."""
@@ -65,7 +65,8 @@ def collect_gu(gu):
                              'umdNm': d.get('umdNm'), 'aptNm': d.get('aptNm'),
                              'excluUseAr': d.get('excluUseAr'), 'dealAmount': d.get('dealAmount'),
                              'floor': d.get('floor'), 'buildYear': d.get('buildYear'),
-                             'dealDay': d.get('dealDay'), 'cdealType': d.get('cdealType')})
+                             'dealDay': d.get('dealDay'), 'cdealType': d.get('cdealType'),
+                             'jibun': d.get('jibun'), 'bonbun': d.get('bonbun'), 'bubun': d.get('bubun')})
     w = csv.DictWriter(open(out, 'w', encoding='utf-8-sig', newline=''), fieldnames=FIELDS)
     w.writeheader(); w.writerows(all_rows)
     print(f'{gu}: {len(all_rows)}건', flush=True)

@@ -16,6 +16,7 @@ description: 서울 25개 구 아파트 실거래 분석 자산 운영·확장 �
 | 단지별 리포트 (상위 30·구별 대장/상승 1위·사분면·대단지·갭·전체 표) | https://claude.ai/code/artifact/31d16e3e-d96d-424d-b100-def3cead57a7 | `compute_complex.py` → `build_complex_report.py` → `Artifact(url=위 URL)` (refresh_all.sh 에 포함) |
 | 3D 평당가 지형 타임랩스 (구 압출·24개월 재생·거래 불꽃) | https://claude.ai/code/artifact/3b2c19a4-150e-4ce1-954a-47d2e055ed58 | `build_terrain.py` → `Artifact(url=위 URL)` |
 | 아파트 은하 (2,599개 단지 별자리 24개월 애니메이션·검색 조명·생활권 토글) | https://claude.ai/code/artifact/9002937a-879d-4821-af04-1c70836c4195 | `build_galaxy.py` → `Artifact(url=위 URL)` |
+| 84㎡ 가격 지도 (지표 전환 지도·가격 차이 분해·구별 σ·재건축/신축 효과·대표 단지 5곳) | https://claude.ai/artifact/3srFbVLVrNQ5cqRGRN41W6 | `p84_compute.py` → `p84_build.py` → `Artifact(url=위 URL, file_path=seoul84_report.html)` (refresh_all.sh 에 포함) |
 | 아파트 파인더 (3,435개 단지 검색+분석기) | https://claude.ai/code/artifact/706eb608-7d2c-46a9-9a88-415c478eab26 | `build_app_data.py` → `build_app.py` → `Artifact(url=위 URL)` |
 | 분기 자동 갱신 루틴 | trig_019RU1R2bHGnkBpvQmovieE2 (1·4·7·10월 15일 09:17 KST) | RemoteTrigger로 관리, 삭제는 claude.ai/code/routines |
 
@@ -34,12 +35,15 @@ compute_complex.py  단지별 매칭 지수·대표 평형 매매/전세/갭 (ap
 build_complex_report.py  단지별 리포트(상위 30·구별 대장/상승 1위·사분면·대단지·갭·전체 표) → seoul_complex_report.html
 build_terrain.py  3D 평당가 지형 타임랩스(three.js r128 cdnjs, 구 경계 압출·월별 높이·거래 불꽃) → seoul_terrain.html
 build_galaxy.py  아파트 은하(단지=별, 가로 평당가 로그·세로 출발 대비 상승률, 24개월 잔상 애니메이션, 검색 조명·생활권 토글) → seoul_galaxy.html
+p84_compute.py   84㎡ 구별 중앙값·대표 단지·σ 분포 + 재건축 분류(rebuild_zones.json 대표지번·단지명 대조) + 가격 차이 분해 → p84_data.json
+p84_build.py     문장까지 데이터로 생성(조사 josa 처리) → seoul84_report.html
 ```
 - 날짜는 전부 `windows.py`(롤링 24개월, **지난달 종료** — 이번 달은 신고 지연으로 제외) 기준. `collect_seoul.py` 가 전 구 수집을 마치면 `windows_manifest.json` 에 기간을 기록하고, 분석 스크립트는 그 기간을 그대로 써서 달이 바뀌어도 CSV 와 어긋나지 않는다(refresh_all.sh 가 시작 시 삭제).
 - 리포트의 기간·전세가율·벨트 동·착시 사례 문장은 전부 데이터에서 생성한다(2026-09-02 하드코딩 제거). 축 범위도 데이터로 계산.
 - 해제거래는 `sales_io.load_sales()` 가 원본행+해제행 쌍을 통째로 버린다(O행만 버리면 원본이 남아 약 5% 해제 거래가 통계에 섞였음). 매매·전세 매칭 키는 (법정동, 단지, 면적) — 동명 단지 혼입 방지. 전세가율은 신규 계약만(갱신 제외).
 - `refresh_all.sh` 는 기존 CSV 를 `_prev/` 로 옮겨 두고 수집하며, 실패 시 되돌린다.
 - 파인더: `collect_kapt_detail.py`(K-apt 프로파일, kapt_*.json) → `build_app_data.py` → `app_template.html` 주입.
+- 84㎡ 지도: `rebuild_zones.json` 은 jaegaebal 정비구역 DB 스냅샷(클라우드엔 DB 없음). 단계가 바뀌면 로컬에서 `python3 p84_export_zones.py` 후 커밋. 재건축 판정은 2003년 이전 준공만, 오매칭 쌍은 `p84_compute.BAD` 에 추가. 매매 CSV 에 지번(jibun·bonbun·bubun) 칸이 있어야 하며 없으면 최근 6개월만 RTMS 재호출(캐시 p84_jibun_cache.json).
 - 정적 데이터: `apt_households.json`(K-apt 세대수 합), `seoul_geo.json`(구 경계), 종사자수는 build 스크립트 내 5개 구만(나머지 KOSIS 수동 필요). `population_202607.json` 은 파일명 고정이며 내용에 `asof`(기준월)를 담는다.
 
 ## 원칙과 함정 (실측)
