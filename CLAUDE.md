@@ -12,6 +12,7 @@
 | `skill_detail/scripts/rights_analysis.py` | 등기부 권리분석 엔진(순수 함수) | `analyze_rights(entries, 경매개시일, 명세서임차인)` |
 | `skill_detail/scripts/parse_deungibu.py` | 등기부 PDF → 권리 목록 | `--selftest` 로 합성 검증 |
 | `skills/auction-priority-pipeline/` | 수집→필터→단지보강→실거래 관문→권리분석 5단계 오케스트레이션 | `scripts/enrich_complex.py`, `scripts/eval_priority.py` |
+| `skills/gongmae-redev-review/` | 공매·경매 빌라가 재개발 후보지(신통·연번) 안일 때: 분양자격·대항력 인수·블록 시세·입찰가, 법원 사건 진행조회(경매사건검색) | `scripts/villa_block_comps.py`, `scripts/bid_calc.py`, `scripts/court_case_search.py` |
 | `skills/seoul-apt-analytics/` | 서울 25개 구 분석 자산 **운영 지침**(원본은 아래 디렉터리) | — |
 | `realprice_서울구별/` | 서울 구별 평당가 리포트 + 아파트 파인더 파이프라인 | `bash refresh_all.sh` (리포트), `build_app_data.py → build_app.py` (파인더) |
 | `filter_listings.py` | 수집 CSV 후처리 필터(저감율 기반 유찰 판정) | `python3 filter_listings.py in.csv out.csv` |
@@ -20,7 +21,7 @@
 | `docs/` | 강의 자료(서문·슬라이드·실습 가이드) | — |
 | `tests/` | pytest 단위 테스트(순수 로직만, 네트워크 없음) | `python3 -m pytest -q tests` |
 
-`~/.claude/skills/{court-auction-scraper, court-auction-detail, auction-priority-pipeline, seoul-apt-analytics}` 는 이 저장소 `skill/`, `skill_detail/`, `skills/*` 의 **사본**이다. 어느 한쪽을 고치면 반대쪽도 맞춰라(`diff -rq` 로 확인). 저장소가 단일 진실 원천.
+`~/.claude/skills/{court-auction-scraper, court-auction-detail, auction-priority-pipeline, seoul-apt-analytics, gongmae-redev-review}` 는 이 저장소 `skill/`, `skill_detail/`, `skills/*` 의 **사본**이다. 어느 한쪽을 고치면 반대쪽도 맞춰라(`diff -rq` 로 확인). 저장소가 단일 진실 원천.
 
 ## 실행 전제
 
